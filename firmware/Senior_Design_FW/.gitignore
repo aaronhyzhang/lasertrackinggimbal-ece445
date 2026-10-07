@@ -1,0 +1,14 @@
+
+# Build outputs and workspace caches
+Debug/
+Release/
+.metadata/
+*.o
+*.d
+*.elf
+*.hex
+*.bin
+*.map
+*.list
+Thumbs.db
+.DS_Store
