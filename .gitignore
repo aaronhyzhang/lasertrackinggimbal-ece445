@@ -1,0 +1,20 @@
+# Firmware build products and local IDE/runtime state
+**/Debug/
+**/Release/
+**/build/
+**/.metadata/
+**/__pycache__/
+*.pyc
+*.o
+*.d
+*.elf
+*.hex
+*.bin
+*.map
+*.list
+*.su
+*.cyclo
+*.log
+*.launch
+Thumbs.db
+.DS_Store

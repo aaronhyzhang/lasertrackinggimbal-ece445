@@ -1,0 +1,3 @@
+# Preserve the dev snapshot's source bytes and recorded checksums, including
+# original vendor line endings. This does not mark source files as binary.
+firmware/Senior_Design_DEV_FW/** -text
