@@ -1,37 +1,56 @@
 {
-  "date": "2026-10-12",
-  "firmware": "0.2.0",
+  "date": "2026-10-13",
+  "firmware": "0.2.1",
   "toolchain": "ARM GCC 13.3.1 / STM32CubeIDE 1.18.0",
-  "native_cubeide": "Debug (-O0), Release (-Os), zero errors/warnings; default CLOSED_LOOP supports runtime OPEN_LOOP",
+  "configured_header_default": "OPEN_LOOP (DEMO_DEFAULT_OPEN_LOOP=1)",
+  "native_cubeide": "Debug/Release use the header; zero errors/warnings",
   "dma_region": {
     "start": "0x30000000",
     "end_exclusive": "0x30004B40",
     "bytes": 19264
   },
   "binaries": {
-    "Debug": {
+    "ConfiguredDebug": {
       "path": "build/Debug/Senior_Design_DEV_FW.bin",
-      "boot_mode": "CLOSED_LOOP",
+      "profile": "configured",
+      "boot_mode": "OPEN_LOOP",
       "bytes": 102364,
-      "sha256": "99bbfeac850723c8e0e7f74a3eb5e5722c5b6c4b391391b632527bcc05345934"
+      "sha256": "63d4893717476dcf1a94632651a709189913ae4c52fd7a172ecceb9f6bc3c2ab"
     },
-    "Release": {
+    "ConfiguredRelease": {
       "path": "build/Release/Senior_Design_DEV_FW.bin",
-      "boot_mode": "CLOSED_LOOP",
+      "profile": "configured",
+      "boot_mode": "OPEN_LOOP",
       "bytes": 61568,
-      "sha256": "4c16219ee97da69b8e3492302bf88780589c9245799531eb91bdea7c8390edf3"
+      "sha256": "01e30003da686dda968c55170362de9e7bb8535b16d17bb9a717c657b8d11538"
     },
     "OpenLoopDebug": {
       "path": "build/OpenLoop/Debug/Senior_Design_DEV_FW.bin",
+      "profile": "open-loop",
       "boot_mode": "OPEN_LOOP",
       "bytes": 102364,
-      "sha256": "a11a2a5fcd8827851ba522e899ce20daa1861ce0b269546f6fc943ef6b2b7aa7"
+      "sha256": "63d4893717476dcf1a94632651a709189913ae4c52fd7a172ecceb9f6bc3c2ab"
     },
     "OpenLoopRelease": {
       "path": "build/OpenLoop/Release/Senior_Design_DEV_FW.bin",
+      "profile": "open-loop",
       "boot_mode": "OPEN_LOOP",
       "bytes": 61568,
-      "sha256": "820d21a6b899af8a09b664588dead529bbb65a3b951eb85785692336ba690268"
+      "sha256": "01e30003da686dda968c55170362de9e7bb8535b16d17bb9a717c657b8d11538"
+    },
+    "ClosedLoopDebug": {
+      "path": "build/ClosedLoop/Debug/Senior_Design_DEV_FW.bin",
+      "profile": "closed-loop",
+      "boot_mode": "CLOSED_LOOP",
+      "bytes": 102364,
+      "sha256": "a631844e9677c03521e031d8da73b94565c86e33ce8d25818b682ea257288d84"
+    },
+    "ClosedLoopRelease": {
+      "path": "build/ClosedLoop/Release/Senior_Design_DEV_FW.bin",
+      "profile": "closed-loop",
+      "boot_mode": "CLOSED_LOOP",
+      "bytes": 61568,
+      "sha256": "095383029306b4f7dcf6678ed4aaa84d71c51658021b2ab0511b16b80ff69318"
     }
   },
   "sources": [
@@ -49,7 +68,7 @@
     },
     {
       "path": "Core/Inc/demo_config.h",
-      "sha256": "fb9bf3c3afb386a9162dc5c65c90d44ccedf18ab814708ab3cabf2ce5f101ed0"
+      "sha256": "a56bc17e96893efb5b42b0e65fa9be50708c7676fdd4dd07c12935bf95af0476"
     },
     {
       "path": "Core/Inc/demo_console.h",
@@ -129,7 +148,7 @@
     },
     {
       "path": "Tests/test_app.c",
-      "sha256": "a9defc67ed1ba4d865e8c7e77a784071ae93867f857364b0cf257ac21f4e070b"
+      "sha256": "77f112e092986f1a598081fc11c15e3c02c029f7ce43161ad9850956192693ae"
     },
     {
       "path": "Tests/test_client.py",
@@ -137,7 +156,7 @@
     },
     {
       "path": "Tests/test_control.c",
-      "sha256": "3a9a79b9d8acc500b0dcaf11efb806347732bde87ab48a1f89859761c2f0bd61"
+      "sha256": "4bac081fcfab7bddcf01cd7855c44bef555318062cda3929df51691349196b0f"
     },
     {
       "path": "Tests/test_defaults.c",
@@ -149,16 +168,16 @@
     },
     {
       "path": "Tools/build.py",
-      "sha256": "8949993c9f95894dcff8c4ef6c4a819322eb07939b9f491bc565ccfce2763c85"
+      "sha256": "44a0a206cb2d83c4af03e8dd8f30ee9ae8895052ca5f4a7277e97d30440c0331"
     },
     {
       "path": "Tools/test.py",
-      "sha256": "a861080c2e81d9af32f2745d3234fad90576acd7a946af30b3bc78c021c35b90"
+      "sha256": "29ca79d94ac500a5a11b3be0f668074087320357d9456135e1ed3653ac4449a0"
     },
     {
       "path": "Tools/udp_client.py",
       "sha256": "25041141decc4e1323059d5ac0e4abd6aeaff24e4ed1f68ef820001703ac816a"
     }
   ],
-  "active_workspace_verified": "2026-10-13"
+  "active_dev_verification": "2026-10-13: 31 source hashes and all six BIN hashes match; native CubeIDE Debug/Release zero errors/warnings"
 }

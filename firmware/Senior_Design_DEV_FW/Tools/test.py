@@ -30,8 +30,9 @@ def main():
                    "-lm", "-o", str(app_executable)], check=True)
     subprocess.run([str(app_executable)], check=True)
     for name, defines in [("test_open_loop", []), ("test_defaults", []),
+                          ("test_defaults", ["-DDEMO_DEFAULT_OPEN_LOOP=0"]),
                           ("test_defaults", ["-DDEMO_DEFAULT_OPEN_LOOP=1"])]:
-        label = name + ("_open" if defines else "")
+        label = name + ("_override_" + defines[0].split("=")[-1] if defines else "")
         binary = output / (label + (".exe" if sys.platform == "win32" else ""))
         subprocess.run(compiler + ["-std=c11", "-Wall", "-Wextra", "-Werror", *defines,
                        "-I", str(root / "Core/Inc"), str(root / f"Tests/{name}.c"),

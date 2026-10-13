@@ -36,7 +36,7 @@ void board_inputs(motor_input_t *in,uint16_t *adc) {
 static void tick(void) { ++now; app_foreground(); app_control_tick(); }
 static void test_open_application(void) {
     now=0; external_fault=FAULT_NONE; stop_latch=true; encoder_present=false; analog_raw=0;
-    app_init(); tick();
+    app_init(); assert(app_mode(MODE_CLOSED_LOOP)); tick();
     assert(!app_mode((motor_mode_t)99));
     assert(app_source(SOURCE_SERIAL)); assert(app_position(SOURCE_SERIAL,90000));
     assert(app_mode(MODE_OPEN_LOOP)); assert(!app_request(ACTION_ARM)); tick();
@@ -64,7 +64,7 @@ static void test_open_application(void) {
     app_status(&s); assert(s.motor.state==MOTOR_DISABLED && !output.pwm); /* Closed loop still requires encoder. */
 }
 int main(void) {
-    app_init(); tick();
+    app_init(); assert(app_mode(MODE_CLOSED_LOOP)); tick();
     assert(!app_request(ACTION_ARM)); assert(app_request(ACTION_CALIBRATE));
     assert(!app_request(ACTION_CALIBRATE)); tick();
     app_status_t s;

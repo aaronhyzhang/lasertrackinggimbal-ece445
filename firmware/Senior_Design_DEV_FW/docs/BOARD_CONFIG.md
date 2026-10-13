@@ -77,3 +77,7 @@ References: [ST UM2407, connectors and VCP](https://www.st.com/resource/en/user_
 ## Open-loop profile assumptions — 2026-10-12
 
 No new pin/harness allocation is needed. PA3 becomes a one-way speed command only when mode OPEN_LOOP is selected; fixed positive A/B/C sequence, 11 pole pairs, 24 V configured bus, 6-PWM straps and 3.3 V digital interface remain assumptions to verify on the bench. Encoder may be absent for open-loop drive; its power/pulls and boot readback must work before closed-loop calibration. PB6/PB7 have no fitted Nucleo external I2C pull-ups; inspect the encoder-board pulls or provide appropriate pulls to 3.3 V. EVM current/protection settings remain unverified and are not replaced by a voltage clamp. Full limits, mode sequence and a correction table are in [OPEN_LOOP_GUIDE.md](OPEN_LOOP_GUIDE.md).
+
+## One-line selection and scope sequence — 2026-10-13
+
+Normal builds follow `DEMO_DEFAULT_OPEN_LOOP` in demo_config.h; it is currently 1 for open loop, with 0 selecting closed loop. This software choice never changes the DRV8304H hardware MODE strap, which remains 6-PWM. [BENCH_SWITCHING_VALIDATION.md](BENCH_SWITCHING_VALIDATION.md) records input pair mapping, nominal 20 kHz/500 ns, correct GH–SH gate probing, no-motor driver checks and alignment/field timing. Bench measurements remain pending.

@@ -1,6 +1,12 @@
 # Open-loop speed bring-up and mode selection
 
-Updated 2026-10-12. Firmware v0.2.0. One unloaded FIT1036 motor, NUCLEO-H753ZI, BOOSTXL-DRV8304H, configured 24 V bus. Software tests/builds pass; actual waveforms, current, alignment and motor synchronization remain unverified.
+Updated 2026-10-13. Firmware v0.2.1. One unloaded FIT1036 motor, NUCLEO-H753ZI, BOOSTXL-DRV8304H, configured 24 V bus. Software tests/builds pass; actual waveforms, current, alignment and motor synchronization remain unverified.
+
+## One-line operating-mode choice before flashing
+
+Edit `Core/Inc/demo_config.h`: `#define DEMO_DEFAULT_OPEN_LOOP 1` selects open-loop speed, or change the value to 0 for closed-loop position. Rebuild normally in CubeIDE or run `python Tools/build.py --config Debug`; no build flag or console mode change is needed. Current value is 1. Both modes remain disabled at boot and require explicit ARM; closed loop still requires calibration/ZERO.
+
+Detailed scope setup, complementary/non-overlap checks and startup timing are in [BENCH_SWITCHING_VALIDATION.md](BENCH_SWITCHING_VALIDATION.md).
 
 ## How much simpler is open loop?
 
@@ -76,14 +82,14 @@ build/OpenLoop/Release/Senior_Design_DEV_FW.elf (also .bin/.hex/.map)
 
 These builds define `DEMO_DEFAULT_OPEN_LOOP=1`. They boot with mode OPEN_LOOP and state DISABLED. They still support the closed-loop mode toggle. A compile-time default is not permission to energize at boot.
 
-The normal build / native CubeIDE Debug and Release configurations boot CLOSED_LOOP, but support `MODE OPEN_LOOP`:
+Normal CLI / native CubeIDE builds now follow the header value instead of forcing CLOSED_LOOP. For an explicit override image independent of that header, use:
 
 ```powershell
 python Tools/build.py --profile closed-loop --config Debug
 python Tools/build.py --profile closed-loop --config Release
 ```
 
-Normal outputs remain under `build/Debug` and `build/Release`. To boot open loop from a native CubeIDE build, add the symbol `DEMO_DEFAULT_OPEN_LOOP=1` to **all** C compilation units in the selected configuration and rebuild; the CLI profile avoids changing the IDE configuration. Program with motor supply disconnected. Hardware has not been flashed by these build commands.
+Normal header-selected outputs remain under `build/Debug` and `build/Release`. Explicit closed-loop override images are under `build/ClosedLoop/Debug` and `build/ClosedLoop/Release`; explicit open-loop images remain under `build/OpenLoop/`. No native IDE preprocessor change is needed for the one-line workflow. Avoid `--profile` overrides when testing the header selection. Program with motor supply disconnected. Hardware has not been flashed by these build commands.
 
 ## Console sequence
 

@@ -1,6 +1,8 @@
 # Firmware and bench bring-up guide
 
-Updated 2026-10-12. Firmware v0.2.0. Software builds/tests pass; all electrical and motion checks below remain pending. This is a single unloaded-motor proof of concept on dev boards.
+Updated 2026-10-12. Firmware v0.2.1. Software builds/tests pass; all electrical and motion checks below remain pending. This is a single unloaded-motor proof of concept on dev boards.
+
+For the one-line pre-flash mode choice and MCU/gate-driver/motor scope sequence, read [BENCH_SWITCHING_VALIDATION.md](BENCH_SWITCHING_VALIDATION.md).
 
 For the new staged analog-speed test and runtime toggle, read [OPEN_LOOP_GUIDE.md](OPEN_LOOP_GUIDE.md) first. This guide describes **CLOSED_LOOP** position mode. Both boot profiles stay disabled at reset.
 
@@ -63,7 +65,7 @@ python Tools/build.py --config Debug
 python Tools/build.py --config Release
 ```
 
-Add `--profile open-loop` for a separate open-loop-default image under `build/OpenLoop/<configuration>`; normal/native IDE builds boot closed loop. Runtime MODE switching is available in either image.
+Add `--profile open-loop` for a separate open-loop-default image under `build/OpenLoop/<configuration>`; normal/native IDE builds use `DEMO_DEFAULT_OPEN_LOOP` in demo_config.h (currently 1/open loop). Explicit closed-loop override images use `build/ClosedLoop/<configuration>`. Runtime MODE switching is available in either image.
 
 The script discovers ARM GCC under `C:/ST/STM32CubeIDE_*/...`; pass `--toolchain <bin-directory>` for another installation. It builds all application/HAL/LwIP sources, treats application warnings as errors, and emits ELF/BIN/HEX/map under `build/Debug` or `build/Release`. CubeIDE's native Debug/Release builds use the same source directories and linker. Refresh/rebuild the project after external edits. Use the FLASH linker; the retained original RAM linker is not a validated alternate demo build.
 

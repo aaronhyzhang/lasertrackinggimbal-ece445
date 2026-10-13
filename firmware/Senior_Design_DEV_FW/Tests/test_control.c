@@ -14,7 +14,7 @@ static motor_input_t healthy(uint32_t now,float angle) {
     in.source=SOURCE_ANALOG; return in;
 }
 static void calibrated(motor_t *m,int direction,uint32_t *time) {
-    motor_init(m); motor_output_t out; float angle=1.0f;
+    motor_init(m); assert(motor_select_mode(m,MODE_CLOSED_LOOP)); motor_output_t out; float angle=1.0f;
     motor_input_t in=healthy(++*time,angle);
     motor_step(m,&in,ACTION_CALIBRATE,&out);
     for (unsigned i=0;i<7500 && m->state!=MOTOR_READY;++i) {
@@ -75,7 +75,7 @@ static void test_faults(void) {
         motor_step(&m,&in,ACTION_CLEAR_FAULT,&out);
         assert(m.state==MOTOR_DISABLED && !m.calibrated && !m.zeroed);
     }
-    motor_t m; motor_output_t out; motor_init(&m);
+    motor_t m; motor_output_t out; motor_init(&m); assert(motor_select_mode(&m,MODE_CLOSED_LOOP));
     motor_input_t in=healthy(1,1); motor_step(&m,&in,ACTION_ARM,&out);
     assert(m.state==MOTOR_DISABLED && !out.enable);
     motor_step(&m,&in,ACTION_CALIBRATE,&out);
@@ -104,7 +104,7 @@ static void test_reversal_and_disable_priority(void) {
     motor_step(&m,&in,ACTION_ARM,&out); assert(m.state==MOTOR_READY && !out.enable);
 }
 static void test_unwrap_and_clock_wrap(void) {
-    motor_t m; motor_output_t out; motor_init(&m);
+    motor_t m; motor_output_t out; motor_init(&m); assert(motor_select_mode(&m,MODE_CLOSED_LOOP));
     motor_input_t in=healthy(UINT32_MAX-2,TAU-0.02f); motor_step(&m,&in,ACTION_NONE,&out);
     float start=m.raw_unwrapped;
     in=healthy(0,0.02f); motor_step(&m,&in,ACTION_NONE,&out);

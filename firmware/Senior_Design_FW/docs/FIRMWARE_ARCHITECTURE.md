@@ -96,3 +96,7 @@ Final camera/laptop/gimbal semantics remain undecided; camera is on the gimbal a
 ## Evidence and remaining work
 
 Debug/Release compile, native CubeIDE integration and host tests are recorded in DEV_FW/docs/VALIDATION.md. No firmware has been flashed, no EVM waveforms/current thresholds measured and no physical performance established. Next acceptance sequence remains: logic/sensors -> PWM/shutdown -> calibration -> analog servo -> Ethernet -> rehearsal. Numeric gains/limits freeze only after bench results. Vendor-backed architecture and tested failure paths are engineering evidence, not MISRA/functional-safety certification.
+
+## One-line configuration and staged switching checks — 2026-10-13
+
+Firmware v0.2.1 normal/native builds use the single `DEMO_DEFAULT_OPEN_LOOP` header line: 1=open-loop speed, 0=closed-loop position. Current default is 1; no automatic arm is added. Explicit CLI profile overrides are optional and stored separately. MCU PWM validation precedes connecting the gate driver; powered driver gate/source/non-overlap/shutdown checks precede connecting the motor. [Bench switching guide](../../Senior_Design_DEV_FW/docs/BENCH_SWITCHING_VALIDATION.md) explains the shared 20 kHz complementary carrier, nominal 500 ns deadtime, 120° duty envelopes, fixed-angle alignment, gradual electrical rotation and probe references. Safe complementary switching alone does not prove rotor synchronization; record loaded waveforms/current/RPM and hardware assumptions.

@@ -1,8 +1,14 @@
 # Validation record
 
-Updated 2026-10-12. Software evidence only; no flash or physical bench validation performed.
+Updated 2026-10-13. Software evidence only; no flash or physical bench validation performed.
 
-## Current v0.2.0 checks — 2026-10-12
+## Current v0.2.1 verification — 2026-10-13
+
+Normal CLI builds and native CubeIDE builds use the header mode line, now 1/open loop. Both normal BIN files match the explicit open-loop override files byte-for-byte and differ from the explicit closed-loop override files. Debug and Release build for all three workflows; native Debug/Release report zero errors/warnings. The retained controller/app/client tests pass, including default header selection and both override values. The active Senior_Design_DEV_FW project is synchronized and independently rebuilt: all 31 source hashes and six BIN hashes match repository evidence; its native CubeIDE Debug/Release builds also report zero errors/warnings. No physical PWM/gate/motor checks have been performed.
+
+[BENCH_SWITCHING_VALIDATION.md](BENCH_SWITCHING_VALIDATION.md) is the detailed MCU-alone -> motor-disconnected EVM -> unloaded-motor scope procedure, with probe references and alignment/field timing. Latest v0.2.1 source/BIN hashes replace the earlier snapshot in build_evidence.json.
+
+## Historical v0.2.0 checks — 2026-10-12
 
 The added open-loop/controller-mode code passes the retained closed-loop tests, actual application mailbox/ownership tests, open-loop mapping/ramp/fault/encoder-independence tests, both boot-default tests and both Python client tests. Application tests explicitly cover disabled-only changes, pending-mode cancellation by stop, ARM rejection with nonzero analog, encoder-free open-loop running, speed/status units and closed-loop calibration requirements after switching back.
 

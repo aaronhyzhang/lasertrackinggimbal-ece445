@@ -19,7 +19,10 @@
 #define DEMO_COMMAND_MAX_AGE_MS 500u
 #define DEMO_MAX_FOLLOWING_ERROR 0.5235987756f /* 30 deg between trajectory and feedback */
 #ifndef DEMO_DEFAULT_OPEN_LOOP
-#define DEMO_DEFAULT_OPEN_LOOP 0 /* Set by --profile open-loop; both modes remain available. */
+#define DEMO_DEFAULT_OPEN_LOOP 1 /* CHANGE THIS LINE: 1=open-loop speed, 0=closed-loop position. */
+#endif
+#if DEMO_DEFAULT_OPEN_LOOP != 0 && DEMO_DEFAULT_OPEN_LOOP != 1
+#error "DEMO_DEFAULT_OPEN_LOOP must be 0 or 1"
 #endif
 #define DEMO_OPEN_MAX_RPM 30.0f
 #define DEMO_OPEN_ACCEL_RPM_S 10.0f
@@ -29,7 +32,7 @@
 #define DEMO_OPEN_ARM_MAX_VOLTS 0.03f /* Require the zero-speed deadband before ARM. */
 #define DEMO_OPEN_ALIGN_MS 2000u
 #define DEMO_OPEN_ALIGN_RAMP_MS 500u
-#define DEMO_FW_VERSION "0.2.0"
+#define DEMO_FW_VERSION "0.2.1"
 #define DEMO_PWM_ARR 2500u /* 100 MHz / (2 * 2500) = 20 kHz */
 #define DEMO_CONTROL_HZ 1000u
 #define DEMO_UDP_PORT 5005u
