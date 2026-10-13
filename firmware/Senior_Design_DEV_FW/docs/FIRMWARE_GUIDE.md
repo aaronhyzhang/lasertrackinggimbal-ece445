@@ -2,7 +2,7 @@
 
 **v0.4.1 wiring change:** INLB now comes from **PE10 / CN12 pin 47**, replacing PB0 / CN11 pin 34. Move that wire with power off before energizing the driver. See [phase-B diagnostics](PHASE_B_PWM_DIAGNOSTIC.md).
 
-Current v0.4.1 default: **open-loop motor control using PG2 RUN and the PA3 pot**, with no serial commands, encoder or Ethernet required. Scope-test mode is now off. See [OPEN_LOOP_BOARD_CONTROL.md](OPEN_LOOP_BOARD_CONTROL.md) for wiring, low-to-high RUN/zero-speed arming and fault reset.
+Current v0.4.2 default: **open-loop motor control using PG2 RUN and the PA3 pot**, with no serial commands, encoder or Ethernet required. Scope-test mode is now off. See [OPEN_LOOP_BOARD_CONTROL.md](OPEN_LOOP_BOARD_CONTROL.md) for wiring, low-to-high RUN/zero-speed arming and fault reset.
 
 Updated 2026-10-12. Firmware v0.2.2. Software builds/tests pass; all electrical and motion checks below remain pending. This is a single unloaded-motor proof of concept on dev boards.
 

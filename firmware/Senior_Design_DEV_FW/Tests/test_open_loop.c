@@ -51,7 +51,8 @@ static void test_spin_and_zero(void) {
     }
     assert(wraps>10); /* Continuous spin is not subject to the closed-loop one-turn limit. */
     assert(fabsf(m.open_speed-DEMO_OPEN_MAX_RPM*TAU/60)<1e-5f);
-    for (unsigned i=0;i<4000 && m.state!=MOTOR_OPEN_IDLE;++i) {
+    const unsigned brake_ticks=(unsigned)ceilf(DEMO_OPEN_MAX_RPM/DEMO_OPEN_ACCEL_RPM_S*1000.0f)+50u;
+    for (unsigned i=0;i<brake_ticks && m.state!=MOTOR_OPEN_IDLE;++i) {
         float old=m.open_speed; motor_input_t in=input(++now,0);
         motor_step(&m,&in,ACTION_NONE,&out); assert(fabsf(m.open_speed-old)<=dv+1e-5f);
     }

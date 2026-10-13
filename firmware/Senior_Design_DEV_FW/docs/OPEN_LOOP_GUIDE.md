@@ -2,7 +2,7 @@
 
 **v0.4.1 wiring change:** INLB now comes from **PE10 / CN12 pin 47**, replacing PB0 / CN11 pin 34. Move that wire with power off before energizing the driver. See [phase-B diagnostics](PHASE_B_PWM_DIAGNOSTIC.md).
 
-Current v0.4.1 default: **open-loop motor control using PG2 RUN and the PA3 pot**, with no serial commands, encoder or Ethernet required. Scope-test mode is now off. See [OPEN_LOOP_BOARD_CONTROL.md](OPEN_LOOP_BOARD_CONTROL.md) for wiring, low-to-high RUN/zero-speed arming and fault reset. The serial command workflow below requires `DEMO_OPEN_BOARD_CONTROL=0` and a rebuild.
+Current v0.4.2 default: **open-loop motor control using PG2 RUN and the PA3 pot**, with no serial commands, encoder or Ethernet required. Scope-test mode is now off. See [OPEN_LOOP_BOARD_CONTROL.md](OPEN_LOOP_BOARD_CONTROL.md) for wiring, low-to-high RUN/zero-speed arming and fault reset. The serial command workflow below requires `DEMO_OPEN_BOARD_CONTROL=0` and a rebuild.
 
 Updated 2026-10-13. Firmware v0.2.2. One unloaded FIT1036 motor, NUCLEO-H753ZI, BOOSTXL-DRV8304H, configured 24 V bus. Software tests/builds pass; actual waveforms, current, alignment and motor synchronization remain unverified.
 
@@ -48,17 +48,17 @@ The previously reserved **PA3 / ADC1_INP15** remains the analog input. The measu
 | Input | Nominal commanded mechanical speed | Electrical field frequency, 11 pole pairs |
 | --- | --- | --- |
 | 0 V | 0 RPM, coast once the speed ramp reaches zero | 0 Hz |
-| 0.75 V | 7.5 RPM | 1.375 Hz |
-| 1.5 V | 15 RPM | 2.75 Hz |
-| 2.25 V | 22.5 RPM | 4.125 Hz |
-| 3 V | 30 RPM | 5.5 Hz |
+| 0.75 V | 25 RPM | 4.583 Hz |
+| 1.5 V | 50 RPM | 9.167 Hz |
+| 2.25 V | 75 RPM | 13.75 Hz |
+| 3 V | 100 RPM | 18.333 Hz |
 
-The 30 RPM maximum is a provisional configurable bring-up choice, not the FIT1036 rated speed or a user-confirmed performance requirement. Adjust `DEMO_OPEN_MAX_RPM` after review/bench evidence. Above the zero deadband, speed = `V/3 * max_RPM`. A 0–100 mV deadband commands zero, accommodating the reported approximately 40 mV pot minimum and ADC noise. Small readings from 3.0 to 3.15 V clamp to the maximum; above 3.15 V, negative/nonfinite values or stale/invalid ADC data fault while armed. Electrical input protection still has to keep PA3 within its supply limits.
+The user reports successful motor rotation using the previous 0–30 RPM configuration. The 100 RPM maximum is the next provisional configurable bench step, not the FIT1036 rated speed or a user-confirmed performance requirement. Adjust `DEMO_OPEN_MAX_RPM` after review/bench evidence. Above the zero deadband, speed = `V/3 * max_RPM`. A 0–100 mV deadband commands zero, accommodating the reported approximately 40 mV pot minimum and ADC noise. Small readings from 3.0 to 3.15 V clamp to the maximum; above 3.15 V, negative/nonfinite values or stale/invalid ADC data fault while armed. Electrical input protection still has to keep PA3 within its supply limits.
 
 Defaults in `Core/Inc/demo_config.h`:
 
-- Maximum command: **30 RPM**, positive only.
-- Acceleration/deceleration: **10 RPM/s**; full-scale speed ramp takes approximately 3 seconds after alignment.
+- Maximum command: **100 RPM**, positive only.
+- Acceleration/deceleration: **10 RPM/s**; full-scale speed ramp takes approximately 10 seconds after alignment.
 - Open-loop rotating vector: **2 V** magnitude, using generated d voltage and zero q voltage. These are generated-frame coordinates, not rotor-oriented torque/current measurements.
 - Startup alignment: **1 V**, ramped over 0.5 s and held within a total 2 s timed stage.
 - Running voltage slew from alignment to 2 V: **2 V/s**.
@@ -112,7 +112,7 @@ Wait for DISABLED/READY after DISABLE and for `mode=OPEN_LOOP state=DISABLED` af
 
 OPEN_IDLE is logically armed even though it coasts. It refuses mode/source changes because a later analog increase could start excitation. Use DISABLE first. MODE changes are accepted only in DISABLED/READY, never during wake/alignment/run or FAULT. Stop cancels pending ARM and pending mode changes. MODE resets calibration/zero, integrators, generator state and command authority and selects ANALOG; it never energizes a motor.
 
-At a 0 V command during running, commanded frequency ramps down at 10 RPM/s, then ENABLE/PWM are inhibited and state returns to OPEN_IDLE. This may take about 3 seconds from 30 RPM. There is no energized zero-speed hold or controlled physical braking; the actual rotor coasts. Returning to a nonzero input while still armed performs another wake/alignment before spinning. Zero during wake/alignment cancels excitation immediately. **DISABLE or `!` always inhibits immediately**, without waiting for the analog speed ramp.
+At a 0 V command during running, commanded frequency ramps down at 10 RPM/s, then ENABLE/PWM are inhibited and state returns to OPEN_IDLE. This may take about 3 seconds from 100 RPM. There is no energized zero-speed hold or controlled physical braking; the actual rotor coasts. Returning to a nonzero input while still armed performs another wake/alignment before spinning. Zero during wake/alignment cancels excitation immediately. **DISABLE or `!` always inhibits immediately**, without waiting for the analog speed ramp.
 
 To return to the existing position demo:
 
@@ -136,7 +136,7 @@ STATUS includes `mode`, `cmd_mrpm` (command RPM ×1000), `ramp_mrpm` (generated 
 ## Step-by-step acceptance
 
 1. **No motor power:** verify VCP, default mode and DISABLED at boot, meter-match ADC points, confirm MODE refuses ARM when input is nonzero. Confirm the active project/image version and profile.
-2. **EVM powered, winding leads disconnected:** verify hardware straps and logic rails, then select OPEN_LOOP, ARM at zero and raise analog. Scope all six signals, nominal 20 kHz carrier, deadtime, coherent phase updates and generated field frequency. This does not require an encoder. At full scale the rotating phase envelope is 5.5 Hz for the provisional 30 RPM /11-pair configuration.
+2. **EVM powered, winding leads disconnected:** verify hardware straps and logic rails, then select OPEN_LOOP, ARM at zero and raise analog. Scope all six signals, nominal 20 kHz carrier, deadtime, coherent phase updates and generated field frequency. This does not require an encoder. At full scale the rotating phase envelope is 18.333 Hz for the provisional 100 RPM /11-pair configuration.
 3. **Shutdown tests, no winding connection:** verify nFAULT during wake versus active drive, `!`, DISABLE, ADC loss/invalid input, reset and foreground/watchdog behavior. Record physical shutdown latency/inactive states, not just status text.
 4. **Power off, attach secured unloaded motor:** verify continuity/phase identity, set 0 V, current-limit the 24 V supply, ARM, then start with a small voltage/speed command. Observe alignment, smooth startup, physical direction and current. Progress through 0.75/1.5/2.25/3 V only after the lower point works.
 5. **Speed and coast:** measure actual shaft RPM using the encoder as an independent observation tool or external tachometer, compare against the commanded/ramped values, and record any stalls or loss of synchronism. Verify deceleration to zero and immediate disable separately; inspect current/temperature. Do not raise voltage/acceleration to hide wrong phasing.
@@ -158,7 +158,7 @@ The firmware's OPEN_ALIGN completion only means its timer elapsed. It does not p
 | PA3 is a protected 0–3 V source, not the motor bus | Verify source range/reference/grounding and effective pull-down; unplug may look like a valid zero command |
 | Encoder can be omitted for the spin test | No open-loop feedback dependency; PB6/PB7 external pulls to 3.3 V or verified encoder-board pulls are still needed when adding I2C |
 | Unloaded shaft with continuous rotation clearance | No gimbal travel/cable/position limits in open loop; verify fixture, lead routing and absence of mechanical stops |
-| 1 V alignment /2 V run /30 RPM /10 RPM/s are sufficient and bounded for first motion | Engineering starting choices, not measured ratings, torque or a 4 A trip; log actual synchronization, current and temperature |
+| 1 V alignment /2 V run /100 RPM /10 RPM/s are sufficient and bounded for first motion | Engineering starting choices, not measured ratings, torque or a 4 A trip; log actual synchronization, current and temperature |
 | EVM shunts, GAIN, IDRIVE, VDS protection configuration are independently verified | No firmware setting/readback/current sampling in this H voltage-mode backend; do not import custom PCB 14 mΩ/gain assumptions |
 
 Write actual strap values, phase order/viewing direction, measured bus/VDDA, supply limit, RPM, current/temp, scope captures and corrected limits in [VALIDATION.md](VALIDATION.md). Keep unknowns explicit instead of treating an elapsed startup timer as proof of hardware correctness.

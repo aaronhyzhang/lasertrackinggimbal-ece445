@@ -1,6 +1,10 @@
 # Validation record
 
-## Current v0.4.1 phase-B pin review — 2026-10-13
+## Current v0.4.2 analog speed-range increase — 2026-10-13
+
+The user reports the connected motor is spinning. This establishes qualitative rotation; actual RPM/current/temperature and loaded gate timings were not provided. The analog range is now 0–3 V -> 0–100 RPM with the unchanged 100 mV zero/ARM deadband. Acceleration remains 10 RPM/s and run effort 2 V; full scale ramps in about 10 s after alignment, and zero-command deceleration can take 10 s. RUN low still inhibits promptly. Higher-speed shaft tracking/synchronism has not been physically validated. The retained full-speed/deceleration test window now follows the configured maximum rather than assuming the old 30 RPM ramp. All retained controller/app/RUN/scope/default/client tests pass, including full-speed deceleration to inhibit with a 100 RPM ceiling. Physical-open-loop, scope and closed-loop Debug/Release builds pass. Active native CubeIDE Debug/Release have zero errors/warnings and all 35 source hashes match. Current software verification is recorded in build_evidence.json.
+
+## Historical v0.4.1 phase-B pin review — 2026-10-13
 
 User photos show an approximately 20.1 kHz raw phase-B signal with edge spikes/stepped levels; user reports A/C are cleaner. Firmware timer/polarity/deadtime review found no B-specific timing difference. PB0 is a valid TIM1_CH2N pin but is shared with Nucleo LD1; B low is now PE10/CN12 pin 47 to remove that load. This is an isolation/hardware-fit improvement, not a confirmed root-cause repair. INLB must be rewired with power off and firmware rebuilt/flashed before driver operation. The user confirms the driver was disconnected and probe settings matched A/C. A D40/PE10 versus prior PB0 header mismatch is also plausible: the old firmware did not configure PE10. Exact physical header/channel/inversion and PE10 physical recheck remain pending. Physical open-loop, scope and closed-loop Debug/Release builds pass; active native CubeIDE Debug/Release have zero errors/warnings. All 35 recorded source hashes match active DEV. Control logic is unchanged, so the prior passing host logic tests were not repeated for this GPIO-only remap. See PHASE_B_PWM_DIAGNOSTIC.md.
 
@@ -83,7 +87,7 @@ The source-only repository checkout passed the C control/protocol/application te
 ## New open-loop bench gates
 
 - [ ] Meter-match zero/3 V and confirm 100 mV deadband/zero-start ARM; confirm default boot profile.
-- [ ] With windings disconnected, verify six-PWM/deadtime, positive phase sequence and nominal 5.5 Hz field envelope at the provisional 30 RPM ceiling.
+- [ ] With windings disconnected, verify six-PWM/deadtime, positive phase sequence and nominal 18.333 Hz field envelope at the new provisional 100 RPM ceiling.
 - [ ] Verify wake/fault/stop/reset/ADC-loss/watchdog physical inhibition.
 - [ ] Secure unloaded motor, verify alignment/synchronization, actual RPM, direction, supply limit, current/temp and zero coast.
 - [ ] Demonstrate mode rejection while armed (including coasting OPEN_IDLE), explicit disable, closed-loop recalibration/ZERO and restored position mapping.

@@ -2,9 +2,9 @@
 
 **v0.4.1 wiring change:** INLB now comes from **PE10 / CN12 pin 47**, replacing PB0 / CN11 pin 34. Move that wire with power off before energizing the driver. See [phase-B diagnostics](docs/PHASE_B_PWM_DIAGNOSTIC.md).
 
-Current v0.4.1 default: **open-loop motor control using PG2 RUN and the PA3 pot**, with no serial commands, encoder or Ethernet required. Scope-test mode is now off. See [OPEN_LOOP_BOARD_CONTROL.md](docs/OPEN_LOOP_BOARD_CONTROL.md) for wiring, low-to-high RUN/zero-speed arming and fault reset.
+Current v0.4.2 default: **open-loop motor control using PG2 RUN and the PA3 pot**, with no serial commands, encoder or Ethernet required. Scope-test mode is now off. See [OPEN_LOOP_BOARD_CONTROL.md](docs/OPEN_LOOP_BOARD_CONTROL.md) for wiring, low-to-high RUN/zero-speed arming and fault reset.
 
-Updated 2026-10-12. Firmware v0.4.1. Target: NUCLEO-H753ZI / STM32H753ZIT6, BOOSTXL-DRV8304H, one DFRobot FIT1036 with AS5600, 24 V motor bus.
+Updated 2026-10-12. Firmware v0.4.2. Target: NUCLEO-H753ZI / STM32H753ZIT6, BOOSTXL-DRV8304H, one DFRobot FIT1036 with AS5600, 24 V motor bus.
 
 For motor firmware (`DEMO_PWM_SCOPE_TEST=0`), change one line in `Core/Inc/demo_config.h`: `#define DEMO_DEFAULT_OPEN_LOOP 1` selects open-loop speed; change 1 to 0 for closed-loop position. Normal CubeIDE and CLI builds use that line. Current open-loop setting is 1; PG2 physical RUN owns arming while DEMO_OPEN_BOARD_CONTROL=1. Startup remains disabled.
 
@@ -14,7 +14,7 @@ For staged PWM/driver/one-way analog-speed validation, start with the [open-loop
 
 Start with the [bring-up and firmware guide](docs/FIRMWARE_GUIDE.md) and [wiring/configuration record](docs/BOARD_CONFIG.md). The analog milestone comes first; Ethernet is compiled in, but is demonstrated only after the analog servo passes bench checks.
 
-Implemented: selectable encoder-free analog speed control (0–3 V -> 0–30 RPM provisional), plus encoder-oriented sine PWM with bounded voltage effort, position P / velocity PI, full-turn trajectory, timed calibration, explicit ZERO/ARM/DISABLE, fault inhibition, ST-LINK VCP console, raw UDP position/heartbeat/status and a Python laptop client. Current regulation, CAN, two-axis control and camera tracking are later milestones.
+Implemented: selectable encoder-free analog speed control (0–3 V -> 0–100 RPM provisional), plus encoder-oriented sine PWM with bounded voltage effort, position P / velocity PI, full-turn trajectory, timed calibration, explicit ZERO/ARM/DISABLE, fault inhibition, ST-LINK VCP console, raw UDP position/heartbeat/status and a Python laptop client. Current regulation, CAN, two-axis control and camera tracking are later milestones.
 
 Debug and Release builds and host tests pass. The user reports successful MCU PWM/complementary switching observation; driver/gate/motor validation is still pending. Gains, alignment strength, sampling/waveform timing and shutdown must be validated on the arriving boards. See [validation record](docs/VALIDATION.md).
 

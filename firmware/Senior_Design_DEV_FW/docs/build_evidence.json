@@ -1,51 +1,51 @@
 {
   "date": "2026-10-13",
-  "firmware": "0.4.1",
+  "firmware": "0.4.2",
   "toolchain": "ARM GCC 13.3.1 / STM32CubeIDE 1.18.0",
   "configured_header_default": "OPEN_LOOP_BOARD_CONTROL: scope=0, open_loop=1, board_control=1",
-  "native_cubeide": "Active DEV Debug/Release rebuilt for PE10 TIM1_CH2N remap: zero errors/warnings",
+  "native_cubeide": "Active DEV native Debug/Release with 100 RPM full scale: zero errors/warnings",
   "binaries": {
     "ConfiguredDebug": {
       "path": "build/Debug/Senior_Design_DEV_FW.bin",
       "profile": "configured",
       "boot_mode": "OPEN_LOOP_BOARD_CONTROL",
       "bytes": 61996,
-      "sha256": "1556d8aa55f2a9c3b0f0593fc84d212a7dd7aeed11224257134f7bba941c0ef3"
+      "sha256": "fd602b47fa75fbc152c0a52cb0bda5b8f0bce4d67514e124676aee74c13e5407"
     },
     "ConfiguredRelease": {
       "path": "build/Release/Senior_Design_DEV_FW.bin",
       "profile": "configured",
       "boot_mode": "OPEN_LOOP_BOARD_CONTROL",
-      "bytes": 36812,
-      "sha256": "bfa3b49db6dc5386060c59db247c163eef8edcf437cdbc29d4422009f94fb7dd"
+      "bytes": 36820,
+      "sha256": "34fd22ce4c6461da48317af5108f1a677f2b23c38fb1658157b77c5572c9232b"
     },
     "ScopeTestDebug": {
       "path": "build/ScopeTest/Debug/Senior_Design_DEV_FW.bin",
       "profile": "--scope-test on",
       "boot_mode": "MCU_PWM_SCOPE_TEST",
-      "bytes": 60956,
-      "sha256": "fee47158d154b8153abb2b94ee762608ae02514ab04c89918bbb1d610ef3a55a"
+      "bytes": 60964,
+      "sha256": "54fcbd3d0edc43d607de96b627a50bfb6bfb298644ceb3d48e9fc62dde9fd551"
     },
     "ScopeTestRelease": {
       "path": "build/ScopeTest/Release/Senior_Design_DEV_FW.bin",
       "profile": "--scope-test on",
       "boot_mode": "MCU_PWM_SCOPE_TEST",
       "bytes": 36116,
-      "sha256": "0992b45e88cfb725065edb9f1275860248d5e9ab8112f7019f911bfde7b51a02"
+      "sha256": "59a70565f26a1e51eeeef2912803b35a9140a071d96c37b52acff5e1508c70e6"
     },
     "ClosedLoopDebug": {
       "path": "build/ClosedLoop/Debug/Senior_Design_DEV_FW.bin",
       "profile": "closed-loop",
       "boot_mode": "CLOSED_LOOP",
       "bytes": 102364,
-      "sha256": "680c1d4e5e18eb3d597fab984d659c110f7404a7aba8f910f52cdabcf7c5c8ae"
+      "sha256": "02a1efe147193c157703e12354fdd25319ba97981c617161c38c2f7b253c06ad"
     },
     "ClosedLoopRelease": {
       "path": "build/ClosedLoop/Release/Senior_Design_DEV_FW.bin",
       "profile": "closed-loop",
       "boot_mode": "CLOSED_LOOP",
       "bytes": 61568,
-      "sha256": "381369c0a66866dc9ea0b07814851d76106c6097c0223ed92a51c0233ff0bc13"
+      "sha256": "8f2f7deb6dcbb81976fa6c19aa9568206f0d618b0e8853063ec1aa4eef2bb417"
     }
   },
   "sources": [
@@ -63,7 +63,7 @@
     },
     {
       "path": "Core/Inc/demo_config.h",
-      "sha256": "e1def3b8cb53ac14cc96ee321eba6480402abfbf722924506af02b70013195dc"
+      "sha256": "8890eef1b64157a1ff91798d2425922b5490306f98ab5c8ccb7d20c1b047c89d"
     },
     {
       "path": "Core/Inc/demo_console.h",
@@ -159,7 +159,7 @@
     },
     {
       "path": "Tests/test_open_loop.c",
-      "sha256": "d4c184829eace8396c223cf8a67f805285f40935cff830ec3d7b105aa2c426f0"
+      "sha256": "ba52a8f5d371593d7a1461b6aa4688e3188e0d9c6d2afee548c42507abc5cb0e"
     },
     {
       "path": "Tools/build.py",
@@ -190,13 +190,13 @@
       "sha256": "e7b9f840dc8545b6b72af74d82b25d350b8bae232c0eb1d161cd8ed942979566"
     }
   ],
-  "active_dev_verification": "v0.4.1 GPIO source synchronized and native Debug/Release rebuilt. User reports phase-B raw waveform issue with driver disconnected; PE10 physical recheck pending.",
+  "active_dev_verification": "v0.4.2 sources synchronized and native Debug/Release rebuilt; all 35 source hashes match. User reports motor rotation before this range increase; 100 RPM physical tracking/current/temperature are pending.",
   "open_loop_thresholds": {
     "zero_speed_max_volts": 0.1,
     "arm_max_volts": 0.1,
     "reported_pot_minimum_volts": 0.04
   },
-  "tests": "Retained v0.4.0 portable controller/app/physical RUN/scope/default and client tests passed previously. This GPIO-only remap was verified by building physical open-loop, scope and closed-loop Debug/Release, plus active native CubeIDE builds; host logic tests were not repeated.",
+  "tests": "Retained portable controller/app/physical RUN/scope/default and Python client tests pass at 100 RPM. Full-speed zero-command test uses a configured braking-duration bound and verifies final inhibition.",
   "dma_regions": {
     "physical_open_loop": {
       "start": "0x30000000",
@@ -218,14 +218,14 @@
     "Debug": {
       "path": "Debug/Senior_Design_DEV_FW.elf",
       "profile": "OPEN_LOOP_BOARD_CONTROL",
-      "bytes": 2415320,
-      "sha256": "a617265fc7c959c4222df6e70302a3da8fa31aa20b5f99c60d14f6f879b150ec"
+      "bytes": 2415324,
+      "sha256": "810d0258b7ea7a84c92659a64e7d4cd7524fc532f40387f4876c0b00324ccac0"
     },
     "Release": {
       "path": "Release/Senior_Design_DEV_FW.elf",
       "profile": "OPEN_LOOP_BOARD_CONTROL",
       "bytes": 62560,
-      "sha256": "16edef426c543de90d5da153f957b6b084512d3c8e529498a8f5be38f461994a"
+      "sha256": "4be7effb8e2776e5d4c98f710fd774f10ebf054c46c14964e97879c7e53b8d55"
     }
   },
   "physical_inputs": {
@@ -240,5 +240,16 @@
     "low": "PE10 / CN12 pin 47 / D40 CN10 pin 24 / TIM1_CH2N",
     "old_low": "PB0 / CN11 pin 34, now input with pulldown",
     "reason": "Remove LD1 load and match standard Nucleo CH2N header; root cause unconfirmed."
+  },
+  "open_loop_limits": {
+    "max_command_rpm": 100,
+    "accel_rpm_per_second": 10,
+    "run_vector_volts": 2,
+    "alignment_volts": 1,
+    "alignment_ms": 2000,
+    "zero_speed_max_volts": 0.1,
+    "arm_max_volts": 0.1,
+    "full_scale_volts": 3,
+    "full_scale_electrical_hz": 18.3333333
   }
 }

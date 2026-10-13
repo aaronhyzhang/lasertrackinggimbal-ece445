@@ -24,7 +24,7 @@
 #if DEMO_DEFAULT_OPEN_LOOP != 0 && DEMO_DEFAULT_OPEN_LOOP != 1
 #error "DEMO_DEFAULT_OPEN_LOOP must be 0 or 1"
 #endif
-#define DEMO_OPEN_MAX_RPM 30.0f
+#define DEMO_OPEN_MAX_RPM 100.0f /* 3 V full scale; higher-speed bench validation pending. */
 #define DEMO_OPEN_ACCEL_RPM_S 10.0f
 #define DEMO_OPEN_VOLTS 2.0f /* Fixed rotating-vector magnitude, not a current limit. */
 #define DEMO_OPEN_VOLT_SLEW 2.0f /* V/s, from alignment magnitude to running magnitude. */
@@ -46,7 +46,7 @@
 #endif
 #define DEMO_BOARD_OPEN_ACTIVE (DEMO_OPEN_BOARD_CONTROL && DEMO_DEFAULT_OPEN_LOOP && !DEMO_PWM_SCOPE_TEST)
 #define DEMO_RUN_DEBOUNCE_MS 20u
-#define DEMO_FW_VERSION "0.4.1"
+#define DEMO_FW_VERSION "0.4.2"
 #define DEMO_PWM_ARR 2500u /* 100 MHz / (2 * 2500) = 20 kHz */
 #define DEMO_CONTROL_HZ 1000u
 #define DEMO_UDP_PORT 5005u
