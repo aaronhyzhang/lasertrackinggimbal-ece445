@@ -24,7 +24,7 @@ static void write_text(const char *s) {
 }
 void console_init(void) {
     if (HAL_UART_Receive_IT(&huart3,&rx_byte,1)!=HAL_OK) Error_Handler();
-    write_text("H753 FIT1036 voltage servo; inhibited at boot. HELP for commands.\r\n");
+    write_text("H753 FIT1036 open/closed-loop voltage control; inhibited at boot. STATUS shows mode; HELP for commands.\r\n");
 }
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *h) {
     if (h!=&huart3) return;
@@ -49,9 +49,15 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *h) {
 static void execute(void) {
     if (!strcmp(line,"HELP")) {
         write_text("STATUS CALIBRATE ZERO ARM DISABLE CLEAR_FAULT SOURCE ANALOG|SERIAL|ETHERNET\r\n"
+                   "MODE OPEN_LOOP|CLOSED_LOOP (inhibited only; clears calibration/zero/commands)\r\n"
                    "POSITION <0..360000 millidegrees> HEARTBEAT; ! immediate stop.\r\n"); return;
     }
     if (!strcmp(line,"STATUS")) { char response[640]; app_status_text(response,sizeof(response)); write_text(response); return; }
+    if (!strcmp(line,"MODE OPEN_LOOP") || !strcmp(line,"MODE CLOSED_LOOP")) {
+        bool ok=app_mode(!strcmp(line,"MODE OPEN_LOOP")?MODE_OPEN_LOOP:MODE_CLOSED_LOOP);
+        write_text(ok?"QUEUED mode change; check STATUS\r\n":"ERR disable first; clear faults; wait for pending actions\r\n");
+        return;
+    }
     motor_action_t a=ACTION_NONE;
     if (!strcmp(line,"CALIBRATE")) a=ACTION_CALIBRATE;
     else if (!strcmp(line,"ZERO")) a=ACTION_ZERO;

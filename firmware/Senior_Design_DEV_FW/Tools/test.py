@@ -19,14 +19,25 @@ def main():
     executable = output / ("test_control.exe" if sys.platform == "win32" else "test_control")
     subprocess.run(compiler + ["-std=c11", "-Wall", "-Wextra", "-Werror", "-I", str(root / "Core/Inc"),
                    str(root / "Tests/test_control.c"), str(root / "Core/Src/motor_control.c"),
+                   str(root / "Core/Src/open_loop.c"),
                    str(root / "Core/Src/demo_protocol.c"), "-lm", "-o", str(executable)], check=True)
     subprocess.run([str(executable)], check=True)
     app_executable = output / ("test_app.exe" if sys.platform == "win32" else "test_app")
     subprocess.run(compiler + ["-std=c11", "-Wall", "-Wextra", "-Werror", "-I", str(root / "Tests/fakes"),
                    "-I", str(root / "Core/Inc"), str(root / "Tests/test_app.c"),
                    str(root / "Core/Src/demo_app.c"), str(root / "Core/Src/motor_control.c"),
+                   str(root / "Core/Src/open_loop.c"),
                    "-lm", "-o", str(app_executable)], check=True)
     subprocess.run([str(app_executable)], check=True)
+    for name, defines in [("test_open_loop", []), ("test_defaults", []),
+                          ("test_defaults", ["-DDEMO_DEFAULT_OPEN_LOOP=1"])]:
+        label = name + ("_open" if defines else "")
+        binary = output / (label + (".exe" if sys.platform == "win32" else ""))
+        subprocess.run(compiler + ["-std=c11", "-Wall", "-Wextra", "-Werror", *defines,
+                       "-I", str(root / "Core/Inc"), str(root / f"Tests/{name}.c"),
+                       str(root / "Core/Src/motor_control.c"), str(root / "Core/Src/open_loop.c"),
+                       "-lm", "-o", str(binary)], check=True)
+        subprocess.run([str(binary)], check=True)
     subprocess.run([sys.executable, "-m", "unittest", "discover", "-s", str(root / "Tests"),
                     "-p", "test_*.py", "-v"], check=True)
 

@@ -5,6 +5,8 @@
 | [Senior_Design_DEV_FW](Senior_Design_DEV_FW/README.md) | NUCLEO-H753ZI / STM32H753ZIT6 | One FIT1036 motor with AS5600 and BOOSTXL-DRV8304H; analog position bring-up, then Ethernet |
 | Senior_Design_FW | STM32H743ZIT6 custom PCB | Existing custom-board baseline; two-axis integration is later work |
 
+For encoder-free analog-speed bring-up, start with the [open-loop guide](Senior_Design_DEV_FW/docs/OPEN_LOOP_GUIDE.md). `MODE OPEN_LOOP|CLOSED_LOOP` switches while disabled. `Tools/build.py --profile open-loop` produces a separate default-open image.
+
 Start with the dev project's [firmware guide](Senior_Design_DEV_FW/docs/FIRMWARE_GUIDE.md), [wiring record](Senior_Design_DEV_FW/docs/BOARD_CONFIG.md), and [validation record](Senior_Design_DEV_FW/docs/VALIDATION.md). Shared project intent, hardware review, architecture and vendor research live in [Senior_Design_FW/docs](Senior_Design_FW/docs/DEV_BOARD_VALIDATION_PLAN.md).
 
 From `firmware/Senior_Design_DEV_FW`, use:

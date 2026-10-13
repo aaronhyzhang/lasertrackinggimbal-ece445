@@ -1,10 +1,12 @@
 # H753 motor demo firmware
 
-Updated 2026-10-08. Target: NUCLEO-H753ZI / STM32H753ZIT6, BOOSTXL-DRV8304H, one DFRobot FIT1036 with AS5600, 24 V motor bus.
+Updated 2026-10-12. Firmware v0.2.0. Target: NUCLEO-H753ZI / STM32H753ZIT6, BOOSTXL-DRV8304H, one DFRobot FIT1036 with AS5600, 24 V motor bus.
+
+For staged PWM/driver/one-way analog-speed validation, start with the [open-loop guide](docs/OPEN_LOOP_GUIDE.md). Toggle modes while disabled with `MODE OPEN_LOOP` or `MODE CLOSED_LOOP`. The separate `--profile open-loop` image boots open loop, inhibited.
 
 Start with the [bring-up and firmware guide](docs/FIRMWARE_GUIDE.md) and [wiring/configuration record](docs/BOARD_CONFIG.md). The analog milestone comes first; Ethernet is compiled in, but is demonstrated only after the analog servo passes bench checks.
 
-Implemented: encoder-oriented sine PWM with bounded voltage effort, position P / velocity PI, full-turn trajectory, timed calibration, explicit ZERO/ARM/DISABLE, fault inhibition, ST-LINK VCP console, raw UDP position/heartbeat/status and a Python laptop client. Current regulation, CAN, two-axis control and camera tracking are later milestones.
+Implemented: selectable encoder-free analog speed control (0–3 V -> 0–30 RPM provisional), plus encoder-oriented sine PWM with bounded voltage effort, position P / velocity PI, full-turn trajectory, timed calibration, explicit ZERO/ARM/DISABLE, fault inhibition, ST-LINK VCP console, raw UDP position/heartbeat/status and a Python laptop client. Current regulation, CAN, two-axis control and camera tracking are later milestones.
 
 Debug and Release builds and host tests pass. No hardware has been flashed or tested. Gains, alignment strength, sampling/waveform timing and shutdown must be validated on the arriving boards. See [validation record](docs/VALIDATION.md).
 
@@ -13,6 +15,7 @@ Build from this directory:
 ```powershell
 python Tools/build.py --config Debug
 python Tools/build.py --config Release
+python Tools/build.py --profile open-loop --config Debug
 ```
 
 CubeIDE Debug/Release configurations also include the application and pinned LwIP sources. Refresh the project in CubeIDE after these filesystem changes. The old IOC has been archived; this demo uses hand-owned initialization in `Core/Src/board.c`, not CubeMX regeneration. [Ownership details](docs/BOARD_CONFIG.md#source-and-generation-ownership).

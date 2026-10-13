@@ -21,6 +21,8 @@ def run(argv):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", choices=["Debug", "Release"], default="Debug")
+    parser.add_argument("--profile", choices=["closed-loop", "open-loop"], default="closed-loop",
+                        help="Boot mode only; MODE still selects either controller at runtime")
     parser.add_argument("--toolchain", type=pathlib.Path, help="ARM GCC bin directory")
     parser.add_argument("--project", type=pathlib.Path, default=pathlib.Path(__file__).resolve().parents[1])
     args = parser.parse_args()
@@ -33,12 +35,13 @@ def main():
             parser.error("Pass --toolchain with the ARM GCC bin directory")
         toolchain = candidates[-1]
     gcc = toolchain / "arm-none-eabi-gcc.exe"
-    output = project / "build" / args.config
+    output = project / "build" / args.config if args.profile == "closed-loop" else project / "build" / "OpenLoop" / args.config
     output.mkdir(parents=True, exist_ok=True)
     cpu = ["-mcpu=cortex-m7", "-mthumb", "-mfpu=fpv5-d16", "-mfloat-abi=hard"]
     flags = cpu + ["-std=gnu11", "-g3", "-O0" if args.config == "Debug" else "-O2",
                    "-ffunction-sections", "-fdata-sections", "-fstack-usage", "-Wall", "-Wextra",
                    "-DUSE_HAL_DRIVER", "-DUSE_PWR_LDO_SUPPLY", "-DSTM32H753xx"]
+    flags += [f"-DDEMO_DEFAULT_OPEN_LOOP={int(args.profile == 'open-loop')}"]
     for inc in ["Core/Inc", "Drivers/STM32H7xx_HAL_Driver/Inc",
                 "Drivers/STM32H7xx_HAL_Driver/Inc/Legacy", "Drivers/CMSIS/Device/ST/STM32H7xx/Include",
                 "Drivers/CMSIS/Include", "Middlewares/LwIP/src/include"]:

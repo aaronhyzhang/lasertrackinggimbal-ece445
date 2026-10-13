@@ -1,6 +1,6 @@
 # Dev-board firmware and motor validation plan
 
-Updated: 2026-10-08 (America/Chicago)
+Updated: 2026-10-12 (America/Chicago)
 Status: dev firmware implemented and software-tested; electrical and motion acceptance pending. See [firmware guide](../../Senior_Design_DEV_FW/docs/FIRMWARE_GUIDE.md) and [validation record](../../Senior_Design_DEV_FW/docs/VALIDATION.md).
 Owner: Colin. This file is the persistent record of demo intent, decisions, test gates, and bench results. Update it when requirements change or a bench session finishes. Proposed choices below are not confirmed requirements.
 
@@ -254,3 +254,9 @@ Use bounded periodic asynchronous encoder reads with measured filter/transport/d
 User confirmed FIT1036, 24 V bus and ST-LINK VCP. DEV_FW now contains the one-axis voltage servo, 0–3 V PA3 target, calibration/ZERO/ARM/stop/fault supervision, six PWM/break, asynchronous AS5600/ADC, watchdog, bounded console, LwIP UDP session/sequence/heartbeat and laptop client. Clocks use HSI and Ethernet uses the Nucleo RMII pins. The old IOC is archived; board.c owns this demo configuration. Detailed harness/straps and software-versus-bench evidence are in the linked DEV guide.
 
 Defaults are 1 V alignment, ±2 V q effort, 0.4 rad/s and 0.4 rad/s² trajectory. These are configurable bring-up values, not measured phase-current limits. Full-turn reference duration is about 17 s plus settling. Current regulation/CAN/two axes/vision remain deferred. All physical acceptance boxes stay unchecked until measured.
+
+## Open-loop milestone — 2026-10-12
+
+User requested staged validation with selectable open/closed loops and a separate open-loop firmware version. OPEN_LOOP maps PA3 0–3 V to a positive speed command; 0 V is zero/coast, 3 V is a provisional configurable 30 RPM ceiling. No encoder is required, no mechanical travel limit/stall detection is claimed, and no current regulation is added. Mode selection is inhibited-only and clears prior calibration/commands. The existing closed-loop position demo is retained.
+
+Revised first-motion sequence: logic/ADC -> winding-disconnected PWM and fault shutdown -> unloaded open-loop alignment/spin/ramp/coast -> encoder/pull-up/health validation -> mode change/new calibration/ZERO -> bounded analog position -> Ethernet position. Hardware evidence is still pending. [Open-loop guide and correction table](../../Senior_Design_DEV_FW/docs/OPEN_LOOP_GUIDE.md) records assumptions and numeric defaults.

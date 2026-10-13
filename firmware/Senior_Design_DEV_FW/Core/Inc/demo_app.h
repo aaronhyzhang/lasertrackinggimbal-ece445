@@ -14,6 +14,7 @@ void app_init(void);
 void app_control_tick(void);
 void app_foreground(void);
 bool app_request(motor_action_t action);
+bool app_mode(motor_mode_t mode);
 void app_stop(void);
 bool app_source(command_source_t source);
 bool app_position(command_source_t source, uint32_t millidegrees);

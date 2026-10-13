@@ -1,10 +1,12 @@
 # Firmware and bench bring-up guide
 
-Updated 2026-10-08. Firmware v0.1.0. Software builds/tests pass; all electrical and motion checks below remain pending. This is a single unloaded-motor proof of concept on dev boards.
+Updated 2026-10-12. Firmware v0.2.0. Software builds/tests pass; all electrical and motion checks below remain pending. This is a single unloaded-motor proof of concept on dev boards.
+
+For the new staged analog-speed test and runtime toggle, read [OPEN_LOOP_GUIDE.md](OPEN_LOOP_GUIDE.md) first. This guide describes **CLOSED_LOOP** position mode. Both boot profiles stay disabled at reset.
 
 ## What each piece does
 
-`board.c` binds clocks, pins, six PWM outputs, hardware break, asynchronous encoder/ADC acquisition and watchdog. It translates hardware into coherent samples and applies/inhibits PWM. `motor_control.c` is HAL-independent: it owns calibration, feedback unwrap, state, trajectory, position P, velocity PI, anti-windup and sine modulation. `demo_app.c` runs the 1 kHz integration step and provides a latest-target mailbox plus one pending action. `demo_console.c` parses ST-LINK serial in foreground. `demo_network.c` runs LwIP raw UDP in foreground with DMA-owned packet buffers. `demo_protocol.c` validates integer values, packet syntax and sequence order.
+`board.c` binds clocks, pins, six PWM outputs, hardware break, asynchronous encoder/ADC acquisition and watchdog. It translates hardware into coherent samples and applies/inhibits PWM. `open_loop.c` implements generated-angle speed control without encoder feedback. `motor_control.c` dispatches the selected mode and is HAL-independent: it owns calibration, feedback unwrap, state, trajectory, position P, velocity PI, anti-windup and sine modulation. `demo_app.c` runs the 1 kHz integration step and provides a latest-target mailbox plus one pending action. `demo_console.c` parses ST-LINK serial in foreground. `demo_network.c` runs LwIP raw UDP in foreground with DMA-owned packet buffers. `demo_protocol.c` validates integer values, packet syntax and sequence order.
 
 ```mermaid
 flowchart LR
@@ -61,6 +63,8 @@ python Tools/build.py --config Debug
 python Tools/build.py --config Release
 ```
 
+Add `--profile open-loop` for a separate open-loop-default image under `build/OpenLoop/<configuration>`; normal/native IDE builds boot closed loop. Runtime MODE switching is available in either image.
+
 The script discovers ARM GCC under `C:/ST/STM32CubeIDE_*/...`; pass `--toolchain <bin-directory>` for another installation. It builds all application/HAL/LwIP sources, treats application warnings as errors, and emits ELF/BIN/HEX/map under `build/Debug` or `build/Release`. CubeIDE's native Debug/Release builds use the same source directories and linker. Refresh/rebuild the project after external edits. Use the FLASH linker; the retained original RAM linker is not a validated alternate demo build.
 
 Host tests execute the actual portable C modules and the Python client over localhost. A native C compiler is required:
@@ -76,7 +80,7 @@ Tests cover positive/negative calibration, failed/stalled calibration, full-turn
 
 1. Verify the [harness/configuration](BOARD_CONFIG.md) with power disconnected. Supply the Nucleo via ST-LINK USB. Leave the motor bus off initially.
 2. Flash the ELF using CubeIDE/ST-LINK with motor supply disconnected. Run freely; do not halt/debug while energized. The watchdog is not frozen in debug, and electrical shutdown during arbitrary CPU halt has not been validated. The external ENABLE pull-down is required for reset/unpowered MCU behavior.
-3. Open ST-LINK VCP at **115200, 8N1**, no flow control. Use uppercase commands terminated by CR or LF. `HELP` lists commands. The banner appears after initialization. `STATUS` should show inhibited state.
+3. Open ST-LINK VCP at **115200, 8N1**, no flow control. Use uppercase commands terminated by CR or LF. `HELP` lists commands, including `MODE OPEN_LOOP|CLOSED_LOOP` while inhibited. The banner appears after initialization. `STATUS` should show inhibited state and the intended mode.
 4. Hand-turn the motor slowly. Check raw angle, direction consistency, magnet=1, encoder/status ages and angle wrap. A missing/failed encoder boot configuration needs wiring repair and reboot; there is no active-drive bus recovery.
 5. Apply measured 0 /0.75 /1.5 /2.25 /3 V to PA3. Check ADC raw values approximately 0 /14895 /29789 /44684 /59577 with actual VDDA near 3.3 V. Meter VDDA and adjust `DEMO_ADC_VREF` for endpoint accuracy. Add source impedance/series protection appropriate to the bench source. Never connect the 24 V motor bus to PA3 or the encoder.
 
@@ -86,11 +90,11 @@ With the motor disconnected, apply the EVM bus and verify 3.3 V logic supply, EN
 
 Inject nFAULT low only through an appropriate open-drain/grounding arrangement; verify hardware clears MOE and all drive inputs go inactive, ENABLE goes low, a fault latches, and no automatic restart occurs. Check DISABLE, `!`, reset, encoder loss, watchdog and supply transitions. Verify the expected wake/sleep nFAULT pulses do not cause false start or repeated wake. Record measured inhibition latency. Do not proceed to motor connection until these checks pass.
 
-## Analog motion milestone
+## Closed-loop analog motion milestone
 
 Secure the unloaded motor with enough clearance for calibration and a complete revolution. Keep cables from winding up. Maintain an accessible bus power cutoff.
 
-1. Set analog input to 0 V. Connect winding leads with power off, then apply current-limited 24 V.
+1. With drive inhibited, select `MODE CLOSED_LOOP` and confirm DISABLED in STATUS. Set analog input to 0 V. Connect winding leads with power off, then apply current-limited 24 V.
 2. Issue `CALIBRATE`. This authorizes motion: wake (10 ms, PWM inhibited), stationary alignment (2 s), +90° **electrical** sweep with settle (2.5 s, about 8.18° mechanical for 11 pole pairs), then return and settle (2.5 s). It accepts movement magnitude only within ±50% of expectation and requires return within about 2°. Direction and electrical offset are stored in RAM. On success state becomes READY with drive off.
 3. With drive disabled, put the shaft at the intended mechanical 0° fixture orientation and issue `ZERO`. This is a requested current-position reference, not automatic homing. `STATUS` must show cal=1, zero=1. Reboot/CLEAR_FAULT requires recalibration and a new zero.
 4. Issue `ARM`, then check `STATUS`. Commands report QUEUED, not proof that an action was applied; the control loop still checks freshness and prerequisites. During ARM_WAKE PWM stays inhibited, then the running trajectory starts at measured position and ramps toward the selected target.

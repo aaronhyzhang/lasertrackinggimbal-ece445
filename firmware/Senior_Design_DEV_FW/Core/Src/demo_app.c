@@ -7,46 +7,70 @@
 #include <string.h>
 static motor_t motor;
 static volatile motor_action_t pending;
+static volatile bool mode_pending;
+static motor_mode_t pending_mode;
 static volatile bool stop_pending;
 static volatile command_source_t source;
 static volatile uint32_t command_ms, target_mdeg, foreground_ms;
 static volatile bool target_valid;
 static volatile uint32_t ticks, max_control_us;
 static uint32_t last_tick_us;
+static uint32_t last_feed;
 static app_status_t status;
 void app_init(void) {
     motor_init(&motor); source=SOURCE_ANALOG; foreground_ms=HAL_GetTick();
+    pending=ACTION_NONE; mode_pending=false; stop_pending=false;
+    target_valid=false; target_mdeg=0; command_ms=HAL_GetTick()-DEMO_COMMAND_MAX_AGE_MS-1u;
+    ticks=0; max_control_us=0; last_feed=HAL_GetTick();
+    memset(&status,0,sizeof(status)); status.motor=motor; status.source=source;
     last_tick_us=board_us();
 }
 void app_stop(void) {
-    uint32_t mask=board_lock(); pending=ACTION_NONE; stop_pending=true;
+    uint32_t mask=board_lock(); pending=ACTION_NONE; mode_pending=false; stop_pending=true;
     board_kill(); board_unlock(mask);
 }
 bool app_request(motor_action_t action) {
     if (action==ACTION_DISABLE) { app_stop(); return true; }
     uint32_t mask=board_lock();
-    bool accepted=pending==ACTION_NONE && !stop_pending;
-    if (action==ACTION_CALIBRATE) accepted &= motor.state==MOTOR_DISABLED || motor.state==MOTOR_READY;
-    if (action==ACTION_ZERO || action==ACTION_ARM) accepted &= motor.state==MOTOR_READY;
-    if (action==ACTION_ARM) accepted &= motor.zeroed;
+    bool accepted=pending==ACTION_NONE && !stop_pending && !mode_pending && action!=ACTION_NONE;
+    if (action==ACTION_CALIBRATE) accepted &= motor.mode==MODE_CLOSED_LOOP && motor_inhibited(&motor);
+    if (action==ACTION_ZERO) accepted &= motor.mode==MODE_CLOSED_LOOP && motor.state==MOTOR_READY;
+    if (action==ACTION_ARM) {
+        if (motor.mode==MODE_OPEN_LOOP) accepted &= motor.state==MOTOR_DISABLED && source==SOURCE_ANALOG;
+        else accepted &= motor.state==MOTOR_READY && motor.zeroed;
+    }
     if (action==ACTION_CLEAR_FAULT) accepted &= motor.state==MOTOR_FAULT;
     if (accepted) pending=action;
     board_unlock(mask); return accepted;
 }
+bool app_mode(motor_mode_t new_mode) {
+    uint32_t mask=board_lock();
+    bool accepted=(new_mode==MODE_OPEN_LOOP || new_mode==MODE_CLOSED_LOOP) &&
+        motor_inhibited(&motor) && pending==ACTION_NONE && !mode_pending && !stop_pending;
+    if (accepted) {
+        pending_mode=new_mode; mode_pending=true;
+        target_valid=false; target_mdeg=0;
+        command_ms=HAL_GetTick()-DEMO_COMMAND_MAX_AGE_MS-1u;
+        board_kill(); /* No mode request can authorize gates. */
+    }
+    board_unlock(mask); return accepted;
+}
 bool app_source(command_source_t new_source) {
     uint32_t mask=board_lock();
-    bool accepted=(motor.state==MOTOR_DISABLED || motor.state==MOTOR_READY) && pending==ACTION_NONE;
+    bool accepted=(new_source==SOURCE_ANALOG || new_source==SOURCE_SERIAL || new_source==SOURCE_ETHERNET) &&
+        motor_inhibited(&motor) && pending==ACTION_NONE && !mode_pending && !stop_pending &&
+        (motor.mode==MODE_CLOSED_LOOP || new_source==SOURCE_ANALOG);
     if (accepted) { source=new_source; command_ms=HAL_GetTick()-DEMO_COMMAND_MAX_AGE_MS-1u; target_mdeg=0; target_valid=false; }
     board_unlock(mask); return accepted;
 }
 bool app_position(command_source_t owner,uint32_t value) {
     if (value>360000u) return false;
-    uint32_t mask=board_lock(); bool accepted=source==owner;
+    uint32_t mask=board_lock(); bool accepted=source==owner && motor.mode==MODE_CLOSED_LOOP && !mode_pending;
     if (accepted) { target_mdeg=value; command_ms=HAL_GetTick(); target_valid=true; }
     board_unlock(mask); return accepted;
 }
 bool app_heartbeat(command_source_t owner) {
-    uint32_t mask=board_lock(); bool accepted=source==owner && target_valid;
+    uint32_t mask=board_lock(); bool accepted=source==owner && target_valid && motor.mode==MODE_CLOSED_LOOP && !mode_pending;
     if (accepted) command_ms=HAL_GetTick();
     board_unlock(mask); return accepted;
 }
@@ -59,6 +83,10 @@ void app_control_tick(void) {
     uint32_t mask=board_lock();
     motor_action_t action=pending; pending=ACTION_NONE;
     in.stop=stop_pending; stop_pending=false;
+    if (mode_pending) {
+        if (!in.stop) { (void)motor_select_mode(&motor,pending_mode); source=SOURCE_ANALOG; }
+        mode_pending=false;
+    }
     in.source=source; in.command_ms=command_ms; in.foreground_ms=foreground_ms;
     in.target_rad=(float)target_mdeg*(6.28318530718f/360000.0f);
     if (action==ACTION_CLEAR_FAULT) {
@@ -69,6 +97,7 @@ void app_control_tick(void) {
     board_unlock(mask);
     if (in.source==SOURCE_ANALOG) {
         float voltage=(float)status.adc_raw*(DEMO_ADC_VREF/65535.0f);
+        in.analog_volts=voltage;
         /* An above-range source is a fault, not an unchecked 396-degree target. */
         if (voltage>3.15f) in.adc_valid=false;
         in.target_rad=fminf(voltage/3.0f,1.0f)*6.28318530718f;
@@ -92,7 +121,6 @@ void app_control_tick(void) {
 }
 void app_foreground(void) {
     uint32_t now=HAL_GetTick(); foreground_ms=now;
-    static uint32_t last_feed;
     if (now-last_feed>=20u) {
         if (board_us()-last_tick_us<20000u) board_watchdog_feed();
         last_feed=now;
@@ -104,17 +132,23 @@ size_t app_status_text(char *text,size_t capacity) {
     if (!capacity) return 0;
     app_status_t s; app_status(&s);
     int n=snprintf(text,capacity,
-        "state=%s fault=%s source=%s cal=%u zero=%u pos_mdeg=%ld target_mdeg=%ld uq_mV=%ld "
+        "state=%s fault=%s source=%s mode=%s cal=%u zero=%u pos_mdeg=%ld target_mdeg=%ld uq_mV=%ld "
         "raw=%u adc=%u magnet=%u nfault=%u ticks=%lu max_us=%lu bus_config_mV=24000 "
-        "dir=%d vel_mdeg_s=%ld ref_mdeg=%ld enc_age_ms=%lu health_age_ms=%lu adc_age_ms=%lu eth=%s fw=%s\r\n",
+        "dir=%d vel_mdeg_s=%ld ref_mdeg=%ld enc_age_ms=%lu health_age_ms=%lu adc_age_ms=%lu eth=%s fw=%s "
+        "pos_valid=%u cmd_mrpm=%ld ramp_mrpm=%ld open_mV=%ld\r\n",
         motor_state_name(s.motor.state),motor_fault_name(s.motor.fault),
         s.source==SOURCE_ANALOG?"ANALOG":s.source==SOURCE_SERIAL?"SERIAL":"ETHERNET",
+        motor_mode_name(s.motor.mode),
         s.motor.calibrated,s.motor.zeroed,(long)(s.motor.position*57295.7795f),
         (long)(s.motor.target*57295.7795f),(long)(s.motor.effort*1000.0f),
         s.encoder_raw,s.adc_raw,s.magnet_good,s.driver_good,
         (unsigned long)s.ticks,(unsigned long)s.max_control_us,
         s.motor.direction,(long)(s.motor.velocity*57295.7795f),(long)(s.motor.reference*57295.7795f),
         (unsigned long)s.encoder_age_ms,(unsigned long)s.health_age_ms,(unsigned long)s.adc_age_ms,
-        network_status(),DEMO_FW_VERSION);
+        network_status(),DEMO_FW_VERSION,
+        (unsigned)(s.motor.mode==MODE_CLOSED_LOOP && s.motor.zeroed && s.motor.calibrated && s.magnet_good &&
+                   s.encoder_age_ms<=DEMO_ENCODER_MAX_AGE_MS && s.health_age_ms<=DEMO_HEALTH_MAX_AGE_MS),
+        (long)(s.motor.open_target_speed*9549.296586f),(long)(s.motor.open_speed*9549.296586f),
+        (long)(s.motor.open_volts*1000.0f));
     return n<0 ? 0 : ((size_t)n<capacity ? (size_t)n : capacity-1u);
 }

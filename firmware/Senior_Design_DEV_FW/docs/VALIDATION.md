@@ -1,8 +1,16 @@
 # Validation record
 
-Updated 2026-10-08. Software evidence only; no flash or physical bench validation performed.
+Updated 2026-10-12. Software evidence only; no flash or physical bench validation performed.
 
-## Software checks
+## Current v0.2.0 checks — 2026-10-12
+
+The added open-loop/controller-mode code passes the retained closed-loop tests, actual application mailbox/ownership tests, open-loop mapping/ramp/fault/encoder-independence tests, both boot-default tests and both Python client tests. Application tests explicitly cover disabled-only changes, pending-mode cancellation by stop, ARM rejection with nonzero analog, encoder-free open-loop running, speed/status units and closed-loop calibration requirements after switching back.
+
+Standalone Debug and Release pass for **both** closed-loop and open-loop-default profiles with application warnings treated as errors. Native CubeIDE Debug/Release also report zero errors/warnings. Latest source/binary evidence is in `build_evidence.json`; older software evidence below describes v0.1.0 history. Nothing has been flashed or physically measured.
+
+Current standalone flash use is 102,364 B Debug /61,568 B Release for either boot profile. The two images differ in boot default, not controller availability. D1 allocation 56,640 B Debug /56,656 B Release includes reserved stack/heap; DMA pools still occupy 19,264 B at 0x30000000. Open-loop-specific acceptance is in [OPEN_LOOP_GUIDE.md](OPEN_LOOP_GUIDE.md).
+
+## Historical v0.1.0 software checks
 
 | Check | Evidence / status |
 | --- | --- |
@@ -49,3 +57,21 @@ Final C control/protocol/application tests and both Python tests pass. [build_ev
 ## Repository checkout verification — 2026-10-11
 
 The source-only repository checkout passed the C control/protocol/application tests and both Python client tests. Debug (-O0) and Release (-O2) rebuilt successfully with application warnings treated as errors. All 27 recorded source hashes and both rebuilt BIN hashes match the previously validated snapshot. Generated images, caches and local logs are excluded from Git. Physical bench validation remains pending.
+
+## New open-loop bench gates
+
+- [ ] Meter-match zero/3 V and confirm 30 mV deadband/zero-start ARM; confirm default boot profile.
+- [ ] With windings disconnected, verify six-PWM/deadtime, positive phase sequence and nominal 5.5 Hz field envelope at the provisional 30 RPM ceiling.
+- [ ] Verify wake/fault/stop/reset/ADC-loss/watchdog physical inhibition.
+- [ ] Secure unloaded motor, verify alignment/synchronization, actual RPM, direction, supply limit, current/temp and zero coast.
+- [ ] Demonstrate mode rejection while armed (including coasting OPEN_IDLE), explicit disable, closed-loop recalibration/ZERO and restored position mapping.
+
+## Assumption correction log
+
+| Date / firmware | Assumed item | Observed hardware/value | Correction / affected rechecks |
+| --- | --- | --- | --- |
+| 2026-10-12 /0.2.0 | 24 V bus, 11 pole pairs, 6-PWM, 30 RPM max, 10 RPM/s, 1 V align/2 V run | Pending bench measurement | Record actual straps/phase order/RPM/current and revise config before declaring pass |
+
+## Active-workspace sync verification — 2026-10-13
+
+The active original DEV project contains the same 31 source/config/tool/test hashes and reproduces all four profile BIN hashes. Normal CubeIDE launches must rebuild after external edits; the native active Debug/Release images were rebuilt for the runtime toggle. Separate open-loop-default images are under build/OpenLoop/Debug and build/OpenLoop/Release. No hardware flash or electrical/motion validation was performed.

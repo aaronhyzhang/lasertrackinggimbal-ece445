@@ -1,6 +1,6 @@
 # Nucleo / BOOSTXL wiring and configuration
 
-Updated 2026-10-08. This is the implemented pin allocation; continuity and waveform checks on the actual board revision remain pending. No BoosterPack stacking: use a labelled harness.
+Updated 2026-10-12. This is the implemented pin allocation; continuity and waveform checks on the actual board revision remain pending. No BoosterPack stacking: use a labelled harness.
 
 ## Harness
 
@@ -18,7 +18,7 @@ Nucleo morpho locations below are from UM2407 table 22. TI locations are from SL
 | Driver nFAULT | PE6 / TIM1_BKIN2 | CN11 pin 62 | J5 pin 15 / nFAULT |
 | Common ground | GND | CN11 pin 19 or CN12 pin 39 | J4 pin 2 or J5 pin 4 / GND |
 | EVM digital I/O supply | 3.3 V | CN11 pin 16 | J5 pin 1 / VDDIO |
-| Analog target | PA3 / ADC1_INP15 | CN12 pin 37; also A0, CN9 pin 1 | Separate 0–3 V source, common GND |
+| Analog command (position or speed by mode) | PA3 / ADC1_INP15 | CN12 pin 37; also A0, CN9 pin 1 | Separate 0–3 V source, common GND |
 | Encoder SCL | PB6 / I2C1_SCL | CN12 pin 17 | FIT1036 encoder SCL |
 | Encoder SDA | PB7 / I2C1_SDA | CN11 pin 21 | FIT1036 encoder SDA |
 | Encoder supply | 3.3 V / GND | Verified Nucleo supply pins | FIT1036 labelled encoder supply/GND |
@@ -73,3 +73,7 @@ This demo is a **hand-owned CubeIDE C project using STM32 HAL**. `Core/Src/board
 The old generated main/MSP/IRQ/config/linker/project files were backed up in the original local CubeIDE workspace; those local backups are not committed here. The historical IOC is retained under `docs/archive/`. Application/protocol files remain separate from HAL/CMSIS. A later migration back to CubeMX must create a new IOC matching this record, generate into a temporary project, compare every clock/pin/IRQ/timer/memory setting, and preserve application modules. The H743 project configuration has not been replaced with this Nucleo BSP.
 
 References: [ST UM2407, connectors and VCP](https://www.st.com/resource/en/user_manual/um2407-stm32h7-nucleo144-boards-mb1364-stmicroelectronics.pdf), [TI SLVUB97, EVM headers](https://www.ti.com/lit/ug/slvub97/slvub97.pdf), [TI DRV8304, mode and wake behavior](https://www.ti.com/lit/ds/symlink/drv8304.pdf), [DFRobot FIT1036, motor/encoder parameters](https://wiki.dfrobot.com/fit1036/), [AS5600 datasheet](https://look.ams-osram.com/m/7059eac7531a86fd/original/AS5600-DS000365.pdf).
+
+## Open-loop profile assumptions — 2026-10-12
+
+No new pin/harness allocation is needed. PA3 becomes a one-way speed command only when mode OPEN_LOOP is selected; fixed positive A/B/C sequence, 11 pole pairs, 24 V configured bus, 6-PWM straps and 3.3 V digital interface remain assumptions to verify on the bench. Encoder may be absent for open-loop drive; its power/pulls and boot readback must work before closed-loop calibration. PB6/PB7 have no fitted Nucleo external I2C pull-ups; inspect the encoder-board pulls or provide appropriate pulls to 3.3 V. EVM current/protection settings remain unverified and are not replaced by a voltage clamp. Full limits, mode sequence and a correction table are in [OPEN_LOOP_GUIDE.md](OPEN_LOOP_GUIDE.md).

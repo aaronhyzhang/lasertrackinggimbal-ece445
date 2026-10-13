@@ -1,8 +1,8 @@
 {
-  "date": "2026-10-08",
-  "firmware": "0.1.0",
+  "date": "2026-10-12",
+  "firmware": "0.2.0",
   "toolchain": "ARM GCC 13.3.1 / STM32CubeIDE 1.18.0",
-  "native_cubeide": "Debug (-O0) and Release (-Os), zero errors/warnings",
+  "native_cubeide": "Debug (-O0), Release (-Os), zero errors/warnings; default CLOSED_LOOP supports runtime OPEN_LOOP",
   "dma_region": {
     "start": "0x30000000",
     "end_exclusive": "0x30004B40",
@@ -10,14 +10,28 @@
   },
   "binaries": {
     "Debug": {
-      "optimization": "-O0",
-      "bytes": 99268,
-      "sha256": "2d478fe193b14ea5e674015f579162e5d8f222177bfe7be2442a6e8074661b2a"
+      "path": "build/Debug/Senior_Design_DEV_FW.bin",
+      "boot_mode": "CLOSED_LOOP",
+      "bytes": 102364,
+      "sha256": "99bbfeac850723c8e0e7f74a3eb5e5722c5b6c4b391391b632527bcc05345934"
     },
     "Release": {
-      "optimization": "-O2",
-      "bytes": 59248,
-      "sha256": "5463d55f00be5eb7f98424aa35b88e79c4feb047e1f833b31ce0d7eca84b9fde"
+      "path": "build/Release/Senior_Design_DEV_FW.bin",
+      "boot_mode": "CLOSED_LOOP",
+      "bytes": 61568,
+      "sha256": "4c16219ee97da69b8e3492302bf88780589c9245799531eb91bdea7c8390edf3"
+    },
+    "OpenLoopDebug": {
+      "path": "build/OpenLoop/Debug/Senior_Design_DEV_FW.bin",
+      "boot_mode": "OPEN_LOOP",
+      "bytes": 102364,
+      "sha256": "a11a2a5fcd8827851ba522e899ce20daa1861ce0b269546f6fc943ef6b2b7aa7"
+    },
+    "OpenLoopRelease": {
+      "path": "build/OpenLoop/Release/Senior_Design_DEV_FW.bin",
+      "boot_mode": "OPEN_LOOP",
+      "bytes": 61568,
+      "sha256": "820d21a6b899af8a09b664588dead529bbb65a3b951eb85785692336ba690268"
     }
   },
   "sources": [
@@ -31,11 +45,11 @@
     },
     {
       "path": "Core/Inc/demo_app.h",
-      "sha256": "2d880bba64f326590e992e9591ba7fb8f0efc7b8125d86c8d97f3262d2df380b"
+      "sha256": "57faf0b17b35b3c29a3d90a823b04cbaf9372a9d0fcf94a7c4d088882020be0a"
     },
     {
       "path": "Core/Inc/demo_config.h",
-      "sha256": "8b28961dcf6aa4f20a522ddda5e97e5e2d9e236d28ab43349a64bcc25038fb97"
+      "sha256": "fb9bf3c3afb386a9162dc5c65c90d44ccedf18ab814708ab3cabf2ce5f101ed0"
     },
     {
       "path": "Core/Inc/demo_console.h",
@@ -59,7 +73,11 @@
     },
     {
       "path": "Core/Inc/motor_control.h",
-      "sha256": "6ce14fc049a9c4911f83742e0cce4fcb9dfc2b3e8302b0c8e383f4a383b49b47"
+      "sha256": "b44a5125917d14c7ed90559120ce92bad27ca42bb23f6b8f0e687e4ce37b39e5"
+    },
+    {
+      "path": "Core/Inc/motor_internal.h",
+      "sha256": "975db95e21cb928067d198b619cfcb98371bdfc3e43dc43553a4e1c5d0b800ab"
     },
     {
       "path": "Core/Inc/stm32h7xx_hal_conf.h",
@@ -71,11 +89,11 @@
     },
     {
       "path": "Core/Src/demo_app.c",
-      "sha256": "d821ebeff8f237f4e65a2cc09f606aeb24f3c215eedc5bf5e6267cf7d4266a29"
+      "sha256": "8543ae970753bb1ef60c9b221f2d4bd84679867ce18715809a09340590b99eaf"
     },
     {
       "path": "Core/Src/demo_console.c",
-      "sha256": "d4e639c3351a6730c9dfd1a9612b1bb04090801db09e695df599a018bb4b3c29"
+      "sha256": "ac63245ea6448505d01d7f5e88302216ea105c9f06f5b805a87774c3f6b1ec00"
     },
     {
       "path": "Core/Src/demo_network.c",
@@ -91,7 +109,11 @@
     },
     {
       "path": "Core/Src/motor_control.c",
-      "sha256": "6ddff2458ad220e5bc56acce438127ec17c06afd6c602585899aef928fea704e"
+      "sha256": "a4030b760f41a09290a1f7a5150e2dacf1cd7d2a7f47e29aa298f7ee91e6cf62"
+    },
+    {
+      "path": "Core/Src/open_loop.c",
+      "sha256": "ae81023bfb031614e6dc3be792ab842223047f645b0732502084b230ef8591c4"
     },
     {
       "path": "Core/Src/stm32h7xx_hal_msp.c",
@@ -102,24 +124,12 @@
       "sha256": "1ca47be8227a7384d1edc4ea73d986e8a999635d9851509c184efc73b7ae8913"
     },
     {
-      "path": "Tools/build.py",
-      "sha256": "4da7e366646c9fa16eed644edb2494a3bec4ffb133b4aa7e316a74fe772c6b3b"
-    },
-    {
-      "path": "Tools/test.py",
-      "sha256": "c992833f86667823d7b8c75f3b72b5146aa965a65fc3db3ed38a8a909234b2b1"
-    },
-    {
-      "path": "Tools/udp_client.py",
-      "sha256": "25041141decc4e1323059d5ac0e4abd6aeaff24e4ed1f68ef820001703ac816a"
-    },
-    {
       "path": "Tests/fakes/board.h",
       "sha256": "dd1659dfa4669a85902de62b1095d88bfe3ae95d30e95dda3f69210574dfdcf2"
     },
     {
       "path": "Tests/test_app.c",
-      "sha256": "047fa0fb78a7a9de0c678063e3c5b4e8c62409852426934b83a95789949e63f0"
+      "sha256": "a9defc67ed1ba4d865e8c7e77a784071ae93867f857364b0cf257ac21f4e070b"
     },
     {
       "path": "Tests/test_client.py",
@@ -128,6 +138,27 @@
     {
       "path": "Tests/test_control.c",
       "sha256": "3a9a79b9d8acc500b0dcaf11efb806347732bde87ab48a1f89859761c2f0bd61"
+    },
+    {
+      "path": "Tests/test_defaults.c",
+      "sha256": "e3634d40933fcde4990986bfc674c390b32bc0d029e7cc9f25f7970288ec1342"
+    },
+    {
+      "path": "Tests/test_open_loop.c",
+      "sha256": "d4c184829eace8396c223cf8a67f805285f40935cff830ec3d7b105aa2c426f0"
+    },
+    {
+      "path": "Tools/build.py",
+      "sha256": "8949993c9f95894dcff8c4ef6c4a819322eb07939b9f491bc565ccfce2763c85"
+    },
+    {
+      "path": "Tools/test.py",
+      "sha256": "a861080c2e81d9af32f2745d3234fad90576acd7a946af30b3bc78c021c35b90"
+    },
+    {
+      "path": "Tools/udp_client.py",
+      "sha256": "25041141decc4e1323059d5ac0e4abd6aeaff24e4ed1f68ef820001703ac816a"
     }
-  ]
+  ],
+  "active_workspace_verified": "2026-10-13"
 }

@@ -1,4 +1,5 @@
 #include "motor_control.h"
+#include "motor_internal.h"
 #include "demo_config.h"
 #include <math.h>
 #include <string.h>
@@ -19,15 +20,24 @@ void motor_modulate(float theta, float vd, float vq, float duty[3]) {
 }
 void motor_init(motor_t *m) {
     memset(m, 0, sizeof(*m)); m->direction = 1; m->state = MOTOR_DISABLED;
+    m->mode=DEMO_DEFAULT_OPEN_LOOP ? MODE_OPEN_LOOP : MODE_CLOSED_LOOP;
+}
+bool motor_inhibited(const motor_t *m) { return m->state==MOTOR_DISABLED || m->state==MOTOR_READY; }
+bool motor_select_mode(motor_t *m,motor_mode_t mode) {
+    if ((mode!=MODE_OPEN_LOOP && mode!=MODE_CLOSED_LOOP) || !motor_inhibited(m)) return false;
+    motor_init(m); m->mode=mode; return true;
+}
+const char *motor_mode_name(motor_mode_t mode) {
+    return mode==MODE_CLOSED_LOOP ? "CLOSED_LOOP" : mode==MODE_OPEN_LOOP ? "OPEN_LOOP" : "INVALID";
 }
 static bool active(motor_state_t s) {
     return s != MOTOR_DISABLED && s != MOTOR_READY && s != MOTOR_FAULT;
 }
-static void enter(motor_t *m, motor_state_t s, uint32_t now) {
+void motor_enter_state(motor_t *m, motor_state_t s, uint32_t now) {
     m->state = s; m->stage_ms = now; m->integral = 0; m->effort = 0;
 }
-static void trip(motor_t *m, motor_fault_t f, uint32_t now) {
-    if (m->state != MOTOR_FAULT) { m->fault = f; enter(m, MOTOR_FAULT, now); }
+void motor_latch_fault(motor_t *m, motor_fault_t f, uint32_t now) {
+    if (m->state != MOTOR_FAULT) { m->fault = f; motor_enter_state(m, MOTOR_FAULT, now); }
 }
 static void encoder_update(motor_t *m, const motor_input_t *in) {
     if (!in->encoder_valid) return;
@@ -47,7 +57,7 @@ static void encoder_update(motor_t *m, const motor_input_t *in) {
     if (elapsed > DEMO_ENCODER_MAX_AGE_MS || fabsf(dr) > 0.12f) {
         m->calibrated = false; m->zeroed = false;
         m->last_raw = raw; m->last_encoder_ms = in->encoder_ms;
-        if (active(m->state)) trip(m, FAULT_ENCODER, in->now_ms);
+        if (active(m->state)) motor_latch_fault(m, FAULT_ENCODER, in->now_ms);
         return;
     }
     m->raw_unwrapped += dr;
@@ -60,6 +70,7 @@ void motor_step(motor_t *m, const motor_input_t *in, motor_action_t action,
                 motor_output_t *out) {
     memset(out, 0, sizeof(*out));
     out->duty[0] = out->duty[1] = out->duty[2] = 0.5f;
+    if (m->mode==MODE_OPEN_LOOP) { motor_open_step(m,in,action,out); return; }
     encoder_update(m, in);
     m->position = m->direction * (m->raw_unwrapped - m->zero_raw);
     bool encoder_ok = in->encoder_valid && in->magnet_good &&
@@ -68,29 +79,29 @@ void motor_step(motor_t *m, const motor_input_t *in, motor_action_t action,
     bool adc_ok = in->adc_valid && in->now_ms-in->adc_ms <= DEMO_ADC_MAX_AGE_MS;
     bool command_ok = in->source == SOURCE_ANALOG ||
         in->now_ms-in->command_ms <= DEMO_COMMAND_MAX_AGE_MS;
-    if (in->hard_fault) trip(m, in->external_fault, in->now_ms);
+    if (in->hard_fault) motor_latch_fault(m, in->external_fault, in->now_ms);
     if (in->stop || action == ACTION_DISABLE) {
-        if (m->state != MOTOR_FAULT) enter(m, m->calibrated ? MOTOR_READY : MOTOR_DISABLED, in->now_ms);
+        if (m->state != MOTOR_FAULT) motor_enter_state(m, m->calibrated ? MOTOR_READY : MOTOR_DISABLED, in->now_ms);
         m->reference_velocity = 0; return;
     }
     if (active(m->state)) {
-        if (!encoder_ok) trip(m, FAULT_ENCODER, in->now_ms);
+        if (!encoder_ok) motor_latch_fault(m, FAULT_ENCODER, in->now_ms);
         else if (in->now_ms-in->foreground_ms > DEMO_FOREGROUND_MAX_AGE_MS)
-            trip(m, FAULT_FOREGROUND, in->now_ms);
+            motor_latch_fault(m, FAULT_FOREGROUND, in->now_ms);
         else if (m->state != MOTOR_CAL_WAKE && m->state != MOTOR_ARM_WAKE && !in->driver_good)
-            trip(m, FAULT_DRIVER, in->now_ms);
+            motor_latch_fault(m, FAULT_DRIVER, in->now_ms);
         else if ((m->state == MOTOR_RUNNING || m->state == MOTOR_ARM_WAKE) && !command_ok)
-            trip(m, FAULT_COMMAND, in->now_ms);
+            motor_latch_fault(m, FAULT_COMMAND, in->now_ms);
         else if ((m->state == MOTOR_RUNNING || m->state == MOTOR_ARM_WAKE) &&
-                 in->source == SOURCE_ANALOG && !adc_ok) trip(m, FAULT_ADC, in->now_ms);
+                 in->source == SOURCE_ANALOG && !adc_ok) motor_latch_fault(m, FAULT_ADC, in->now_ms);
     }
     if (action == ACTION_CLEAR_FAULT && m->state == MOTOR_FAULT && !in->hard_fault && encoder_ok) {
         m->fault = FAULT_NONE; m->calibrated = false; m->zeroed = false;
-        enter(m, MOTOR_DISABLED, in->now_ms);
+        motor_enter_state(m, MOTOR_DISABLED, in->now_ms);
     }
     if (action == ACTION_CALIBRATE && (m->state == MOTOR_DISABLED || m->state == MOTOR_READY) && encoder_ok) {
         m->calibrated = false; m->zeroed = false;
-        enter(m, MOTOR_CAL_WAKE, in->now_ms);
+        motor_enter_state(m, MOTOR_CAL_WAKE, in->now_ms);
     }
     if (action == ACTION_ZERO && m->state == MOTOR_READY && encoder_ok) {
         m->zero_raw = m->raw_unwrapped; m->position = 0; m->zeroed = true;
@@ -99,21 +110,21 @@ void motor_step(motor_t *m, const motor_input_t *in, motor_action_t action,
         command_ok && (in->source != SOURCE_ANALOG || adc_ok) &&
         m->position >= -0.02f && m->position <= TAU_F+0.02f) {
         m->reference = clampf(m->position, 0, TAU_F); m->reference_velocity = 0;
-        m->velocity = 0; enter(m, MOTOR_ARM_WAKE, in->now_ms);
+        m->velocity = 0; motor_enter_state(m, MOTOR_ARM_WAKE, in->now_ms);
     }
     uint32_t t = in->now_ms - m->stage_ms;
     switch (m->state) {
     case MOTOR_CAL_WAKE: case MOTOR_ARM_WAKE:
         out->enable = true; /* Break remains active; MOE stays clear throughout wake. */
         if (t >= 10u) {
-            if (!in->driver_good) trip(m, FAULT_DRIVER, in->now_ms);
-            else enter(m, m->state == MOTOR_CAL_WAKE ? MOTOR_CAL_ALIGN : MOTOR_RUNNING, in->now_ms);
+            if (!in->driver_good) motor_latch_fault(m, FAULT_DRIVER, in->now_ms);
+            else motor_enter_state(m, m->state == MOTOR_CAL_WAKE ? MOTOR_CAL_ALIGN : MOTOR_RUNNING, in->now_ms);
         }
         break;
     case MOTOR_CAL_ALIGN:
         out->enable = out->pwm = true;
         motor_modulate(0, DEMO_ALIGN_VOLTS*clampf((float)t/500.0f,0,1),0,out->duty);
-        if (t >= 2000u) { m->sweep_start = m->raw_unwrapped; enter(m,MOTOR_CAL_SWEEP,in->now_ms); }
+        if (t >= 2000u) { m->sweep_start = m->raw_unwrapped; motor_enter_state(m,MOTOR_CAL_SWEEP,in->now_ms); }
         break;
     case MOTOR_CAL_SWEEP:
         out->enable = out->pwm = true;
@@ -122,28 +133,28 @@ void motor_step(motor_t *m, const motor_input_t *in, motor_action_t action,
             float moved = m->raw_unwrapped - m->sweep_start;
             float expected = 0.5f*PI_F/DEMO_POLE_PAIRS;
             if (fabsf(moved) < 0.5f*expected || fabsf(moved) > 1.5f*expected)
-                trip(m,FAULT_CALIBRATION,in->now_ms);
-            else { m->direction = moved > 0 ? 1 : -1; enter(m,MOTOR_CAL_RETURN,in->now_ms); }
+                motor_latch_fault(m,FAULT_CALIBRATION,in->now_ms);
+            else { m->direction = moved > 0 ? 1 : -1; motor_enter_state(m,MOTOR_CAL_RETURN,in->now_ms); }
         }
         break;
     case MOTOR_CAL_RETURN:
         out->enable = out->pwm = true;
         motor_modulate(0.5f*PI_F*(1.0f-clampf((float)t/1500.0f,0,1)),DEMO_ALIGN_VOLTS,0,out->duty);
         if (t >= 2500u) {
-            if (fabsf(m->raw_unwrapped-m->sweep_start) > 0.035f) trip(m,FAULT_CALIBRATION,in->now_ms);
+            if (fabsf(m->raw_unwrapped-m->sweep_start) > 0.035f) motor_latch_fault(m,FAULT_CALIBRATION,in->now_ms);
             else {
                 m->electrical_offset = motor_wrap(-m->direction*DEMO_POLE_PAIRS*m->raw_unwrapped);
-                m->calibrated = true; m->velocity = 0; enter(m,MOTOR_READY,in->now_ms);
+                m->calibrated = true; m->velocity = 0; motor_enter_state(m,MOTOR_READY,in->now_ms);
             }
             out->enable = out->pwm = false;
         }
         break;
     case MOTOR_RUNNING: {
         if (!isfinite(in->target_rad) || in->target_rad < 0 || in->target_rad > TAU_F) {
-            trip(m,FAULT_COMMAND,in->now_ms); break;
+            motor_latch_fault(m,FAULT_COMMAND,in->now_ms); break;
         }
         if (m->position < -0.0873f || m->position > TAU_F+0.0873f) {
-            trip(m,FAULT_TRAVEL,in->now_ms); break;
+            motor_latch_fault(m,FAULT_TRAVEL,in->now_ms); break;
         }
         m->target = in->target_rad;
         float distance = m->target - m->reference;
@@ -158,7 +169,7 @@ void motor_step(motor_t *m, const motor_input_t *in, motor_action_t action,
         }
         else m->reference = clampf(m->reference+step,0,TAU_F);
         if (fabsf(m->reference-m->position)>DEMO_MAX_FOLLOWING_ERROR) {
-            trip(m,FAULT_TRACKING,in->now_ms); break;
+            motor_latch_fault(m,FAULT_TRACKING,in->now_ms); break;
         }
         float demand = clampf(DEMO_POSITION_KP*(m->reference-m->position)+m->reference_velocity,
                               -DEMO_MAX_SPEED, DEMO_MAX_SPEED);
@@ -177,7 +188,7 @@ void motor_step(motor_t *m, const motor_input_t *in, motor_action_t action,
     if (m->state == MOTOR_FAULT) { out->enable = out->pwm = false; m->effort = 0; }
 }
 const char *motor_state_name(motor_state_t s) {
-    static const char *const names[] = {"DISABLED","CAL_WAKE","CAL_ALIGN","CAL_SWEEP","CAL_RETURN","READY","ARM_WAKE","RUNNING","FAULT"};
+    static const char *const names[] = {"DISABLED","CAL_WAKE","CAL_ALIGN","CAL_SWEEP","CAL_RETURN","READY","ARM_WAKE","RUNNING","FAULT","OPEN_IDLE","OPEN_WAKE","OPEN_ALIGN","OPEN_RUNNING"};
     return (unsigned)s < sizeof(names)/sizeof(names[0]) ? names[s] : "INVALID";
 }
 const char *motor_fault_name(motor_fault_t f) {

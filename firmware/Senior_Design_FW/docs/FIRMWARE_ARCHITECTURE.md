@@ -1,6 +1,14 @@
 # Firmware architecture
 
-Updated: 2026-10-08 (America/Chicago). Active implementation: [Senior_Design_DEV_FW](../../Senior_Design_DEV_FW), STM32H753ZIT6. Software builds and host tests pass; hardware validation is pending. [Firmware guide](../../Senior_Design_DEV_FW/docs/FIRMWARE_GUIDE.md), [board settings](../../Senior_Design_DEV_FW/docs/BOARD_CONFIG.md), and [validation record](../../Senior_Design_DEV_FW/docs/VALIDATION.md) describe the actual code. [Vendor research](ARCHITECTURE_RESEARCH.md) explains the architectural choices.
+Updated: 2026-10-12 (America/Chicago). Active implementation: [Senior_Design_DEV_FW](../../Senior_Design_DEV_FW), STM32H753ZIT6. Software builds and host tests pass; hardware validation is pending. [Firmware guide](../../Senior_Design_DEV_FW/docs/FIRMWARE_GUIDE.md), [board settings](../../Senior_Design_DEV_FW/docs/BOARD_CONFIG.md), and [validation record](../../Senior_Design_DEV_FW/docs/VALIDATION.md) describe the actual code. [Vendor research](ARCHITECTURE_RESEARCH.md) explains the architectural choices.
+
+## Selectable open-loop addition — 2026-10-12
+
+Firmware v0.2.0 adds an independent `open_loop.c` path for analog commanded speed, default maximum 30 RPM, with 10 RPM/s reference ramp, 1 V timed alignment and 2 V rotating-vector magnitude. Encoder, zero, position/velocity loops and one-turn travel checks are bypassed only in OPEN_LOOP. Common PWM, driver break/wake, ADC/liveness/timing/stop/watchdog supervision remains. Actual RPM/stall/current are not regulated or verified in this mode. See [open-loop guide](../../Senior_Design_DEV_FW/docs/OPEN_LOOP_GUIDE.md).
+
+`MODE OPEN_LOOP|CLOSED_LOOP` is an inhibited-only foreground request applied by the control IRQ. It resets calibration/reference/controller/command authority and selects ANALOG; a pending mode request cannot race ARM and is canceled by stop. Logical armed OPEN_IDLE refuses mode/source changes even with bridge coasting. Open-loop ARM requires a fresh near-zero ADC; raising analog then performs wake/alignment/run. Zero ramps frequency to zero, then coasts; DISABLE/! inhibit immediately. Switching back requires new closed-loop calibration and ZERO.
+
+The `--profile open-loop` build selects only the boot default via `DEMO_DEFAULT_OPEN_LOOP=1` and emits a separate image under `build/OpenLoop/`. Both modes share one source/BSP and remain available at runtime. Open-loop analog input is separately typed in volts and never reinterprets a position command as speed. Serial/Ethernet motion setters reject open-loop mode; network STATUS/DISABLE remain available.
 
 ## Scope and ownership
 
