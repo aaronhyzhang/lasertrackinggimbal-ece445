@@ -34,3 +34,7 @@ Refresh/build/flash in CubeIDE and verify the wire before powering the driver. P
 No new physical measurements of PE10 or proof of a root cause were available when this change was made. The user confirmed the driver was unplugged; exact physical B-low header, channel mapping and inversion remain to be clarified.
 
 References: [ST UM2407 LED solder bridges and headers](https://www.st.com/resource/en/user_manual/um2407-stm32h7-nucleo144-boards-mb1364-stmicroelectronics.pdf), [STM32H753 datasheet Table 9 alternate functions](https://www.st.com/resource/en/datasheet/stm32h753zi.pdf), [Tektronix probe grounding/ringing guidance](https://www.tek.com/en/documents/application-note/probing-techniques-accurate-voltage-measurements-power-converters-oscillos).
+
+## Follow-up report — 2026-10-13
+
+The user subsequently reported the waveform looks good after the PE10 update and asked about motor hookup. Record this as qualitative improvement; it does not establish a precise deadtime measurement, the exact original physical-pin mismatch, or loaded EVM switching acceptance. Continue the motor-disconnected gate and stop checks before wiring the motor.
