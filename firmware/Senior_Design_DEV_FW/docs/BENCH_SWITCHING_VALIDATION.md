@@ -1,6 +1,8 @@
 # PWM, gate-driver and first-spin validation
 
-Current v0.4.0 default: **open-loop motor control using PG2 RUN and the PA3 pot**, with no serial commands, encoder or Ethernet required. Scope-test mode is now off. See [OPEN_LOOP_BOARD_CONTROL.md](OPEN_LOOP_BOARD_CONTROL.md) for wiring, low-to-high RUN/zero-speed arming and fault reset.
+**v0.4.1 wiring change:** INLB now comes from **PE10 / CN12 pin 47**, replacing PB0 / CN11 pin 34. Move that wire with power off before energizing the driver. See [phase-B diagnostics](PHASE_B_PWM_DIAGNOSTIC.md).
+
+Current v0.4.1 default: **open-loop motor control using PG2 RUN and the PA3 pot**, with no serial commands, encoder or Ethernet required. Scope-test mode is now off. See [OPEN_LOOP_BOARD_CONTROL.md](OPEN_LOOP_BOARD_CONTROL.md) for wiring, low-to-high RUN/zero-speed arming and fault reset.
 
 Updated 2026-10-13. Firmware v0.2.2. All figures below are configured expectations, not scope measurements. Record measured results in [VALIDATION.md](VALIDATION.md). Wiring and EVM straps are in [BOARD_CONFIG.md](BOARD_CONFIG.md).
 
@@ -40,7 +42,7 @@ On an ordinary bench scope, channel ground clips are typically common and earth-
 | Phase | High input / Nucleo pin | Low input / Nucleo pin |
 | --- | --- | --- |
 | A | TIM1_CH1 /PE9 | TIM1_CH1N /PE8 |
-| B | TIM1_CH2 /PE11 | TIM1_CH2N /PB0 |
+| B | TIM1_CH2 /PE11 | TIM1_CH2N /PE10 |
 | C | TIM1_CH3 /PE13 | TIM1_CH3N /PE12 |
 
 Expected while driving:

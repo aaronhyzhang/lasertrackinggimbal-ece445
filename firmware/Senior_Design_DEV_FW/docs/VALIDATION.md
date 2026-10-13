@@ -1,6 +1,10 @@
 # Validation record
 
-## Current v0.4.0 physical open-loop control — 2026-10-13
+## Current v0.4.1 phase-B pin review — 2026-10-13
+
+User photos show an approximately 20.1 kHz raw phase-B signal with edge spikes/stepped levels; user reports A/C are cleaner. Firmware timer/polarity/deadtime review found no B-specific timing difference. PB0 is a valid TIM1_CH2N pin but is shared with Nucleo LD1; B low is now PE10/CN12 pin 47 to remove that load. This is an isolation/hardware-fit improvement, not a confirmed root-cause repair. INLB must be rewired with power off and firmware rebuilt/flashed before driver operation. The user confirms the driver was disconnected and probe settings matched A/C. A D40/PE10 versus prior PB0 header mismatch is also plausible: the old firmware did not configure PE10. Exact physical header/channel/inversion and PE10 physical recheck remain pending. Physical open-loop, scope and closed-loop Debug/Release builds pass; active native CubeIDE Debug/Release have zero errors/warnings. All 35 recorded source hashes match active DEV. Control logic is unchanged, so the prior passing host logic tests were not repeated for this GPIO-only remap. See PHASE_B_PWM_DIAGNOSTIC.md.
+
+## Historical v0.4.0 physical open-loop control — 2026-10-13
 
 PG2 RUN low/disconnected inhibits; stable low then stable high requests ARM only with the 100 mV zero-speed input, healthy ADC/liveness and disabled controller. Requests at high pot are consumed; boot/reset with RUN high never arms. Real PE6 nFAULT and latched faults remain; only reset recovers physical-profile faults. No console/network/encoder transactions start in this profile. Yellow PE1 LD2 indicates armed, red PB14 LD3 indicates fault. User-reported MCU complementary switching passes the qualitative first gate; loaded gate/motor operation and shutdown latency are pending. Configured physical-open-loop, scope override and closed-loop Debug/Release builds pass, along with retained host/client and new actual app RUN tests. Active native CubeIDE Debug/Release report zero errors/warnings. All 35 source hashes match the active DEV copy. See OPEN_LOOP_BOARD_CONTROL.md and current build_evidence.json.
 

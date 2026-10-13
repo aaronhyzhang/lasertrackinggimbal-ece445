@@ -1,6 +1,8 @@
 # Open-loop speed bring-up and mode selection
 
-Current v0.4.0 default: **open-loop motor control using PG2 RUN and the PA3 pot**, with no serial commands, encoder or Ethernet required. Scope-test mode is now off. See [OPEN_LOOP_BOARD_CONTROL.md](OPEN_LOOP_BOARD_CONTROL.md) for wiring, low-to-high RUN/zero-speed arming and fault reset. The serial command workflow below requires `DEMO_OPEN_BOARD_CONTROL=0` and a rebuild.
+**v0.4.1 wiring change:** INLB now comes from **PE10 / CN12 pin 47**, replacing PB0 / CN11 pin 34. Move that wire with power off before energizing the driver. See [phase-B diagnostics](PHASE_B_PWM_DIAGNOSTIC.md).
+
+Current v0.4.1 default: **open-loop motor control using PG2 RUN and the PA3 pot**, with no serial commands, encoder or Ethernet required. Scope-test mode is now off. See [OPEN_LOOP_BOARD_CONTROL.md](OPEN_LOOP_BOARD_CONTROL.md) for wiring, low-to-high RUN/zero-speed arming and fault reset. The serial command workflow below requires `DEMO_OPEN_BOARD_CONTROL=0` and a rebuild.
 
 Updated 2026-10-13. Firmware v0.2.2. One unloaded FIT1036 motor, NUCLEO-H753ZI, BOOSTXL-DRV8304H, configured 24 V bus. Software tests/builds pass; actual waveforms, current, alignment and motor synchronization remain unverified.
 

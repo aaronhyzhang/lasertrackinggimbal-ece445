@@ -1,8 +1,10 @@
 # Automatic MCU PWM scope test
 
+**v0.4.1 wiring change:** INLB now comes from **PE10 / CN12 pin 47**, replacing PB0 / CN11 pin 34. Move that wire with power off before energizing the driver. See [phase-B diagnostics](PHASE_B_PWM_DIAGNOSTIC.md).
+
 Firmware v0.3.0, updated 2026-10-13. Software verification does not establish physical waveforms; bench captures are pending.
 
-The user has no command interface on the bench and needs to verify PWM independently of motor startup. Current v0.4.0 normal CubeIDE builds select physical open-loop motor control. Select this diagnostic instead through one line in Core/Inc/demo_config.h:
+The user has no command interface on the bench and needs to verify PWM independently of motor startup. Current v0.4.1 normal CubeIDE builds select physical open-loop motor control. Select this diagnostic instead through one line in Core/Inc/demo_config.h:
 
 ```c
 #define DEMO_PWM_SCOPE_TEST 1
@@ -33,7 +35,7 @@ The user has no command interface on the bench and needs to verify PWM independe
 | Phase | High output | Low output |
 | --- | --- | --- |
 | A | PE9, CN12 pin 52 | PE8, CN12 pin 40 |
-| B | PE11, CN12 pin 56 | PB0, CN11 pin 34 |
+| B | PE11, CN12 pin 56 | PE10, CN12 pin 47 |
 | C | PE13, CN12 pin 55 | PE12, CN12 pin 49 |
 
 | Analog voltage | Commanded high-output duty before deadtime |

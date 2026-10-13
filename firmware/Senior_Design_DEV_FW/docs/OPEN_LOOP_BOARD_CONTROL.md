@@ -1,6 +1,8 @@
 # Open-loop motor control from board inputs
 
-Firmware v0.4.0, updated 2026-10-13. Current CubeIDE header defaults select this profile. The user reports seeing MCU PWM and complementary switching; measured deadtime and driver/motor operation remain pending.
+**v0.4.1 wiring change:** INLB now comes from **PE10 / CN12 pin 47**, replacing PB0 / CN11 pin 34. Move that wire with power off before energizing the driver. See [phase-B diagnostics](PHASE_B_PWM_DIAGNOSTIC.md).
+
+Firmware v0.4.1, updated 2026-10-13. Current CubeIDE header defaults select this profile. The user reports seeing MCU PWM and complementary switching; measured deadtime and driver/motor operation remain pending.
 
 This uses one RUN switch/jumper and one speed pot. No serial command, Ethernet, encoder feedback, CALIBRATE or ZERO is required. Console/network/encoder transactions are not started in this profile. Shared BSP peripheral setup remains. The existing sinusoidal voltage commutation is reused; identical scope-test duties would produce no rotating field.
 
@@ -24,7 +26,7 @@ These are already set. Refresh/build/flash the active Senior_Design_DEV_FW proje
 | Driver nFAULT input | PE6, CN11 pin 62 | EVM J5 pin 15; active LOW hardware shutdown. Retain effective 3.3 V pull-up. This is real driver fault feedback, not a user RUN switch. |
 | Logic supply / ground | Nucleo 3.3 V / GND | EVM J5 pin 1 VDDIO / J5 pin 4 GND; common analog reference. Verify rail straps/population. |
 
-Connect the six existing PWM wires unchanged (PE9/PE8, PE11/PB0, PE13/PE12 to INHA/INLA, INHB/INLB, INHC/INLC). Use DRV8304H hardware MODE=AGND/6-PWM and CAL low. Record GAIN/IDRIVE/VDS settings. Encoder can remain disconnected. Motor windings connect to EVM A/B/C; the winding supply is 24 V at the motor-power terminal, independent of encoder/MCU logic supply. See BOARD_CONFIG.md for every header location.
+Connect the six PWM wires (v0.4.1 moves INLB from PB0 to PE10) (PE9/PE8, PE11/PE10, PE13/PE12 to INHA/INLA, INHB/INLB, INHC/INLC). Use DRV8304H hardware MODE=AGND/6-PWM and CAL low. Record GAIN/IDRIVE/VDS settings. Encoder can remain disconnected. Motor windings connect to EVM A/B/C; the winding supply is 24 V at the motor-power terminal, independent of encoder/MCU logic supply. See BOARD_CONFIG.md for every header location.
 
 Remove any PE6 test fixture that overrides/masks the actual fault signal. A pull-up resistor is appropriate for the open-drain output; a hard tie to 3.3 V is not. Do not repurpose nFAULT as RUN during motor operation.
 

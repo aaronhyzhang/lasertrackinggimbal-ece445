@@ -1,51 +1,51 @@
 {
   "date": "2026-10-13",
-  "firmware": "0.4.0",
+  "firmware": "0.4.1",
   "toolchain": "ARM GCC 13.3.1 / STM32CubeIDE 1.18.0",
   "configured_header_default": "OPEN_LOOP_BOARD_CONTROL: scope=0, open_loop=1, board_control=1",
-  "native_cubeide": "Active DEV native Debug/Release physical open-loop builds: zero errors/warnings",
+  "native_cubeide": "Active DEV Debug/Release rebuilt for PE10 TIM1_CH2N remap: zero errors/warnings",
   "binaries": {
     "ConfiguredDebug": {
       "path": "build/Debug/Senior_Design_DEV_FW.bin",
       "profile": "configured",
       "boot_mode": "OPEN_LOOP_BOARD_CONTROL",
       "bytes": 61996,
-      "sha256": "bbc6c9a81d9d4cc6a3ff61db0194f5e0e86dc229d17330c8a8a461f24ea4daab"
+      "sha256": "1556d8aa55f2a9c3b0f0593fc84d212a7dd7aeed11224257134f7bba941c0ef3"
     },
     "ConfiguredRelease": {
       "path": "build/Release/Senior_Design_DEV_FW.bin",
       "profile": "configured",
       "boot_mode": "OPEN_LOOP_BOARD_CONTROL",
       "bytes": 36812,
-      "sha256": "c2d198b2ce20304c9d776880e66b3a6304eb36d3507cf87533349ec873615b5c"
+      "sha256": "bfa3b49db6dc5386060c59db247c163eef8edcf437cdbc29d4422009f94fb7dd"
     },
     "ScopeTestDebug": {
       "path": "build/ScopeTest/Debug/Senior_Design_DEV_FW.bin",
       "profile": "--scope-test on",
       "boot_mode": "MCU_PWM_SCOPE_TEST",
       "bytes": 60956,
-      "sha256": "932b3b956923e3de2d565a4d834a7a808e520d2c913dd431b6cd86ab0adc8e4b"
+      "sha256": "fee47158d154b8153abb2b94ee762608ae02514ab04c89918bbb1d610ef3a55a"
     },
     "ScopeTestRelease": {
       "path": "build/ScopeTest/Release/Senior_Design_DEV_FW.bin",
       "profile": "--scope-test on",
       "boot_mode": "MCU_PWM_SCOPE_TEST",
       "bytes": 36116,
-      "sha256": "293ec1ad8cf17bd89cd14a91e1dcf4ca52895f1f2ddeb7e2ac146d70d778f59b"
+      "sha256": "0992b45e88cfb725065edb9f1275860248d5e9ab8112f7019f911bfde7b51a02"
     },
     "ClosedLoopDebug": {
       "path": "build/ClosedLoop/Debug/Senior_Design_DEV_FW.bin",
       "profile": "closed-loop",
       "boot_mode": "CLOSED_LOOP",
       "bytes": 102364,
-      "sha256": "ac941ccb863adfd2ab63ff266efb2f61c5a4ae55abb7edf0f0544d1d7cb0231a"
+      "sha256": "680c1d4e5e18eb3d597fab984d659c110f7404a7aba8f910f52cdabcf7c5c8ae"
     },
     "ClosedLoopRelease": {
       "path": "build/ClosedLoop/Release/Senior_Design_DEV_FW.bin",
       "profile": "closed-loop",
       "boot_mode": "CLOSED_LOOP",
       "bytes": 61568,
-      "sha256": "6912344b4e9046292dfeb092196b52c5e4681d5cc3f61fb5c24def336a46a2cf"
+      "sha256": "381369c0a66866dc9ea0b07814851d76106c6097c0223ed92a51c0233ff0bc13"
     }
   },
   "sources": [
@@ -63,7 +63,7 @@
     },
     {
       "path": "Core/Inc/demo_config.h",
-      "sha256": "4ce336fba20197decf204560efea757f55b528a6e081e30ae122235e8a6c5905"
+      "sha256": "e1def3b8cb53ac14cc96ee321eba6480402abfbf722924506af02b70013195dc"
     },
     {
       "path": "Core/Inc/demo_console.h",
@@ -99,7 +99,7 @@
     },
     {
       "path": "Core/Src/board.c",
-      "sha256": "04343c1d7d87a28736c8bcc08da1a44f1f13f37b5a35b2a8d747dffd197bd8d9"
+      "sha256": "b127ce93f533917b031cfd15796d9d270d78eaa49f2e06b562d65fc0cc8e8c4f"
     },
     {
       "path": "Core/Src/demo_app.c",
@@ -190,13 +190,13 @@
       "sha256": "e7b9f840dc8545b6b72af74d82b25d350b8bae232c0eb1d161cd8ed942979566"
     }
   ],
-  "active_dev_verification": "v0.4.0 active source synchronized and native Debug/Release rebuilt; all recorded source hashes match. No agent hardware flash; user reports prior MCU complementary PWM.",
+  "active_dev_verification": "v0.4.1 GPIO source synchronized and native Debug/Release rebuilt. User reports phase-B raw waveform issue with driver disconnected; PE10 physical recheck pending.",
   "open_loop_thresholds": {
     "zero_speed_max_volts": 0.1,
     "arm_max_volts": 0.1,
     "reported_pot_minimum_volts": 0.04
   },
-  "tests": "Retained portable C/controller/app/scope/default and Python client tests pass. New actual app tests cover PG2 boot-high inhibition, debounce/fresh edges, rejected high-pot/invalid-ADC arming, 40 mV zero start, low stop during alignment/run, pot coast/restart, latched faults/reset and time wrap.",
+  "tests": "Retained v0.4.0 portable controller/app/physical RUN/scope/default and client tests passed previously. This GPIO-only remap was verified by building physical open-loop, scope and closed-loop Debug/Release, plus active native CubeIDE builds; host logic tests were not repeated.",
   "dma_regions": {
     "physical_open_loop": {
       "start": "0x30000000",
@@ -219,13 +219,13 @@
       "path": "Debug/Senior_Design_DEV_FW.elf",
       "profile": "OPEN_LOOP_BOARD_CONTROL",
       "bytes": 2415320,
-      "sha256": "ed81cc4bece874f0382c8201b0a7f7fba10029865bda9c6c8014a199b93ee450"
+      "sha256": "a617265fc7c959c4222df6e70302a3da8fa31aa20b5f99c60d14f6f879b150ec"
     },
     "Release": {
       "path": "Release/Senior_Design_DEV_FW.elf",
       "profile": "OPEN_LOOP_BOARD_CONTROL",
       "bytes": 62560,
-      "sha256": "ccb8d07a8b0b809adf60de41ecd9b5ba9848b9378ccaa73782ee50a56f9b14eb"
+      "sha256": "16edef426c543de90d5da153f957b6b084512d3c8e529498a8f5be38f461994a"
     }
   },
   "physical_inputs": {
@@ -234,5 +234,11 @@
     "analog": "PA3 / A0, 100 mV zero/ARM region",
     "armed_led": "PE1 / yellow LD2",
     "fault_led": "PB14 / red LD3"
+  },
+  "phase_b_pwm": {
+    "high": "PE11 / CN12 pin 56 / TIM1_CH2",
+    "low": "PE10 / CN12 pin 47 / D40 CN10 pin 24 / TIM1_CH2N",
+    "old_low": "PB0 / CN11 pin 34, now input with pulldown",
+    "reason": "Remove LD1 load and match standard Nucleo CH2N header; root cause unconfirmed."
   }
 }

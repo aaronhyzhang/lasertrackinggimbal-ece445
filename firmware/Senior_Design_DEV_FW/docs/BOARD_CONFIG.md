@@ -1,6 +1,8 @@
 # Nucleo / BOOSTXL wiring and configuration
 
-Current v0.4.0 default: **open-loop motor control using PG2 RUN and the PA3 pot**, with no serial commands, encoder or Ethernet required. Scope-test mode is now off. See [OPEN_LOOP_BOARD_CONTROL.md](OPEN_LOOP_BOARD_CONTROL.md) for wiring, low-to-high RUN/zero-speed arming and fault reset.
+**v0.4.1 wiring change:** INLB now comes from **PE10 / CN12 pin 47**, replacing PB0 / CN11 pin 34. Move that wire with power off before energizing the driver. See [phase-B diagnostics](PHASE_B_PWM_DIAGNOSTIC.md).
+
+Current v0.4.1 default: **open-loop motor control using PG2 RUN and the PA3 pot**, with no serial commands, encoder or Ethernet required. Scope-test mode is now off. See [OPEN_LOOP_BOARD_CONTROL.md](OPEN_LOOP_BOARD_CONTROL.md) for wiring, low-to-high RUN/zero-speed arming and fault reset.
 
 Updated 2026-10-12. This is the implemented pin allocation; continuity and waveform checks on the actual board revision remain pending. No BoosterPack stacking: use a labelled harness.
 
@@ -13,7 +15,7 @@ Nucleo morpho locations below are from UM2407 table 22. TI locations are from SL
 | Phase A high input | PE9 / TIM1_CH1 | CN12 pin 52 | J4 pin 1 / INHA |
 | Phase A low input | PE8 / TIM1_CH1N | CN12 pin 40 | J4 pin 3 / INLA |
 | Phase B high input | PE11 / TIM1_CH2 | CN12 pin 56 | J4 pin 5 / INHB |
-| Phase B low input | PB0 / TIM1_CH2N | CN11 pin 34 | J4 pin 7 / INLB |
+| Phase B low input | PE10 / TIM1_CH2N | CN12 pin 47 | J4 pin 7 / INLB |
 | Phase C high input | PE13 / TIM1_CH3 | CN12 pin 55 | J4 pin 9 / INHC |
 | Phase C low input | PE12 / TIM1_CH3N | CN12 pin 49 | J4 pin 11 / INLC |
 | Physical open-loop RUN request | PG2 | CN11 pin 42 | Switch/jumper to Nucleo 3.3 V; LOW/disconnected stops |
