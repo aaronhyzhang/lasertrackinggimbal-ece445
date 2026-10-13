@@ -26,4 +26,6 @@ The dev project uses hand-owned HAL initialization, with the old IOC archived fo
 
 Build outputs, workspace state, runtime caches, local logs, downloaded vendor PDFs and local schematic attachments are not part of this source upload. Vendor source licenses are retained. Local validation metadata identifies the pre-upload snapshot; portable builds/tests should be rerun when source or board configuration changes.
 
-Current H753 v0.3.0 default is an automatic MCU-only ADC-to-duty scope test (driver ENABLE held LOW). See [PWM_SCOPE_TEST.md](Senior_Design_DEV_FW/docs/PWM_SCOPE_TEST.md); set DEMO_PWM_SCOPE_TEST=0 to restore motor firmware.
+Historical H753 v0.3.0 default is an automatic MCU-only ADC-to-duty scope test (driver ENABLE held LOW). See [PWM_SCOPE_TEST.md](Senior_Design_DEV_FW/docs/PWM_SCOPE_TEST.md); set DEMO_PWM_SCOPE_TEST=0 to restore motor firmware.
+
+Current H753 v0.4.0 default is physical open-loop control: PG2 RUN low/high plus PA3 analog speed, with no console, Ethernet or encoder transactions required. Scope test is now off. See [OPEN_LOOP_BOARD_CONTROL.md](Senior_Design_DEV_FW/docs/OPEN_LOOP_BOARD_CONTROL.md).

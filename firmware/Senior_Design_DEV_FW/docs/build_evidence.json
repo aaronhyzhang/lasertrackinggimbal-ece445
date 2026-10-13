@@ -1,51 +1,51 @@
 {
   "date": "2026-10-13",
-  "firmware": "0.3.0",
+  "firmware": "0.4.0",
   "toolchain": "ARM GCC 13.3.1 / STM32CubeIDE 1.18.0",
-  "configured_header_default": "MCU_PWM_SCOPE_TEST (DEMO_PWM_SCOPE_TEST=1), motor default OPEN_LOOP when scope test=0",
-  "native_cubeide": "Active DEV native Debug/Release MCU scope builds: zero errors/warnings",
+  "configured_header_default": "OPEN_LOOP_BOARD_CONTROL: scope=0, open_loop=1, board_control=1",
+  "native_cubeide": "Active DEV native Debug/Release physical open-loop builds: zero errors/warnings",
   "binaries": {
     "ConfiguredDebug": {
       "path": "build/Debug/Senior_Design_DEV_FW.bin",
       "profile": "configured",
-      "boot_mode": "MCU_PWM_SCOPE_TEST",
-      "bytes": 60956,
-      "sha256": "932b3b956923e3de2d565a4d834a7a808e520d2c913dd431b6cd86ab0adc8e4b"
+      "boot_mode": "OPEN_LOOP_BOARD_CONTROL",
+      "bytes": 61996,
+      "sha256": "bbc6c9a81d9d4cc6a3ff61db0194f5e0e86dc229d17330c8a8a461f24ea4daab"
     },
     "ConfiguredRelease": {
       "path": "build/Release/Senior_Design_DEV_FW.bin",
       "profile": "configured",
+      "boot_mode": "OPEN_LOOP_BOARD_CONTROL",
+      "bytes": 36812,
+      "sha256": "c2d198b2ce20304c9d776880e66b3a6304eb36d3507cf87533349ec873615b5c"
+    },
+    "ScopeTestDebug": {
+      "path": "build/ScopeTest/Debug/Senior_Design_DEV_FW.bin",
+      "profile": "--scope-test on",
+      "boot_mode": "MCU_PWM_SCOPE_TEST",
+      "bytes": 60956,
+      "sha256": "932b3b956923e3de2d565a4d834a7a808e520d2c913dd431b6cd86ab0adc8e4b"
+    },
+    "ScopeTestRelease": {
+      "path": "build/ScopeTest/Release/Senior_Design_DEV_FW.bin",
+      "profile": "--scope-test on",
       "boot_mode": "MCU_PWM_SCOPE_TEST",
       "bytes": 36116,
       "sha256": "293ec1ad8cf17bd89cd14a91e1dcf4ca52895f1f2ddeb7e2ac146d70d778f59b"
-    },
-    "OpenLoopDebug": {
-      "path": "build/OpenLoop/Debug/Senior_Design_DEV_FW.bin",
-      "profile": "open-loop",
-      "boot_mode": "OPEN_LOOP",
-      "bytes": 102364,
-      "sha256": "01bb451292cb101d4e04ac6cd90f4ef04cbb706f8e3adbdda4af9e73d1976ee5"
-    },
-    "OpenLoopRelease": {
-      "path": "build/OpenLoop/Release/Senior_Design_DEV_FW.bin",
-      "profile": "open-loop",
-      "boot_mode": "OPEN_LOOP",
-      "bytes": 61568,
-      "sha256": "32b155f8fc59cce8401f2465710a47924093daadb6a6560665a385d7974e38f6"
     },
     "ClosedLoopDebug": {
       "path": "build/ClosedLoop/Debug/Senior_Design_DEV_FW.bin",
       "profile": "closed-loop",
       "boot_mode": "CLOSED_LOOP",
       "bytes": 102364,
-      "sha256": "6d4146caa4abb6587b7b43594b5e5df05be7f3d5b11c6ad71139f31d39ddc49a"
+      "sha256": "ac941ccb863adfd2ab63ff266efb2f61c5a4ae55abb7edf0f0544d1d7cb0231a"
     },
     "ClosedLoopRelease": {
       "path": "build/ClosedLoop/Release/Senior_Design_DEV_FW.bin",
       "profile": "closed-loop",
       "boot_mode": "CLOSED_LOOP",
       "bytes": 61568,
-      "sha256": "5b09691c0e044c2997ad9c2a64ff903a0552cb761f3873dd902f5ef9e8bf482b"
+      "sha256": "6912344b4e9046292dfeb092196b52c5e4681d5cc3f61fb5c24def336a46a2cf"
     }
   },
   "sources": [
@@ -55,7 +55,7 @@
     },
     {
       "path": "Core/Inc/board.h",
-      "sha256": "c79bacf34793f24eeb62f0ee92bb397a2cbc7d298ddcdb831e29f897940c2636"
+      "sha256": "8a63eaba847012c027d3d1c2c81b07bbabd3c8dc41af0a69d6016d7cbd88a88e"
     },
     {
       "path": "Core/Inc/demo_app.h",
@@ -63,7 +63,7 @@
     },
     {
       "path": "Core/Inc/demo_config.h",
-      "sha256": "0e1edc6fb7a45ca13526128de62be11d2d0155a000d90ae977094ab3d59241bd"
+      "sha256": "4ce336fba20197decf204560efea757f55b528a6e081e30ae122235e8a6c5905"
     },
     {
       "path": "Core/Inc/demo_console.h",
@@ -99,11 +99,11 @@
     },
     {
       "path": "Core/Src/board.c",
-      "sha256": "966ceeaeae73adc42a7fa05a8e5d8a32c77b396758b15274250a768f59df2e2c"
+      "sha256": "04343c1d7d87a28736c8bcc08da1a44f1f13f37b5a35b2a8d747dffd197bd8d9"
     },
     {
       "path": "Core/Src/demo_app.c",
-      "sha256": "8543ae970753bb1ef60c9b221f2d4bd84679867ce18715809a09340590b99eaf"
+      "sha256": "ea412390e7c5842805efe89116419114beeccb2e87ec0dc964636db63e446e9c"
     },
     {
       "path": "Core/Src/demo_console.c",
@@ -119,7 +119,7 @@
     },
     {
       "path": "Core/Src/main.c",
-      "sha256": "53190e508a29d97f1ca1422c0a56d75d750c90cd908d6d406c20cbd10dab357a"
+      "sha256": "0fe64f57897002e33633b8faea2ba67a7cf89e292daaf484f2604864754c8374"
     },
     {
       "path": "Core/Src/motor_control.c",
@@ -139,7 +139,7 @@
     },
     {
       "path": "Tests/fakes/board.h",
-      "sha256": "dd1659dfa4669a85902de62b1095d88bfe3ae95d30e95dda3f69210574dfdcf2"
+      "sha256": "e9cf59bfc04443a5106110422250098eebc702dcde4988be2cd501dd71bc1645"
     },
     {
       "path": "Tests/test_app.c",
@@ -163,11 +163,11 @@
     },
     {
       "path": "Tools/build.py",
-      "sha256": "39666e8fee43122ab7604738e77e1054145bc39b00bbe84f2e50e10a0ca30cd0"
+      "sha256": "6285bfd9315c55c1637171cb2de5bfd0ec569c5942beb47da1182744aaea7e19"
     },
     {
       "path": "Tools/test.py",
-      "sha256": "fb17067a00802412de89833e63aab82a8b8f7b2614bce4063caeb428f4fdd1b5"
+      "sha256": "6f5ce0354af37040bd67ce4bc01eb106a7221d49ad7acb1722ad7aab5fa8297c"
     },
     {
       "path": "Tools/udp_client.py",
@@ -180,22 +180,35 @@
     {
       "path": "Tests/test_pwm_scope.c",
       "sha256": "682e25b3732711721099e1f29a54f5b8ba64f1d33166e75d3db8aef947f47f4b"
+    },
+    {
+      "path": "Core/Inc/run_switch.h",
+      "sha256": "530741a41a45a02d241bf6592eaf079ab790dae716dbcb46561dbd6989441ac9"
+    },
+    {
+      "path": "Tests/test_board_run.c",
+      "sha256": "e7b9f840dc8545b6b72af74d82b25d350b8bae232c0eb1d161cd8ed942979566"
     }
   ],
-  "active_dev_verification": "v0.3.0 source synchronized and native Debug/Release rebuilt in active DEV; physical waveforms not tested.",
+  "active_dev_verification": "v0.4.0 active source synchronized and native Debug/Release rebuilt; all recorded source hashes match. No agent hardware flash; user reports prior MCU complementary PWM.",
   "open_loop_thresholds": {
     "zero_speed_max_volts": 0.1,
     "arm_max_volts": 0.1,
     "reported_pot_minimum_volts": 0.04
   },
-  "tests": "Portable C controller/application/open-loop/default tests, new PWM scope mapping/permit/ADC tests, and both Python client tests pass.",
+  "tests": "Retained portable C/controller/app/scope/default and Python client tests pass. New actual app tests cover PG2 boot-high inhibition, debounce/fresh edges, rejected high-pot/invalid-ADC arming, 40 mV zero start, low stop during alignment/run, pot coast/restart, latched faults/reset and time wrap.",
   "dma_regions": {
+    "physical_open_loop": {
+      "start": "0x30000000",
+      "end_exclusive": "0x30000000",
+      "bytes": 0
+    },
     "scope_test": {
       "start": "0x30000000",
       "end_exclusive": "0x30000000",
       "bytes": 0
     },
-    "motor_profiles": {
+    "closed_loop": {
       "start": "0x30000000",
       "end_exclusive": "0x30004B40",
       "bytes": 19264
@@ -204,15 +217,22 @@
   "native_elfs": {
     "Debug": {
       "path": "Debug/Senior_Design_DEV_FW.elf",
-      "bytes": 2410524,
-      "sha256": "b9048e8f0da8ebac541381dcb3f13b8aa5907ff7d46a633c09849785b7eaf02d",
-      "profile": "MCU_PWM_SCOPE_TEST"
+      "profile": "OPEN_LOOP_BOARD_CONTROL",
+      "bytes": 2415320,
+      "sha256": "ed81cc4bece874f0382c8201b0a7f7fba10029865bda9c6c8014a199b93ee450"
     },
     "Release": {
       "path": "Release/Senior_Design_DEV_FW.elf",
-      "bytes": 62128,
-      "sha256": "7fdcc9330675030c7bb00556b2d4df95337858d425aa29346fdf8ada83cabea1",
-      "profile": "MCU_PWM_SCOPE_TEST"
+      "profile": "OPEN_LOOP_BOARD_CONTROL",
+      "bytes": 62560,
+      "sha256": "ccb8d07a8b0b809adf60de41ecd9b5ba9848b9378ccaa73782ee50a56f9b14eb"
     }
+  },
+  "physical_inputs": {
+    "run": "PG2 / CN11 pin 42, high request, low stop, 20 ms stable low then high",
+    "nfault": "PE6 / CN11 pin 62, active-low real driver fault",
+    "analog": "PA3 / A0, 100 mV zero/ARM region",
+    "armed_led": "PE1 / yellow LD2",
+    "fault_led": "PB14 / red LD3"
   }
 }

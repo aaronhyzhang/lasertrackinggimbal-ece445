@@ -16,7 +16,7 @@ static volatile uint16_t encoder_raw, adc_raw;
 static volatile bool encoder_valid, magnet_good, adc_valid;
 static uint8_t encoder_data[2], health_data;
 static bool read_health;
-#if !DEMO_PWM_SCOPE_TEST
+#if !DEMO_PWM_SCOPE_TEST && !DEMO_BOARD_OPEN_ACTIVE
 static uint32_t health_due;
 #endif
 uint32_t board_lock(void) { uint32_t m = __get_PRIMASK(); __disable_irq(); return m; }
@@ -89,6 +89,11 @@ static void pins_init(void) {
     gpio(GPIOD,GPIO_PIN_8|GPIO_PIN_9,GPIO_MODE_AF_PP,GPIO_PULLUP,GPIO_AF7_USART3);
     gpio(GPIOA,GPIO_PIN_3,GPIO_MODE_ANALOG,GPIO_NOPULL,0);
     gpio(GPIOB,GPIO_PIN_14,GPIO_MODE_OUTPUT_PP,GPIO_NOPULL,0); /* red LD3 */
+#if DEMO_BOARD_OPEN_ACTIVE
+    gpio(GPIOG,GPIO_PIN_2,GPIO_MODE_INPUT,GPIO_PULLDOWN,0); /* Physical RUN, CN11 pin 42. */
+    GPIOE->BSRR=(uint32_t)GPIO_PIN_1<<16;
+    gpio(GPIOE,GPIO_PIN_1,GPIO_MODE_OUTPUT_PP,GPIO_NOPULL,0); /* yellow LD2: armed. */
+#endif
 }
 static void pwm_init(void) {
     __HAL_RCC_TIM1_CLK_ENABLE();
@@ -183,7 +188,7 @@ void board_sensors_start(void) {
     else encoder_valid=true;
 }
 void board_sensor_tick(void) {
-#if !DEMO_PWM_SCOPE_TEST
+#if !DEMO_PWM_SCOPE_TEST && !DEMO_BOARD_OPEN_ACTIVE
     if (HAL_I2C_GetState(&hi2c1)==HAL_I2C_STATE_READY) {
         uint32_t now=HAL_GetTick(); read_health=(int32_t)(now-health_due)>=0;
         HAL_StatusTypeDef s=HAL_I2C_Mem_Read_IT(&hi2c1,0x36u<<1,
@@ -220,11 +225,15 @@ void board_inputs(motor_input_t *in,uint16_t *adc) {
     in->external_fault=latched_fault; in->hard_fault=latched_fault!=FAULT_NONE;
     board_unlock(m);
 }
+bool board_run_high(void) { return (GPIOG->IDR&GPIO_PIN_2)!=0; }
 void board_apply(const motor_output_t *out) {
 #if DEMO_PWM_SCOPE_TEST
     (void)out; board_inhibit(); /* This build cannot authorize driver ENABLE. */
 #else
     uint32_t mask=board_lock();
+#if DEMO_BOARD_OPEN_ACTIVE
+    if (!board_run_high()) { board_kill(); board_unlock(mask); return; }
+#endif
     if (!out->enable || latched_fault!=FAULT_NONE || stop_latched) { board_inhibit(); board_unlock(mask); return; }
     GPIOG->BSRR=GPIO_PIN_4;
     if (!out->pwm) {

@@ -1,10 +1,14 @@
 # Validation record
 
-## Current v0.3.0 MCU-only PWM test — 2026-10-13
+## Current v0.4.0 physical open-loop control — 2026-10-13
+
+PG2 RUN low/disconnected inhibits; stable low then stable high requests ARM only with the 100 mV zero-speed input, healthy ADC/liveness and disabled controller. Requests at high pot are consumed; boot/reset with RUN high never arms. Real PE6 nFAULT and latched faults remain; only reset recovers physical-profile faults. No console/network/encoder transactions start in this profile. Yellow PE1 LD2 indicates armed, red PB14 LD3 indicates fault. User-reported MCU complementary switching passes the qualitative first gate; loaded gate/motor operation and shutdown latency are pending. Configured physical-open-loop, scope override and closed-loop Debug/Release builds pass, along with retained host/client and new actual app RUN tests. Active native CubeIDE Debug/Release report zero errors/warnings. All 35 source hashes match the active DEV copy. See OPEN_LOOP_BOARD_CONTROL.md and current build_evidence.json.
+
+## Historical v0.3.0 MCU-only PWM test — 2026-10-13
 
 Added an automatic ADC-to-duty path with no ARM, comms, encoder, alignment or rotating field. Driver ENABLE stays LOW, including in board_apply. Hardware break remains active; PE6 is a pull-high permit/pull-low stop with automatic diagnostic resume. ADC invalid/stale/overrange inhibits all outputs. Scope captures and physical GPIO/gate checks are pending. See [PWM_SCOPE_TEST.md](PWM_SCOPE_TEST.md). Configured scope-test Debug/Release and explicit open/closed-loop motor Debug/Release builds pass. Active DEV native CubeIDE Debug/Release report zero errors/warnings. All 33 recorded source hashes match the active DEV copy. The existing motor/app/client tests plus scope duty/40–100 mV/ADC-age/range/permit tests pass. Current software build/test evidence is in build_evidence.json.
 
-Updated 2026-10-13. Software evidence only; no flash or physical bench validation performed.
+Updated 2026-10-13. Agent verification is software only. The user reports flashing/observing complementary MCU PWM; quantitative timing, EVM gate and motor validation remain pending.
 
 ## Historical v0.2.2 threshold update — 2026-10-13
 

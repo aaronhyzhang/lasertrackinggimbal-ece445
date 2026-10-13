@@ -23,12 +23,20 @@ def main():
                    str(root / "Core/Src/demo_protocol.c"), "-lm", "-o", str(executable)], check=True)
     subprocess.run([str(executable)], check=True)
     app_executable = output / ("test_app.exe" if sys.platform == "win32" else "test_app")
-    subprocess.run(compiler + ["-std=c11", "-Wall", "-Wextra", "-Werror", "-I", str(root / "Tests/fakes"),
+    subprocess.run(compiler + ["-std=c11", "-Wall", "-Wextra", "-Werror", "-DDEMO_OPEN_BOARD_CONTROL=0", "-I", str(root / "Tests/fakes"),
                    "-I", str(root / "Core/Inc"), str(root / "Tests/test_app.c"),
                    str(root / "Core/Src/demo_app.c"), str(root / "Core/Src/motor_control.c"),
                    str(root / "Core/Src/open_loop.c"),
                    "-lm", "-o", str(app_executable)], check=True)
     subprocess.run([str(app_executable)], check=True)
+    run_executable = output / ("test_board_run.exe" if sys.platform == "win32" else "test_board_run")
+    subprocess.run(compiler + ["-std=c11", "-Wall", "-Wextra", "-Werror",
+                   "-DDEMO_OPEN_BOARD_CONTROL=1", "-DDEMO_PWM_SCOPE_TEST=0", "-DDEMO_DEFAULT_OPEN_LOOP=1",
+                   "-I", str(root / "Tests/fakes"), "-I", str(root / "Core/Inc"),
+                   str(root / "Tests/test_board_run.c"), str(root / "Core/Src/demo_app.c"),
+                   str(root / "Core/Src/motor_control.c"), str(root / "Core/Src/open_loop.c"),
+                   "-lm", "-o", str(run_executable)], check=True)
+    subprocess.run([str(run_executable)], check=True)
     for name, defines in [("test_open_loop", []), ("test_pwm_scope", []), ("test_defaults", []),
                           ("test_defaults", ["-DDEMO_DEFAULT_OPEN_LOOP=0"]),
                           ("test_defaults", ["-DDEMO_DEFAULT_OPEN_LOOP=1"])]:

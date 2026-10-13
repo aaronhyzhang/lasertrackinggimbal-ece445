@@ -4,6 +4,8 @@
 #include "motor_control.h"
 #include <stdint.h>
 #define GPIOB ((void *)0)
+#define GPIOE ((void *)1)
+#define GPIO_PIN_1 1u
 #define GPIO_PIN_14 14u
 #define GPIO_PIN_SET 1
 #define GPIO_PIN_RESET 0
@@ -12,6 +14,7 @@ void board_unlock(uint32_t mask);
 uint32_t HAL_GetTick(void);
 uint32_t board_us(void);
 void board_inputs(motor_input_t *in,uint16_t *adc);
+bool board_run_high(void);
 void board_trip(motor_fault_t fault);
 void board_clear_trip(void);
 void board_kill(void);

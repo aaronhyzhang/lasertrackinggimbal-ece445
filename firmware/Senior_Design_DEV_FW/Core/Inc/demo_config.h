@@ -33,12 +33,20 @@
 #define DEMO_OPEN_ALIGN_MS 2000u
 #define DEMO_OPEN_ALIGN_RAMP_MS 500u
 #ifndef DEMO_PWM_SCOPE_TEST
-#define DEMO_PWM_SCOPE_TEST 1 /* 1=automatic MCU PWM scope test, driver ENABLE always LOW; 0=motor firmware. */
+#define DEMO_PWM_SCOPE_TEST 0 /* 1=automatic MCU PWM scope test, driver ENABLE always LOW; 0=motor firmware. */
 #endif
 #if DEMO_PWM_SCOPE_TEST != 0 && DEMO_PWM_SCOPE_TEST != 1
 #error "DEMO_PWM_SCOPE_TEST must be 0 or 1"
 #endif
-#define DEMO_FW_VERSION "0.3.0"
+#ifndef DEMO_OPEN_BOARD_CONTROL
+#define DEMO_OPEN_BOARD_CONTROL 1 /* Open loop: PG2 physical RUN, no console/encoder/network required. */
+#endif
+#if DEMO_OPEN_BOARD_CONTROL != 0 && DEMO_OPEN_BOARD_CONTROL != 1
+#error "DEMO_OPEN_BOARD_CONTROL must be 0 or 1"
+#endif
+#define DEMO_BOARD_OPEN_ACTIVE (DEMO_OPEN_BOARD_CONTROL && DEMO_DEFAULT_OPEN_LOOP && !DEMO_PWM_SCOPE_TEST)
+#define DEMO_RUN_DEBOUNCE_MS 20u
+#define DEMO_FW_VERSION "0.4.0"
 #define DEMO_PWM_ARR 2500u /* 100 MHz / (2 * 2500) = 20 kHz */
 #define DEMO_CONTROL_HZ 1000u
 #define DEMO_UDP_PORT 5005u

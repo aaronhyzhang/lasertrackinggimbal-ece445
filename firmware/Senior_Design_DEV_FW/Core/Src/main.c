@@ -16,15 +16,19 @@ int main(void) {
         if (now-last_feed>=20u) { last_feed=now; board_watchdog_feed(); }
     }
 #else
+#if !DEMO_BOARD_OPEN_ACTIVE
     board_sensors_start();
     console_init();
     network_init(); /* Optional hardware failure leaves the analog path usable. */
+#endif
     app_init();
     board_start_control();
     board_watchdog_start();
     for (;;) {
+#if !DEMO_BOARD_OPEN_ACTIVE
         console_poll();
         network_poll();
+#endif
         app_foreground();
     }
 #endif

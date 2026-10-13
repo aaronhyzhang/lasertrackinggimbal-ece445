@@ -1,11 +1,15 @@
 #include "demo_app.h"
 #include "board.h"
 #include "demo_config.h"
+#include "run_switch.h"
 #include "demo_network.h"
 #include <stdio.h>
 #include <math.h>
 #include <string.h>
 static motor_t motor;
+#if DEMO_BOARD_OPEN_ACTIVE
+static run_switch_t run_switch;
+#endif
 static volatile motor_action_t pending;
 static volatile bool mode_pending;
 static motor_mode_t pending_mode;
@@ -18,6 +22,9 @@ static uint32_t last_tick_us;
 static uint32_t last_feed;
 static app_status_t status;
 void app_init(void) {
+#if DEMO_BOARD_OPEN_ACTIVE
+    memset(&run_switch,0,sizeof(run_switch));
+#endif
     motor_init(&motor); source=SOURCE_ANALOG; foreground_ms=HAL_GetTick();
     pending=ACTION_NONE; mode_pending=false; stop_pending=false;
     target_valid=false; target_mdeg=0; command_ms=HAL_GetTick()-DEMO_COMMAND_MAX_AGE_MS-1u;
@@ -32,6 +39,9 @@ void app_stop(void) {
 bool app_request(motor_action_t action) {
     if (action==ACTION_DISABLE) { app_stop(); return true; }
     uint32_t mask=board_lock();
+#if DEMO_BOARD_OPEN_ACTIVE
+    board_unlock(mask); return false; /* Physical RUN owns ARM/restart authority. */
+#endif
     bool accepted=pending==ACTION_NONE && !stop_pending && !mode_pending && action!=ACTION_NONE;
     if (action==ACTION_CALIBRATE) accepted &= motor.mode==MODE_CLOSED_LOOP && motor_inhibited(&motor);
     if (action==ACTION_ZERO) accepted &= motor.mode==MODE_CLOSED_LOOP && motor.state==MOTOR_READY;
@@ -44,6 +54,9 @@ bool app_request(motor_action_t action) {
     board_unlock(mask); return accepted;
 }
 bool app_mode(motor_mode_t new_mode) {
+#if DEMO_BOARD_OPEN_ACTIVE
+    (void)new_mode; return false; /* Reflash to change board-control profile. */
+#endif
     uint32_t mask=board_lock();
     bool accepted=(new_mode==MODE_OPEN_LOOP || new_mode==MODE_CLOSED_LOOP) &&
         motor_inhibited(&motor) && pending==ACTION_NONE && !mode_pending && !stop_pending;
@@ -102,6 +115,17 @@ void app_control_tick(void) {
         if (voltage>3.15f) in.adc_valid=false;
         in.target_rad=fminf(voltage/3.0f,1.0f)*6.28318530718f;
     }
+#if DEMO_BOARD_OPEN_ACTIVE
+    motor_action_t physical=run_switch_step(&run_switch,board_run_high(),in.now_ms);
+    if (physical==ACTION_DISABLE) {
+        in.stop=true; action=ACTION_DISABLE; board_kill();
+    } else if (physical==ACTION_ARM && !in.stop && motor.state==MOTOR_DISABLED &&
+               !in.hard_fault && in.adc_valid && in.now_ms-in.adc_ms<=DEMO_ADC_MAX_AGE_MS &&
+               in.now_ms-in.foreground_ms<=DEMO_FOREGROUND_MAX_AGE_MS &&
+               in.analog_volts<=DEMO_OPEN_ARM_MAX_VOLTS) {
+        action=ACTION_ARM; board_release_stop();
+    }
+#endif
     motor_state_t previous=motor.state;
     motor_step(&motor,&in,action,&out); board_apply(&out);
     if (previous!=MOTOR_FAULT && motor.state==MOTOR_FAULT) {
@@ -126,6 +150,11 @@ void app_foreground(void) {
         last_feed=now;
     }
     HAL_GPIO_WritePin(GPIOB,GPIO_PIN_14,motor.state==MOTOR_FAULT?GPIO_PIN_SET:GPIO_PIN_RESET);
+#if DEMO_BOARD_OPEN_ACTIVE
+    bool armed=motor.state==MOTOR_OPEN_IDLE || motor.state==MOTOR_OPEN_WAKE ||
+               motor.state==MOTOR_OPEN_ALIGN || motor.state==MOTOR_OPEN_RUNNING;
+    HAL_GPIO_WritePin(GPIOE,GPIO_PIN_1,armed?GPIO_PIN_SET:GPIO_PIN_RESET);
+#endif
 }
 void app_status(app_status_t *s) { uint32_t mask=board_lock(); *s=status; board_unlock(mask); }
 size_t app_status_text(char *text,size_t capacity) {

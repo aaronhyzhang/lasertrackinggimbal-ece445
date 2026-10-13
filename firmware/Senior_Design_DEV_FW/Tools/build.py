@@ -25,6 +25,8 @@ def main():
                         help="Default uses demo_config.h; explicit profiles select motor firmware and override its boot mode")
     parser.add_argument("--scope-test", choices=["configured", "on", "off"], default="configured",
                         help="Default follows header; on builds MCU-only ADC/PWM test; off builds motor firmware")
+    parser.add_argument("--board-control", choices=["configured", "on", "off"], default="configured",
+                        help="Open-loop arming: physical PG2 RUN (on) or existing console (off)")
     parser.add_argument("--toolchain", type=pathlib.Path, help="ARM GCC bin directory")
     parser.add_argument("--project", type=pathlib.Path, default=pathlib.Path(__file__).resolve().parents[1])
     args = parser.parse_args()
@@ -37,7 +39,9 @@ def main():
             parser.error("Pass --toolchain with the ARM GCC bin directory")
         toolchain = candidates[-1]
     gcc = toolchain / "arm-none-eabi-gcc.exe"
-    if args.profile == "configured":
+    if args.scope_test == "on":
+        output = project / "build" / "ScopeTest" / args.config
+    elif args.profile == "configured":
         output = project / "build" / args.config
     else:
         output = project / "build" / ("OpenLoop" if args.profile == "open-loop" else "ClosedLoop") / args.config
@@ -52,6 +56,8 @@ def main():
         flags += [f"-DDEMO_PWM_SCOPE_TEST={int(args.scope_test == 'on')}"]
     elif args.profile != "configured":
         flags += ["-DDEMO_PWM_SCOPE_TEST=0"]
+    if args.board_control != "configured":
+        flags += [f"-DDEMO_OPEN_BOARD_CONTROL={int(args.board_control == 'on')}"]
     for inc in ["Core/Inc", "Drivers/STM32H7xx_HAL_Driver/Inc",
                 "Drivers/STM32H7xx_HAL_Driver/Inc/Legacy", "Drivers/CMSIS/Device/ST/STM32H7xx/Include",
                 "Drivers/CMSIS/Include", "Middlewares/LwIP/src/include"]:

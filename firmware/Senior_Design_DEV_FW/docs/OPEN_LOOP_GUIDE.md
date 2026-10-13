@@ -1,6 +1,6 @@
 # Open-loop speed bring-up and mode selection
 
-Current v0.3.0 default: **automatic MCU-only PWM scope test** (`DEMO_PWM_SCOPE_TEST=1`). No serial/encoder/Ethernet or ARM is required; PG4/driver ENABLE remains LOW. PA3 controls duty, not motor speed. See [PWM_SCOPE_TEST.md](PWM_SCOPE_TEST.md). Set the test switch to 0 and rebuild before using the motor procedures below.
+Current v0.4.0 default: **open-loop motor control using PG2 RUN and the PA3 pot**, with no serial commands, encoder or Ethernet required. Scope-test mode is now off. See [OPEN_LOOP_BOARD_CONTROL.md](OPEN_LOOP_BOARD_CONTROL.md) for wiring, low-to-high RUN/zero-speed arming and fault reset. The serial command workflow below requires `DEMO_OPEN_BOARD_CONTROL=0` and a rebuild.
 
 Updated 2026-10-13. Firmware v0.2.2. One unloaded FIT1036 motor, NUCLEO-H753ZI, BOOSTXL-DRV8304H, configured 24 V bus. Software tests/builds pass; actual waveforms, current, alignment and motor synchronization remain unverified.
 

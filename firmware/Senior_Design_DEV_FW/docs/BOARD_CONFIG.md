@@ -1,6 +1,6 @@
 # Nucleo / BOOSTXL wiring and configuration
 
-Current v0.3.0 default: **automatic MCU-only PWM scope test** (`DEMO_PWM_SCOPE_TEST=1`). No serial/encoder/Ethernet or ARM is required; PG4/driver ENABLE remains LOW. PA3 controls duty, not motor speed. See [PWM_SCOPE_TEST.md](PWM_SCOPE_TEST.md). Set the test switch to 0 and rebuild before using the motor procedures below.
+Current v0.4.0 default: **open-loop motor control using PG2 RUN and the PA3 pot**, with no serial commands, encoder or Ethernet required. Scope-test mode is now off. See [OPEN_LOOP_BOARD_CONTROL.md](OPEN_LOOP_BOARD_CONTROL.md) for wiring, low-to-high RUN/zero-speed arming and fault reset.
 
 Updated 2026-10-12. This is the implemented pin allocation; continuity and waveform checks on the actual board revision remain pending. No BoosterPack stacking: use a labelled harness.
 
@@ -16,6 +16,7 @@ Nucleo morpho locations below are from UM2407 table 22. TI locations are from SL
 | Phase B low input | PB0 / TIM1_CH2N | CN11 pin 34 | J4 pin 7 / INLB |
 | Phase C high input | PE13 / TIM1_CH3 | CN12 pin 55 | J4 pin 9 / INHC |
 | Phase C low input | PE12 / TIM1_CH3N | CN12 pin 49 | J4 pin 11 / INLC |
+| Physical open-loop RUN request | PG2 | CN11 pin 42 | Switch/jumper to Nucleo 3.3 V; LOW/disconnected stops |
 | Driver ENABLE | PG4 | CN12 pin 69 | J5 pin 9 / ENABLE |
 | Driver nFAULT | PE6 / TIM1_BKIN2 | CN11 pin 62 | J5 pin 15 / nFAULT |
 | Common ground | GND | CN11 pin 19 or CN12 pin 39 | J4 pin 2 or J5 pin 4 / GND |
@@ -57,6 +58,7 @@ GAIN (J4 pin 18), IDRIVE (J5 pin 18) and VDS (J5 pin 20) retain a deliberately v
 | Ethernet | Nucleo LAN8742, PHY address 0; PA1/2/7, PB13, PC1/4/5, PG11/13, AF11 |
 | Watchdog | IWDG1, LSI /32, reload 999: nominal ~1 s, LSI tolerance applies; no debug freeze |
 | Fault indicator | Nucleo LD3, PB14, high on software fault |
+| Open-loop armed indicator | Nucleo yellow LD2, PE1, high while armed/waking/aligning/running in physical profile |
 
 The AS5600 remains powered continuously. Angle reads are asynchronous and launched once per servo tick when I2C is idle; health reads replace occasional angle reads. Expect occasional 2 ms angle spacing. A failed boot configuration requires fixing the encoder wiring and rebooting. There is no automatic active-drive I2C recovery; stale data inhibits drive.
 

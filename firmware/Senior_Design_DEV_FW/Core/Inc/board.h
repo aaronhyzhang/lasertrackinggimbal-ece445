@@ -12,6 +12,7 @@ void board_pwm_scope_poll(void);
 void board_sensors_start(void);
 void board_sensor_tick(void);
 void board_inputs(motor_input_t *in, uint16_t *adc);
+bool board_run_high(void);
 void board_apply(const motor_output_t *out);
 void board_inhibit(void);
 void board_kill(void);

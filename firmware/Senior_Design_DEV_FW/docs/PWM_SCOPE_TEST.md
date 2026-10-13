@@ -2,13 +2,13 @@
 
 Firmware v0.3.0, updated 2026-10-13. Software verification does not establish physical waveforms; bench captures are pending.
 
-The user has no command interface on the bench and needs to verify PWM independently of motor startup. Current normal CubeIDE builds select this test through one line in Core/Inc/demo_config.h:
+The user has no command interface on the bench and needs to verify PWM independently of motor startup. Current v0.4.0 normal CubeIDE builds select physical open-loop motor control. Select this diagnostic instead through one line in Core/Inc/demo_config.h:
 
 ```c
 #define DEMO_PWM_SCOPE_TEST 1
 ```
 
-1 selects MCU-only automatic ADC-to-duty output. 0 restores motor firmware, where DEMO_DEFAULT_OPEN_LOOP selects speed (1) or position (0). Motor firmware still requires ARM; this update does not add autonomous motor starting or a motor-enable jumper.
+1 selects MCU-only automatic ADC-to-duty output. 0 restores motor firmware, where DEMO_DEFAULT_OPEN_LOOP selects speed (1) or position (0). The current motor firmware uses a physical PG2 RUN transition for ARM when DEMO_OPEN_BOARD_CONTROL=1; see OPEN_LOOP_BOARD_CONTROL.md. Scope-test mode still cannot enable the driver.
 
 ## Behavior
 
@@ -49,8 +49,8 @@ If there are no pulses at 1.5 V, check PE6 HIGH, scope the exact MCU pin/header,
 
 ## Build and return to motor testing
 
-Normal CubeIDE/CLI builds follow the header. CLI --scope-test on/off overrides only this test switch. Explicit --profile open-loop or closed-loop selects motor firmware unless --scope-test on is also specified. This prevents an explicit motor profile from accidentally producing a diagnostic image.
+Normal CubeIDE/CLI builds follow the header. CLI --scope-test on/off overrides only this test switch; --scope-test on writes to build/ScopeTest/Debug or Release. Explicit --profile open-loop or closed-loop selects motor firmware unless --scope-test on is also specified. This prevents an explicit motor profile from accidentally producing a diagnostic image.
 
-After MCU captures pass, set DEMO_PWM_SCOPE_TEST to 0 and rebuild/flash before gate-driver or motor testing. Follow BENCH_SWITCHING_VALIDATION.md. A rotating motor field cannot be replaced by three identical duty values; alignment/ramping and motor enable authorization still belong to the motor bring-up path. A physical motor ARM input can be designed separately if serial commands remain unavailable.
+After MCU captures pass, set DEMO_PWM_SCOPE_TEST to 0 and rebuild/flash before gate-driver or motor testing. Follow BENCH_SWITCHING_VALIDATION.md. A rotating motor field cannot be replaced by three identical duty values; alignment/ramping and motor enable authorization still belong to the motor bring-up path. The physical motor RUN input is now implemented; see OPEN_LOOP_BOARD_CONTROL.md.
 
 References: [ST AN4013, complementary PWM/deadtime and break](https://www.st.com/resource/en/application_note/dm00042534-stm32-crossseries-timer-overview-stmicroelectronics.pdf), [ST UM2407, board connector pins](https://www.st.com/resource/en/user_manual/um2407-stm32h7-nucleo144-boards-mb1364-stmicroelectronics.pdf). Nominal timing is based on the implemented 100 MHz TIM1 clock, ARR=2500 and DTG=50, and still needs physical measurement.
