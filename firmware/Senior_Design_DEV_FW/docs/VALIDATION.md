@@ -93,3 +93,7 @@ The source-only repository checkout passed the C control/protocol/application te
 ## Active-workspace sync verification — 2026-10-13
 
 The active original DEV project contains the same 31 source/config/tool/test hashes and reproduces all four profile BIN hashes. Normal CubeIDE launches must rebuild after external edits; the native active Debug/Release images were rebuilt for the runtime toggle. Separate open-loop-default images are under build/OpenLoop/Debug and build/OpenLoop/Release. No hardware flash or electrical/motion validation was performed.
+
+## User-reported gate-driver observations — 2026-10-13
+
+The user observed complementary MCU PWM and faster duty-envelope modulation as pot voltage increased. With the EVM connected, GLA-to-GND switched to about 10 V (approximately -150 mV minimum), while GHA-to-GND initially stayed near 0 V (approximately -400 mV minimum). After setting hardware MODE to GND, the user reported GHA-to-GND reaching 34 V with a stated 24 V bus. This is consistent with proper high-side drive, and the MODE configuration was likely responsible for the prior behavior; it is not a direct gate-to-source measurement. Actual simultaneous SHA voltage, GHA-SHA waveform, high/low non-overlap, supply current, other phase gates and loaded switching remain unverified. No scope captures or agent hardware measurements were provided. Motor connection/spin acceptance remains pending.

@@ -50,3 +50,7 @@ The fixed 1 V alignment/2 V run effort and provisional 30 RPM limit are configur
 To repeat MCU-only scope tests, set DEMO_PWM_SCOPE_TEST=1 and rebuild: driver ENABLE is forced LOW, identical duty follows the pot, and PE6 again acts as a diagnostic permit only with the driver disconnected. Return it to 0 before motor testing.
 
 References: [ST UM2407 connectors/LEDs](https://www.st.com/resource/en/user_manual/um2407-stm32h7-nucleo144-boards-mb1364-stmicroelectronics.pdf), [TI DRV8304 6-PWM/wake/fault behavior](https://www.ti.com/lit/ds/symlink/drv8304.pdf). Configured timing/voltage expectations still require physical confirmation.
+
+## User-reported gate-driver observations — 2026-10-13
+
+The user observed complementary MCU PWM and faster duty-envelope modulation as pot voltage increased. With the EVM connected, GLA-to-GND switched to about 10 V (approximately -150 mV minimum), while GHA-to-GND initially stayed near 0 V (approximately -400 mV minimum). After setting hardware MODE to GND, the user reported GHA-to-GND reaching 34 V with a stated 24 V bus. This is consistent with proper high-side drive, and the MODE configuration was likely responsible for the prior behavior; it is not a direct gate-to-source measurement. Actual simultaneous SHA voltage, GHA-SHA waveform, high/low non-overlap, supply current, other phase gates and loaded switching remain unverified. No scope captures or agent hardware measurements were provided. Motor connection/spin acceptance remains pending.
