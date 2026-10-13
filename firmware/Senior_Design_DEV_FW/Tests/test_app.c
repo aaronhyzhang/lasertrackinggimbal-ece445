@@ -46,10 +46,10 @@ static void test_open_application(void) {
     assert(!app_source(SOURCE_ETHERNET)); assert(!app_request(ACTION_CALIBRATE)); assert(!app_request(ACTION_ZERO));
     analog_raw=59577; assert(app_request(ACTION_ARM)); tick();
     app_status(&s); assert(s.motor.state==MOTOR_DISABLED && !output.pwm); /* ARM at 3 V is refused. */
-    analog_raw=0; assert(app_request(ACTION_ARM)); tick();
+    analog_raw=29789; assert(app_request(ACTION_ARM)); tick();
     app_status(&s); assert(s.motor.state==MOTOR_OPEN_IDLE && !output.pwm);
     assert(!app_mode(MODE_CLOSED_LOOP)); assert(!app_source(SOURCE_ANALOG));
-    analog_raw=29789;
+    analog_raw=46669;
     for (unsigned i=0;i<2500;++i) tick();
     app_status(&s); assert(s.motor.state==MOTOR_OPEN_RUNNING && output.pwm);
     char text[640]; size_t length=app_status_text(text,sizeof(text));

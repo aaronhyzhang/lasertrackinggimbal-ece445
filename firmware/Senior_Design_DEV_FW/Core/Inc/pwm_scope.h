@@ -9,7 +9,7 @@ static inline uint32_t pwm_scope_compare(uint16_t raw, bool valid,
                                          uint32_t age_ms, bool permit) {
     if (!valid || age_ms > DEMO_ADC_MAX_AGE_MS || !permit) return 0;
     float volts = (float)raw * (DEMO_ADC_VREF / 65535.0f);
-    if (volts <= DEMO_OPEN_ZERO_VOLTS || volts > 3.15f) return 0;
+    if (volts <= DEMO_SCOPE_ZERO_VOLTS || volts > 3.15f) return 0;
     float duty = volts / 3.0f;
     if (duty < 0.05f) duty = 0.05f;
     if (duty > 0.95f) duty = 0.95f;

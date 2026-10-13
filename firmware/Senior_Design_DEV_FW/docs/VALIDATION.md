@@ -1,6 +1,17 @@
 # Validation record
 
-## Current v0.4.2 analog speed-range increase — 2026-10-13
+## Current v0.5.0 bidirectional command and neutral startup — 2026-10-13
+
+0 V commands -100 RPM, 1.3–1.7 V inclusive commands zero, and 3 V commands +100 RPM. Equal active spans give 76.923 RPM/V (2.308x the preceding sensitivity). A fresh physical RUN request outside neutral waits with PWM/ENABLE off; valid/fresh center input must remain uninterrupted for 200 ms before arming OPEN_IDLE. LD2 blinks while waiting and stays steady when armed. RUN LOW/stop/fault cancels waiting; reset with RUN HIGH still requires stable LOW then HIGH. Fault clearing still requires reset/fresh RUN. The old ground pull-down no longer biases open loop to stop; use a verified midpoint bias if required.
+
+Reversal ramps field speed to zero, disables all drive for 1 s, then repeats 10 ms wake/2 s alignment and ramps in the new direction. Center stop similarly ramps to zero and coasts; neutral provides no position hold. These are generated-field transitions, not encoder-confirmed standstill or current-regulated braking. The one-second pause and loaded reversal need bench validation.
+
+Portable controller/application/RUN tests pass for both mapping signs, angle wrap, both reversal directions, disabled coast/re-alignment, full-speed center stop, boot-high inhibit, pending neutral/dwell restart, invalid/stale ADC and foreground-interrupted dwell, waiting-fault cancellation, stop/RUN cancellation, latched faults/reset and tick wrap. Retained closed-loop/protocol/client/scope/default tests also pass. Configured physical-open-loop, MCU scope override and closed-loop Debug/Release ARM builds all pass with application warnings treated as errors. Active native CubeIDE Debug/Release also rebuilt with zero errors/warnings. Configured standalone flash use is 62,868 B Debug / 37,684 B Release, D1 allocation 10,392 / 10,400 B and no Ethernet DMA pools in the physical profile. Closed-loop DMA pools remain 19,264 B at 0x30000000. All 35 recorded source hashes are verified against the synchronized active DEV project; source and binary identities are in build_evidence.json.
+
+The user reported successful motor spin, qualitative phase-B improvement, and that the preceding 100 RPM range looks good. This does not establish numerical shaft tracking/current/temperature or physical safety of this new direction-change behavior. No new image was flashed by the agent. See [OPEN_LOOP_BOARD_CONTROL.md](OPEN_LOOP_BOARD_CONTROL.md) for current operating instructions and [build_evidence.json](build_evidence.json) for source/artifact identities.
+
+
+## Historical v0.4.2 analog speed-range increase — 2026-10-13
 
 The user reports the connected motor is spinning. This establishes qualitative rotation; actual RPM/current/temperature and loaded gate timings were not provided. The analog range is now 0–3 V -> 0–100 RPM with the unchanged 100 mV zero/ARM deadband. Acceleration remains 10 RPM/s and run effort 2 V; full scale ramps in about 10 s after alignment, and zero-command deceleration can take 10 s. RUN low still inhibits promptly. Higher-speed shaft tracking/synchronism has not been physically validated. The retained full-speed/deceleration test window now follows the configured maximum rather than assuming the old 30 RPM ramp. All retained controller/app/RUN/scope/default/client tests pass, including full-speed deceleration to inhibit with a 100 RPM ceiling. Physical-open-loop, scope and closed-loop Debug/Release builds pass. Active native CubeIDE Debug/Release have zero errors/warnings and all 35 source hashes match. Current software verification is recorded in build_evidence.json.
 
@@ -16,7 +27,7 @@ PG2 RUN low/disconnected inhibits; stable low then stable high requests ARM only
 
 Added an automatic ADC-to-duty path with no ARM, comms, encoder, alignment or rotating field. Driver ENABLE stays LOW, including in board_apply. Hardware break remains active; PE6 is a pull-high permit/pull-low stop with automatic diagnostic resume. ADC invalid/stale/overrange inhibits all outputs. Scope captures and physical GPIO/gate checks are pending. See [PWM_SCOPE_TEST.md](PWM_SCOPE_TEST.md). Configured scope-test Debug/Release and explicit open/closed-loop motor Debug/Release builds pass. Active DEV native CubeIDE Debug/Release report zero errors/warnings. All 33 recorded source hashes match the active DEV copy. The existing motor/app/client tests plus scope duty/40–100 mV/ADC-age/range/permit tests pass. Current software build/test evidence is in build_evidence.json.
 
-Updated 2026-10-13. Agent verification is software only. The user reports flashing/observing complementary MCU PWM; quantitative timing, EVM gate and motor validation remain pending.
+Updated 2026-10-13. Agent verification is software only. Historical entries below retain the behavior and evidence for each earlier revision; use the current v0.5.0 guide for operation. The user has since reported motor rotation and that the 100 RPM range looks good; quantitative loaded-gate/current/RPM and this bidirectional revision remain unverified.
 
 ## Historical v0.2.2 threshold update — 2026-10-13
 
@@ -72,7 +83,7 @@ The Python loopback test does not run firmware LwIP, the STM32 MAC/PHY, EVM or e
 
 Use the canonical [bench-session template](../../Senior_Design_FW/docs/DEV_BOARD_VALIDATION_PLAN.md#bench-session-record-copy-for-each-run). Complete analog acceptance before Ethernet motion. Limit changes require repeating affected checks.
 
-## Final build evidence
+## Historical v0.1.0 final build evidence
 
 This section is populated from the final artifacts, rather than the intermediate builds. ELF/BIN/HEX artifacts are under `build/<configuration>/`; native CubeIDE artifacts are under `Debug/` and `Release/`. None has been flashed.
 
@@ -86,11 +97,11 @@ The source-only repository checkout passed the C control/protocol/application te
 
 ## New open-loop bench gates
 
-- [ ] Meter-match zero/3 V and confirm 100 mV deadband/zero-start ARM; confirm default boot profile.
-- [ ] With windings disconnected, verify six-PWM/deadtime, positive phase sequence and nominal 18.333 Hz field envelope at the new provisional 100 RPM ceiling.
+- [ ] Meter-check 0/0.65/1.3/1.5/1.7/2.35/3 V and signed map. Verify wait at both extremes, uninterrupted 200 ms center dwell, boot-high inhibit, and RUN LOW cancel.
+- [ ] With windings disconnected, verify six-PWM/deadtime, both field sequences and nominal 18.333 Hz field envelope at the new provisional 100 RPM ceiling.
 - [ ] Verify wake/fault/stop/reset/ADC-loss/watchdog physical inhibition.
-- [ ] Secure unloaded motor, verify alignment/synchronization, actual RPM, direction, supply limit, current/temp and zero coast.
-- [ ] Demonstrate mode rejection while armed (including coasting OPEN_IDLE), explicit disable, closed-loop recalibration/ZERO and restored position mapping.
+- [ ] Secure unloaded motor, verify alignment/synchronization, actual RPM, direction, supply limit, current/temp, center coast and low-speed reversal with disabled pause/re-alignment.
+- [ ] Demonstrate mode rejection while armed (including OPEN_IDLE and OPEN_COAST), explicit disable, closed-loop recalibration/ZERO and restored position mapping.
 
 ## Assumption correction log
 
@@ -98,7 +109,7 @@ The source-only repository checkout passed the C control/protocol/application te
 | --- | --- | --- | --- |
 | 2026-10-12 /0.2.0 | 24 V bus, 11 pole pairs, 6-PWM, 30 RPM max, 10 RPM/s, 1 V align/2 V run | Pending bench measurement | Record actual straps/phase order/RPM/current and revise config before declaring pass |
 
-## Active-workspace sync verification — 2026-10-13
+## Historical v0.2.0 active-workspace sync verification — 2026-10-13
 
 The active original DEV project contains the same 31 source/config/tool/test hashes and reproduces all four profile BIN hashes. Normal CubeIDE launches must rebuild after external edits; the native active Debug/Release images were rebuilt for the runtime toggle. Separate open-loop-default images are under build/OpenLoop/Debug and build/OpenLoop/Release. No hardware flash or electrical/motion validation was performed.
 

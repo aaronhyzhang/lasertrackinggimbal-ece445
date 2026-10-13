@@ -1,171 +1,58 @@
-# Open-loop speed bring-up and mode selection
+# Open-loop firmware and mode selection
 
-**v0.4.1 wiring change:** INLB now comes from **PE10 / CN12 pin 47**, replacing PB0 / CN11 pin 34. Move that wire with power off before energizing the driver. See [phase-B diagnostics](PHASE_B_PWM_DIAGNOSTIC.md).
+**INLB uses PE10 / CN12 pin 47**, replacing the old PB0 / CN11 pin 34 connection. See [phase-B diagnostics](PHASE_B_PWM_DIAGNOSTIC.md).
 
-Current v0.4.2 default: **open-loop motor control using PG2 RUN and the PA3 pot**, with no serial commands, encoder or Ethernet required. Scope-test mode is now off. See [OPEN_LOOP_BOARD_CONTROL.md](OPEN_LOOP_BOARD_CONTROL.md) for wiring, low-to-high RUN/zero-speed arming and fault reset. The serial command workflow below requires `DEMO_OPEN_BOARD_CONTROL=0` and a rebuild.
+Current v0.5.0 default: **bidirectional open-loop motor control using PG2 RUN and the PA3 pot**, without serial commands, encoder or Ethernet. RUN requests wait for 1.3–1.7 V continuously for 200 ms before arming. See [OPEN_LOOP_BOARD_CONTROL.md](OPEN_LOOP_BOARD_CONTROL.md).
 
-Updated 2026-10-13. Firmware v0.2.2. One unloaded FIT1036 motor, NUCLEO-H753ZI, BOOSTXL-DRV8304H, configured 24 V bus. Software tests/builds pass; actual waveforms, current, alignment and motor synchronization remain unverified.
+Updated 2026-10-13. Use the [board-control guide](OPEN_LOOP_BOARD_CONTROL.md) for the current wiring, mapping, startup, reversal and bench procedure. Motor rotation and the preceding 100 RPM range are user-reported; this bidirectional revision still needs hardware checks.
 
-## One-line operating-mode choice before flashing
+## One-line mode selection
 
-Edit `Core/Inc/demo_config.h`: `#define DEMO_DEFAULT_OPEN_LOOP 1` selects open-loop speed, or change the value to 0 for closed-loop position. Rebuild normally in CubeIDE or run `python Tools/build.py --config Debug`; no build flag or console mode change is needed. Current value is 1. Both modes remain disabled at boot and require explicit ARM; closed loop still requires calibration/ZERO.
+In Core/Inc/demo_config.h, DEMO_DEFAULT_OPEN_LOOP=1 selects analog signed speed and 0 selects closed-loop 0–360 degree position. Rebuild normally in CubeIDE or run python Tools/build.py --config Debug; the header controls normal builds. DEMO_OPEN_BOARD_CONTROL=1 selects physical PG2 RUN for open loop. Both motor modes boot disabled; closed loop needs encoder calibration and ZERO. This does not change the DRV8304H hardware MODE strap, which remains 6-PWM.
 
-Detailed scope setup, complementary/non-overlap checks and startup timing are in [BENCH_SWITCHING_VALIDATION.md](BENCH_SWITCHING_VALIDATION.md).
-
-## How much simpler is open loop?
-
-The spinning algorithm needs a target speed, an acceleration ramp, an angle accumulator and a bounded voltage vector. It bypasses rotor-angle feedback, sensor electrical calibration, mechanical zero, unwrapped position tracking, position P, velocity PI and controller anti-windup. ADC acquisition, six-PWM generation, deadtime, driver wake/fault handling, stop interlocks, watchdog and diagnostics are still needed.
+## Control pieces
 
 | Piece | OPEN_LOOP | CLOSED_LOOP |
 | --- | --- | --- |
-| Analog input | Commanded one-way speed | Bounded 0–360° position |
-| Electrical angle | Generated from elapsed nominal control ticks | Encoder × pole pairs + calibrated offset |
-| Position / velocity regulators | Bypassed | Position P and velocity PI |
-| Encoder required | No | Yes, with magnet/freshness checks |
-| Alignment | Timed stationary field, without confirmation of rotor movement | Alignment, measured sign sweep, return and offset validation |
-| Calibration and ZERO commands | Rejected | Required before ARM |
-| Mechanical travel limit | No full-turn limit; continuous bench spin | One-turn position reference and travel/tracking fault checks |
-| Stall / actual speed detection | Not provided | Uses encoder feedback and following-error checks |
-| Current regulation | Not provided | Not provided in this voltage-mode demo; current FOC is later |
-| Network motion | Rejected; analog-only open loop | Existing selected-source position protocol |
+| Analog input | Signed speed: 0 V=-100 RPM, 1.3–1.7 V=0, 3 V=+100 RPM | 0–3 V -> 0–360 degree position |
+| Electrical angle | Accumulated from commanded field speed | Encoder times pole pairs plus calibrated offset |
+| Regulators | Speed/voltage ramps only | Position P, velocity PI and bounded voltage effort |
+| Encoder | Not used | Required, with magnet/freshness checks |
+| Startup | Center-neutral arming, timed stationary-field alignment | Calibration sign/offset/return validation, ZERO, ARM |
+| Mechanical travel | Continuous unloaded bench rotation | One-turn reference and travel/tracking checks |
+| Actual speed / stall | Not measured or detected | Encoder-derived velocity and following-error checks |
+| Current regulation | Not implemented | Not implemented; current FOC is a later milestone |
+| Motion source | Analog only | Analog or selected serial/Ethernet position source |
 
-The core angle update is:
+The simpler commutation path in Core/Src/open_loop.c performs:
 
 ```text
-speed_reference approaches speed_target at the configured acceleration
+speed_reference approaches target at 10 RPM/s
+on opposite-sign request: ramp to zero, inhibit/coast, repeat wake/alignment
 electrical_angle = wrap(electrical_angle + 11 * speed_reference_rad_s * 0.001 s)
 phase_duties = sine_modulation(electrical_angle, bounded_voltage_vector)
 ```
 
-`Core/Src/open_loop.c` contains this simpler path and its timed startup states. It reuses the existing board, modulation and fault helpers. Both modes live in one maintained source tree, so the combined image is larger than the earlier closed-loop-only image even though the open-loop control path is simpler. No second copy of HAL or the application is maintained.
+The generated stator field rotates in either direction by signed angle accumulation. The rotor follows only if voltage, alignment, acceleration and load allow synchronization. This bypasses encoder calibration, mechanical zero, position P and velocity PI; it retains ADC freshness, six-PWM generation, deadtime, wake/fault logic, stop interlocks and watchdog. It does not provide position holding or regulated torque. [SimpleFOC open-loop velocity explanation](https://docs.simplefoc.com/velocity_openloop).
 
-Open loop commands the rotating stator field. The rotor follows only if alignment, voltage, acceleration and load permit synchronization. The reported commanded/ramped RPM is **not a measured motor speed**. A stalled motor can continue receiving excitation. This mode is for initial unloaded bench validation, not gimbal position/holding or final tracking.
+## State and protection ownership
 
-## Analog mapping and defaults
+Core/Src/demo_app.c owns the physical RUN request and neutral dwell. A boot-high RUN is inhibited until stable LOW then HIGH. A valid HIGH request latches a wait; 200 ms continuously valid center input arms OPEN_IDLE with gates off. RUN LOW, stop or fault cancels waiting. Yellow LD2 blinks while waiting and stays steady when armed.
 
-The previously reserved **PA3 / ADC1_INP15** remains the analog input. The measured signal uses `DEMO_ADC_VREF` (default 3.3 V); **3 V is the command full scale**, not ADC reference voltage.
+Core/Src/open_loop.c owns OPEN_IDLE -> OPEN_WAKE (10 ms) -> OPEN_ALIGN (2 s) -> OPEN_RUNNING. Center or reversal ramps speed to zero, then OPEN_COAST disables drive for 1 s before returning to idle. Opposite sign during alignment goes directly to coast. Physical standstill is not measured; the pause must be bench-tested. Board hardware owns complementary PWM, break inhibition and output authorization. The diagnostic PWM scope profile is separate and retains its unipolar duty mapping / 100 mV off threshold.
 
-| Input | Nominal commanded mechanical speed | Electrical field frequency, 11 pole pairs |
-| --- | --- | --- |
-| 0 V | 0 RPM, coast once the speed ramp reaches zero | 0 Hz |
-| 0.75 V | 25 RPM | 4.583 Hz |
-| 1.5 V | 50 RPM | 9.167 Hz |
-| 2.25 V | 75 RPM | 13.75 Hz |
-| 3 V | 100 RPM | 18.333 Hz |
+Status fields cmd_mrpm/ramp_mrpm are signed commanded/generated speed in milli-RPM, not shaft measurements; open_dir is the current field direction and wait_neutral reports the physical pending request. No position validity is claimed in open loop.
 
-The user reports successful motor rotation using the previous 0–30 RPM configuration. The 100 RPM maximum is the next provisional configurable bench step, not the FIT1036 rated speed or a user-confirmed performance requirement. Adjust `DEMO_OPEN_MAX_RPM` after review/bench evidence. Above the zero deadband, speed = `V/3 * max_RPM`. A 0–100 mV deadband commands zero, accommodating the reported approximately 40 mV pot minimum and ADC noise. Small readings from 3.0 to 3.15 V clamp to the maximum; above 3.15 V, negative/nonfinite values or stale/invalid ADC data fault while armed. Electrical input protection still has to keep PA3 within its supply limits.
+## Defaults and assumptions
 
-Defaults in `Core/Inc/demo_config.h`:
+The current map has equal 1.3 V active spans and +/-100 RPM full scale. Center 1.3–1.7 V is inclusive; sensitivity is 76.923 RPM/V. Acceleration/deceleration is 10 RPM/s; alignment is 1 V with a 0.5 s ramp within 2 s; run vector is 2 V with 2 V/s slew. Bus remains configured 24 V, not measured. These are bench limits, not motor ratings/current limits. Check actual voltage/current/temperature and rotor synchronization. **Pot minimum now commands reverse; bias an unplugged PA3 to center instead of using the old ground pull-down.** See the board-control guide for divider/loading details.
 
-- Maximum command: **100 RPM**, positive only.
-- Acceleration/deceleration: **10 RPM/s**; full-scale speed ramp takes approximately 10 seconds after alignment.
-- Open-loop rotating vector: **2 V** magnitude, using generated d voltage and zero q voltage. These are generated-frame coordinates, not rotor-oriented torque/current measurements.
-- Startup alignment: **1 V**, ramped over 0.5 s and held within a total 2 s timed stage.
-- Running voltage slew from alignment to 2 V: **2 V/s**.
-- ARM requires input in the **≤100 mV zero-speed region**; calibration/ZERO are not required in this mode.
-- Driver wake: **10 ms**, PWM inhibited; fault must be high before alignment.
-- ADC, foreground, external driver faults and control timing/watchdog checks remain active. Encoder faults/health do not gate open-loop drive.
+## Build and optional console control
 
-The voltage limit is not a phase-current limit. Keep a current-limited bench supply and measure current/temperature. The 24 V configured bus is not measured by this profile. Loss of synchronism, unknown phase resistance, wrong driver straps or an actual bus different from the configured bus invalidate assumptions about applied voltage/current.
+Normal outputs are build/Debug and build/Release; native CubeIDE uses Debug/ and Release/. Explicit --profile open-loop or --profile closed-loop overrides the header and writes build/OpenLoop or build/ClosedLoop. It does not override DEMO_OPEN_BOARD_CONTROL; default open-loop builds still use physical RUN. --scope-test on writes build/ScopeTest and forces ENABLE LOW. Build commands do not flash hardware.
 
-## Separate open-loop-default firmware image
+For the optional serial-controlled path set DEMO_OPEN_BOARD_CONTROL=0 before rebuilding. ST-LINK VCP is 115200 8N1. While inhibited, MODE OPEN_LOOP selects this controller; with PA3 in 1.3–1.7 V, ARM enters OPEN_IDLE. This legacy path does not latch a wait-for-neutral request or require the physical-profile dwell; ARM outside center remains disabled. DISABLE or ! immediately inhibits via the existing board stop. SOURCE SERIAL/ETHERNET motion and CALIBRATE/ZERO are rejected in open loop. Disable before switching to MODE CLOSED_LOOP; new calibration/ZERO are required before closed-loop ARM.
 
-From `Senior_Design_DEV_FW`:
+## Verification
 
-```powershell
-python Tools/build.py --profile open-loop --config Debug
-python Tools/build.py --profile open-loop --config Release
-```
-
-Images are emitted under:
-
-```text
-build/OpenLoop/Debug/Senior_Design_DEV_FW.elf   (also .bin/.hex/.map)
-build/OpenLoop/Release/Senior_Design_DEV_FW.elf (also .bin/.hex/.map)
-```
-
-These builds define `DEMO_DEFAULT_OPEN_LOOP=1`. They boot with mode OPEN_LOOP and state DISABLED. They still support the closed-loop mode toggle. A compile-time default is not permission to energize at boot.
-
-Normal CLI / native CubeIDE builds now follow the header value instead of forcing CLOSED_LOOP. For an explicit override image independent of that header, use:
-
-```powershell
-python Tools/build.py --profile closed-loop --config Debug
-python Tools/build.py --profile closed-loop --config Release
-```
-
-Normal header-selected outputs remain under `build/Debug` and `build/Release`. Explicit closed-loop override images are under `build/ClosedLoop/Debug` and `build/ClosedLoop/Release`; explicit open-loop images remain under `build/OpenLoop/`. No native IDE preprocessor change is needed for the one-line workflow. Avoid `--profile` overrides when testing the header selection. Program with motor supply disconnected. Hardware has not been flashed by these build commands.
-
-## Console sequence
-
-ST-LINK VCP remains **115200, 8N1**. Commands use uppercase and CR/LF termination.
-
-```text
-DISABLE
-STATUS
-MODE OPEN_LOOP
-STATUS
-ARM
-STATUS
-```
-
-Wait for DISABLED/READY after DISABLE and for `mode=OPEN_LOOP state=DISABLED` after MODE. Actions and mode changes report QUEUED; STATUS shows their applied result. Put the analog source at **0 V before ARM**. ARM at a higher input is ignored by the control prerequisites and leaves the motor disabled. Successful ARM yields OPEN_IDLE with PWM and ENABLE off. A raised analog input begins OPEN_WAKE -> OPEN_ALIGN -> OPEN_RUNNING.
-
-OPEN_IDLE is logically armed even though it coasts. It refuses mode/source changes because a later analog increase could start excitation. Use DISABLE first. MODE changes are accepted only in DISABLED/READY, never during wake/alignment/run or FAULT. Stop cancels pending ARM and pending mode changes. MODE resets calibration/zero, integrators, generator state and command authority and selects ANALOG; it never energizes a motor.
-
-At a 0 V command during running, commanded frequency ramps down at 10 RPM/s, then ENABLE/PWM are inhibited and state returns to OPEN_IDLE. This may take about 3 seconds from 100 RPM. There is no energized zero-speed hold or controlled physical braking; the actual rotor coasts. Returning to a nonzero input while still armed performs another wake/alignment before spinning. Zero during wake/alignment cancels excitation immediately. **DISABLE or `!` always inhibits immediately**, without waiting for the analog speed ramp.
-
-To return to the existing position demo:
-
-```text
-DISABLE
-STATUS
-MODE CLOSED_LOOP
-STATUS
-CALIBRATE
-STATUS
-ZERO
-ARM
-```
-
-Before CALIBRATE, verify the encoder is connected, configured and healthy. Wait for successful READY after calibration, set the intended mechanical-zero fixture orientation with drive off, issue ZERO, then ARM. The analog input again means 0–360° position. Previous open-loop angles or commands never become position setpoints. The full procedure/limits are in [FIRMWARE_GUIDE.md](FIRMWARE_GUIDE.md).
-
-`SOURCE SERIAL/ETHERNET`, POSITION and motion HEARTBEAT are rejected in open loop. Network STATUS and DISABLE remain diagnostic/stop operations; no network ARM or MODE operation was added. This prevents an old Ethernet position packet from being interpreted as a speed. `CLEAR_FAULT` in open loop requires healthy analog/liveness inputs but no encoder, returns to DISABLED and still requires a new near-zero ARM. Switching modes cannot clear a fault.
-
-STATUS includes `mode`, `cmd_mrpm` (command RPM ×1000), `ramp_mrpm` (generated RPM ×1000), and `open_mV` (vector magnitude). Existing `uq_mV`, position/reference/velocity fields are for the closed-loop controller. `pos_valid=0` in open loop; raw encoder/magnet/age fields can help wiring checks, but they are not a validated open-loop mechanical speed/position estimate.
-
-## Step-by-step acceptance
-
-1. **No motor power:** verify VCP, default mode and DISABLED at boot, meter-match ADC points, confirm MODE refuses ARM when input is nonzero. Confirm the active project/image version and profile.
-2. **EVM powered, winding leads disconnected:** verify hardware straps and logic rails, then select OPEN_LOOP, ARM at zero and raise analog. Scope all six signals, nominal 20 kHz carrier, deadtime, coherent phase updates and generated field frequency. This does not require an encoder. At full scale the rotating phase envelope is 18.333 Hz for the provisional 100 RPM /11-pair configuration.
-3. **Shutdown tests, no winding connection:** verify nFAULT during wake versus active drive, `!`, DISABLE, ADC loss/invalid input, reset and foreground/watchdog behavior. Record physical shutdown latency/inactive states, not just status text.
-4. **Power off, attach secured unloaded motor:** verify continuity/phase identity, set 0 V, current-limit the 24 V supply, ARM, then start with a small voltage/speed command. Observe alignment, smooth startup, physical direction and current. Progress through 0.75/1.5/2.25/3 V only after the lower point works.
-5. **Speed and coast:** measure actual shaft RPM using the encoder as an independent observation tool or external tachometer, compare against the commanded/ramped values, and record any stalls or loss of synchronism. Verify deceleration to zero and immediate disable separately; inspect current/temperature. Do not raise voltage/acceleration to hide wrong phasing.
-6. **Add encoder feedback:** with drive inhibited, validate encoder supply, SDA/SCL pulls, hand rotation, magnet status and sample age. If it was absent at boot, repair/attach with power off and reboot for its configuration/readback before trying closed loop.
-7. **Toggle to closed loop:** perform new electrical calibration and mechanical ZERO, then repeat the earlier bounded position milestone. Ethernet position validation follows after that succeeds.
-
-The firmware's OPEN_ALIGN completion only means its timer elapsed. It does not prove the rotor reached the intended alignment. If the rotor chatters or does not start, disable and inspect phase assignment, power/driver faults, actual bus/current, mechanical load and limits. Automatic stall recovery or encoder-based trim is not part of this test mode.
-
-## Hardware assumptions to verify and correct
-
-| Assumption | Basis / pending evidence |
-| --- | --- |
-| One motor/inverter, FIT1036, 11 pole pairs | User-confirmed SKU and DFRobot specification; verify received motor/phase identity |
-| Bus 24 V, voltage-vector scaling uses that value | User-selected nominal bus; meter actual bus, note supply collapse/regeneration; no firmware bus/current measurement |
-| DRV8304H in **6-PWM** mode | Existing six-output BSP; inspect MODE strap at AGND and CAL at ground; a 3-PWM strap is incompatible |
-| Same six-input/ENABLE/nFAULT harness | [BOARD_CONFIG.md](BOARD_CONFIG.md); continuity and signal polarity/route require scope evidence |
-| Positive electrical phase sequence produces the intended one physical direction | Actual CW/CCW depends on A/B/C wiring and viewing side; record direction; swap any two winding leads only with power off if needed, then recalibrate for closed loop |
-| 3.3 V digital interface | VDDIO and nFAULT pull-up at 3.3 V; common signal ground; ENABLE effective pull-down for reset/unpowered MCU |
-| PA3 is a protected 0–3 V source, not the motor bus | Verify source range/reference/grounding and effective pull-down; unplug may look like a valid zero command |
-| Encoder can be omitted for the spin test | No open-loop feedback dependency; PB6/PB7 external pulls to 3.3 V or verified encoder-board pulls are still needed when adding I2C |
-| Unloaded shaft with continuous rotation clearance | No gimbal travel/cable/position limits in open loop; verify fixture, lead routing and absence of mechanical stops |
-| 1 V alignment /2 V run /100 RPM /10 RPM/s are sufficient and bounded for first motion | Engineering starting choices, not measured ratings, torque or a 4 A trip; log actual synchronization, current and temperature |
-| EVM shunts, GAIN, IDRIVE, VDS protection configuration are independently verified | No firmware setting/readback/current sampling in this H voltage-mode backend; do not import custom PCB 14 mΩ/gain assumptions |
-
-Write actual strap values, phase order/viewing direction, measured bus/VDDA, supply limit, RPM, current/temp, scope captures and corrected limits in [VALIDATION.md](VALIDATION.md). Keep unknowns explicit instead of treating an elapsed startup timer as proof of hardware correctness.
-
-## References and applicability
-
-- [TI SPRABZ0A, section 9](https://www.ti.com/lit/an/sprabz0a/sprabz0a.pdf): staged PWM checks with motor disconnected, followed by unloaded open-loop checks before closing feedback loops. C2000 hardware/current sensing and numeric gains are not copied into this STM32 implementation.
-- [SimpleFOC open-loop velocity documentation](https://docs.simplefoc.com/velocity_openloop): advancing a generated angle and bounded excitation without rotor feedback; actual synchronization and heating must be checked. No SimpleFOC library is linked here; we use a fixed 1 kHz timer with timing faults rather than its adaptive scheduling implementation.
-- [DFRobot FIT1036 specifications](https://wiki.dfrobot.com/fit1036/): motor pole count and encoder interface; numeric bring-up limits remain our conservative choices.
-- [TI BOOSTXL user guide](https://www.ti.com/lit/ug/slvub97/slvub97.pdf) and [DRV8304 datasheet](https://www.ti.com/lit/ds/symlink/drv8304.pdf): EVM connections, hardware PWM mode and driver fault/wake behavior.
+Tests exercise the actual portable controller and application, including both signs and angle wrap, neutral mapping/ARM, boot-high inhibit, pending request/dwell reset, RUN/stop cancellation, coast/re-alignment, fault latching, invalid/stale ADC and unsigned time wrap. Closed-loop, protocol/client and diagnostic scope regression checks remain. See [VALIDATION.md](VALIDATION.md) and [build_evidence.json](build_evidence.json) for final software results; software checks do not establish physical standstill or regulated motor current.

@@ -7,6 +7,7 @@ typedef struct {
     command_source_t source;
     uint16_t adc_raw, encoder_raw;
     bool magnet_good, driver_good;
+    bool waiting_neutral;
     uint32_t ticks, max_control_us, command_ms;
     uint32_t encoder_age_ms, health_age_ms, adc_age_ms;
 } app_status_t;

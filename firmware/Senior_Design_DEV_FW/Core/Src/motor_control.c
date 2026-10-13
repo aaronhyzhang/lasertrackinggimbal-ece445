@@ -188,7 +188,7 @@ void motor_step(motor_t *m, const motor_input_t *in, motor_action_t action,
     if (m->state == MOTOR_FAULT) { out->enable = out->pwm = false; m->effort = 0; }
 }
 const char *motor_state_name(motor_state_t s) {
-    static const char *const names[] = {"DISABLED","CAL_WAKE","CAL_ALIGN","CAL_SWEEP","CAL_RETURN","READY","ARM_WAKE","RUNNING","FAULT","OPEN_IDLE","OPEN_WAKE","OPEN_ALIGN","OPEN_RUNNING"};
+    static const char *const names[] = {"DISABLED","CAL_WAKE","CAL_ALIGN","CAL_SWEEP","CAL_RETURN","READY","ARM_WAKE","RUNNING","FAULT","OPEN_IDLE","OPEN_WAKE","OPEN_ALIGN","OPEN_RUNNING","OPEN_COAST"};
     return (unsigned)s < sizeof(names)/sizeof(names[0]) ? names[s] : "INVALID";
 }
 const char *motor_fault_name(motor_fault_t f) {

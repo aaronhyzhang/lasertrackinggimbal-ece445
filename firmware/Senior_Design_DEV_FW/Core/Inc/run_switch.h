@@ -3,7 +3,7 @@
 #include "motor_control.h"
 #include "demo_config.h"
 /* LOW stops immediately; arming needs stable LOW then stable HIGH.
- * A HIGH edge is consumed even if the caller's zero-speed/health checks fail. */
+ * A HIGH edge emits one request; the caller may wait for valid center input. */
 typedef struct {
     uint32_t low_since, high_since;
     bool low_tracking, high_tracking, seen_low;

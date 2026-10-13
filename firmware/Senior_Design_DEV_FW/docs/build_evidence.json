@@ -1,51 +1,51 @@
 {
   "date": "2026-10-13",
-  "firmware": "0.4.2",
+  "firmware": "0.5.0",
   "toolchain": "ARM GCC 13.3.1 / STM32CubeIDE 1.18.0",
   "configured_header_default": "OPEN_LOOP_BOARD_CONTROL: scope=0, open_loop=1, board_control=1",
-  "native_cubeide": "Active DEV native Debug/Release with 100 RPM full scale: zero errors/warnings",
+  "native_cubeide": "Active DEV native Debug/Release: bidirectional signed analog speed and wait-for-neutral startup; zero errors/warnings",
   "binaries": {
     "ConfiguredDebug": {
       "path": "build/Debug/Senior_Design_DEV_FW.bin",
       "profile": "configured",
       "boot_mode": "OPEN_LOOP_BOARD_CONTROL",
-      "bytes": 61996,
-      "sha256": "fd602b47fa75fbc152c0a52cb0bda5b8f0bce4d67514e124676aee74c13e5407"
+      "bytes": 62868,
+      "sha256": "2f8e617c80b147108fe8ec26a996a194fe93ce2a324d855a809bd9f2e5ca2ef8"
     },
     "ConfiguredRelease": {
       "path": "build/Release/Senior_Design_DEV_FW.bin",
       "profile": "configured",
       "boot_mode": "OPEN_LOOP_BOARD_CONTROL",
-      "bytes": 36820,
-      "sha256": "34fd22ce4c6461da48317af5108f1a677f2b23c38fb1658157b77c5572c9232b"
+      "bytes": 37684,
+      "sha256": "f08860fa87bb7a7d52e3840856b9b28dd8a51d09ed9da9271e0d8ea85803e750"
     },
     "ScopeTestDebug": {
       "path": "build/ScopeTest/Debug/Senior_Design_DEV_FW.bin",
       "profile": "--scope-test on",
       "boot_mode": "MCU_PWM_SCOPE_TEST",
-      "bytes": 60964,
-      "sha256": "54fcbd3d0edc43d607de96b627a50bfb6bfb298644ceb3d48e9fc62dde9fd551"
+      "bytes": 61476,
+      "sha256": "f09ecedbf0a2df698947b53b3d97dcfafa7bfddac7241683015ee8d1719f632a"
     },
     "ScopeTestRelease": {
       "path": "build/ScopeTest/Release/Senior_Design_DEV_FW.bin",
       "profile": "--scope-test on",
       "boot_mode": "MCU_PWM_SCOPE_TEST",
-      "bytes": 36116,
-      "sha256": "59a70565f26a1e51eeeef2912803b35a9140a071d96c37b52acff5e1508c70e6"
+      "bytes": 36428,
+      "sha256": "b3e58eb55c5a7589993ed28d85ddd967544bb2dd266241d4a620fa2c72fb8bb0"
     },
     "ClosedLoopDebug": {
       "path": "build/ClosedLoop/Debug/Senior_Design_DEV_FW.bin",
       "profile": "closed-loop",
       "boot_mode": "CLOSED_LOOP",
-      "bytes": 102364,
-      "sha256": "02a1efe147193c157703e12354fdd25319ba97981c617161c38c2f7b253c06ad"
+      "bytes": 102956,
+      "sha256": "42226ed97baeb041832606ed5371c5a3c289ba6a3fa67deab976b6bd5b46a85b"
     },
     "ClosedLoopRelease": {
       "path": "build/ClosedLoop/Release/Senior_Design_DEV_FW.bin",
       "profile": "closed-loop",
       "boot_mode": "CLOSED_LOOP",
-      "bytes": 61568,
-      "sha256": "8f2f7deb6dcbb81976fa6c19aa9568206f0d618b0e8853063ec1aa4eef2bb417"
+      "bytes": 61944,
+      "sha256": "b228b66b08498793ea065f6364019eca44f71adc8ca7e00ff9b1f7dcaab7b6ea"
     }
   },
   "sources": [
@@ -59,11 +59,11 @@
     },
     {
       "path": "Core/Inc/demo_app.h",
-      "sha256": "57faf0b17b35b3c29a3d90a823b04cbaf9372a9d0fcf94a7c4d088882020be0a"
+      "sha256": "ac7a31bc0e1022440c2784d8437420550cb1a083e0de114f7c4eec6c76fc3b98"
     },
     {
       "path": "Core/Inc/demo_config.h",
-      "sha256": "8890eef1b64157a1ff91798d2425922b5490306f98ab5c8ccb7d20c1b047c89d"
+      "sha256": "098201f2b0c55b7670aa92c09d1321a270c782a265de8794eb9b1b2980a4726e"
     },
     {
       "path": "Core/Inc/demo_console.h",
@@ -87,7 +87,7 @@
     },
     {
       "path": "Core/Inc/motor_control.h",
-      "sha256": "b44a5125917d14c7ed90559120ce92bad27ca42bb23f6b8f0e687e4ce37b39e5"
+      "sha256": "1681b6714a12c8879b78233c00a64bab462e3416419ff13de09b553196ec8a91"
     },
     {
       "path": "Core/Inc/motor_internal.h",
@@ -103,7 +103,7 @@
     },
     {
       "path": "Core/Src/demo_app.c",
-      "sha256": "ea412390e7c5842805efe89116419114beeccb2e87ec0dc964636db63e446e9c"
+      "sha256": "fd4bbb2ba2fe87124bfc8903a7cdf8df3ed73a6bad83f03e4cb89f8cd0445013"
     },
     {
       "path": "Core/Src/demo_console.c",
@@ -123,11 +123,11 @@
     },
     {
       "path": "Core/Src/motor_control.c",
-      "sha256": "a4030b760f41a09290a1f7a5150e2dacf1cd7d2a7f47e29aa298f7ee91e6cf62"
+      "sha256": "f423448000374466c6351d31812a31f5df89e65e177ddbc45d8b8373910d8096"
     },
     {
       "path": "Core/Src/open_loop.c",
-      "sha256": "ae81023bfb031614e6dc3be792ab842223047f645b0732502084b230ef8591c4"
+      "sha256": "1f16f961fd981d3c70a714cdb717c0d3a3dc5eccb56c5dcb64e59c6ae9b30529"
     },
     {
       "path": "Core/Src/stm32h7xx_hal_msp.c",
@@ -143,7 +143,7 @@
     },
     {
       "path": "Tests/test_app.c",
-      "sha256": "77f112e092986f1a598081fc11c15e3c02c029f7ce43161ad9850956192693ae"
+      "sha256": "5c773b07cdff6e69fb881bbff624e2878ae7d96093095fb27c64a0e17222bf89"
     },
     {
       "path": "Tests/test_client.py",
@@ -159,7 +159,7 @@
     },
     {
       "path": "Tests/test_open_loop.c",
-      "sha256": "ba52a8f5d371593d7a1461b6aa4688e3188e0d9c6d2afee548c42507abc5cb0e"
+      "sha256": "76a12fc3a418ac24a2fa372d568bd882cb86fa648f16c11608250b0412918da2"
     },
     {
       "path": "Tools/build.py",
@@ -175,7 +175,7 @@
     },
     {
       "path": "Core/Inc/pwm_scope.h",
-      "sha256": "6ef578bcf37b437b370ace6521be58271594f3c3374d1f5a762077bf0da0e295"
+      "sha256": "fdbbf894f3417d8e7dae3af1499913c72ec2bfc6583d7e03a3f91733f12b1186"
     },
     {
       "path": "Tests/test_pwm_scope.c",
@@ -183,20 +183,22 @@
     },
     {
       "path": "Core/Inc/run_switch.h",
-      "sha256": "530741a41a45a02d241bf6592eaf079ab790dae716dbcb46561dbd6989441ac9"
+      "sha256": "1903b0c63d9c732868f366b4924e1c405d29c80b0c86862e4bd71f106bf3334f"
     },
     {
       "path": "Tests/test_board_run.c",
-      "sha256": "e7b9f840dc8545b6b72af74d82b25d350b8bae232c0eb1d161cd8ed942979566"
+      "sha256": "35b67b29797b39a35ef0f45170dd09ed1e0afb00f3caa367598b000ec69959b1"
     }
   ],
-  "active_dev_verification": "v0.4.2 sources synchronized and native Debug/Release rebuilt; all 35 source hashes match. User reports motor rotation before this range increase; 100 RPM physical tracking/current/temperature are pending.",
+  "active_dev_verification": "v0.5.0 application/config/test sources synchronized; native Debug/Release independently rebuilt, zero errors/warnings; all 35 source hashes checked. No agent hardware flash. User reports preceding motor rotation/100 RPM range looks good; new physical neutral startup/reversal and quantitative shaft/current/temp checks remain pending.",
   "open_loop_thresholds": {
-    "zero_speed_max_volts": 0.1,
-    "arm_max_volts": 0.1,
-    "reported_pot_minimum_volts": 0.04
+    "neutral_low_volts": 1.3,
+    "neutral_high_volts": 1.7,
+    "neutral_continuous_ms": 200,
+    "reported_pot_minimum_volts": 0.04,
+    "scope_test_zero_max_volts": 0.1
   },
-  "tests": "Retained portable controller/app/physical RUN/scope/default and Python client tests pass at 100 RPM. Full-speed zero-command test uses a configured braking-duration bound and verifies final inhibition.",
+  "tests": "All retained portable controller/app/physical RUN/scope/default/Python client tests pass. Covers signed symmetry/endpoints and angle wrap, full-speed neutral stop, both reversal directions/coast/re-alignment, boot-high inhibit, wait at both extremes, center dwell/out-of-band/ADC/foreground reset, RUN/stop/fault cancellation, latched reset interlock and unsigned time wrap.",
   "dma_regions": {
     "physical_open_loop": {
       "start": "0x30000000",
@@ -218,21 +220,21 @@
     "Debug": {
       "path": "Debug/Senior_Design_DEV_FW.elf",
       "profile": "OPEN_LOOP_BOARD_CONTROL",
-      "bytes": 2415324,
-      "sha256": "810d0258b7ea7a84c92659a64e7d4cd7524fc532f40387f4876c0b00324ccac0"
+      "bytes": 2417068,
+      "sha256": "c27c81abd727a5d2f216f248f84aa428c338d8794f08e8d680c18a782cd952ee"
     },
     "Release": {
       "path": "Release/Senior_Design_DEV_FW.elf",
       "profile": "OPEN_LOOP_BOARD_CONTROL",
-      "bytes": 62560,
-      "sha256": "4be7effb8e2776e5d4c98f710fd774f10ebf054c46c14964e97879c7e53b8d55"
+      "bytes": 66856,
+      "sha256": "e654b4007fd85ee2e407fbf4c1c17e06e8c0de7419b034efee2e18425ee20ed5"
     }
   },
   "physical_inputs": {
     "run": "PG2 / CN11 pin 42, high request, low stop, 20 ms stable low then high",
     "nfault": "PE6 / CN11 pin 62, active-low real driver fault",
-    "analog": "PA3 / A0, 100 mV zero/ARM region",
-    "armed_led": "PE1 / yellow LD2",
+    "analog": "PA3 / A0, 0V=-100RPM / 1.3-1.7V neutral / 3V=+100RPM; physical pending RUN waits for 200ms continuous fresh center",
+    "armed_led": "PE1 / yellow LD2, 2Hz blink waiting neutral, steady armed including coast",
     "fault_led": "PB14 / red LD3"
   },
   "phase_b_pwm": {
@@ -242,14 +244,20 @@
     "reason": "Remove LD1 load and match standard Nucleo CH2N header; root cause unconfirmed."
   },
   "open_loop_limits": {
-    "max_command_rpm": 100,
+    "max_abs_command_rpm": 100,
+    "low_endpoint_command_rpm": -100,
+    "high_endpoint_command_rpm": 100,
     "accel_rpm_per_second": 10,
     "run_vector_volts": 2,
     "alignment_volts": 1,
     "alignment_ms": 2000,
-    "zero_speed_max_volts": 0.1,
-    "arm_max_volts": 0.1,
+    "neutral_low_volts": 1.3,
+    "neutral_high_volts": 1.7,
+    "neutral_continuous_ms": 200,
+    "disabled_coast_ms": 1000,
     "full_scale_volts": 3,
-    "full_scale_electrical_hz": 18.3333333
+    "full_scale_electrical_hz_magnitude": 18.3333333,
+    "rpm_per_volt_active_span": 76.92307692307692,
+    "standstill_measured": false
   }
 }

@@ -9,6 +9,9 @@
 static motor_t motor;
 #if DEMO_BOARD_OPEN_ACTIVE
 static run_switch_t run_switch;
+static volatile bool neutral_wait;
+static bool neutral_tracking;
+static uint32_t neutral_since;
 #endif
 static volatile motor_action_t pending;
 static volatile bool mode_pending;
@@ -24,6 +27,7 @@ static app_status_t status;
 void app_init(void) {
 #if DEMO_BOARD_OPEN_ACTIVE
     memset(&run_switch,0,sizeof(run_switch));
+    neutral_wait=false; neutral_tracking=false; neutral_since=0;
 #endif
     motor_init(&motor); source=SOURCE_ANALOG; foreground_ms=HAL_GetTick();
     pending=ACTION_NONE; mode_pending=false; stop_pending=false;
@@ -116,14 +120,30 @@ void app_control_tick(void) {
         in.target_rad=fminf(voltage/3.0f,1.0f)*6.28318530718f;
     }
 #if DEMO_BOARD_OPEN_ACTIVE
-    motor_action_t physical=run_switch_step(&run_switch,board_run_high(),in.now_ms);
+    bool run_high=board_run_high();
+    motor_action_t physical=run_switch_step(&run_switch,run_high,in.now_ms);
+    if (in.stop || motor.state==MOTOR_FAULT || in.hard_fault) {
+        neutral_wait=false; neutral_tracking=false;
+    }
     if (physical==ACTION_DISABLE) {
+        neutral_wait=false; neutral_tracking=false;
         in.stop=true; action=ACTION_DISABLE; board_kill();
-    } else if (physical==ACTION_ARM && !in.stop && motor.state==MOTOR_DISABLED &&
-               !in.hard_fault && in.adc_valid && in.now_ms-in.adc_ms<=DEMO_ADC_MAX_AGE_MS &&
-               in.now_ms-in.foreground_ms<=DEMO_FOREGROUND_MAX_AGE_MS &&
-               in.analog_volts<=DEMO_OPEN_ARM_MAX_VOLTS) {
-        action=ACTION_ARM; board_release_stop();
+    } else if (physical==ACTION_ARM && !in.stop && motor.state==MOTOR_DISABLED && !in.hard_fault) {
+        /* Latch the RUN request even at non-neutral; gates remain inhibited. */
+        neutral_wait=true; neutral_tracking=false;
+    }
+    if (neutral_wait && run_high && !in.stop && motor.state==MOTOR_DISABLED && !in.hard_fault) {
+        bool neutral_ok=in.adc_valid && in.now_ms-in.adc_ms<=DEMO_ADC_MAX_AGE_MS &&
+            in.now_ms-in.foreground_ms<=DEMO_FOREGROUND_MAX_AGE_MS &&
+            motor_open_neutral(in.analog_volts);
+        if (!neutral_ok) neutral_tracking=false;
+        else {
+            if (!neutral_tracking) { neutral_tracking=true; neutral_since=in.now_ms; }
+            if (in.now_ms-neutral_since>=DEMO_OPEN_NEUTRAL_DWELL_MS) {
+                neutral_wait=false; neutral_tracking=false;
+                action=ACTION_ARM; board_release_stop();
+            }
+        }
     }
 #endif
     motor_state_t previous=motor.state;
@@ -138,6 +158,9 @@ void app_control_tick(void) {
     if (used>max_control_us) max_control_us=used;
     if (used>500u) board_trip(FAULT_CONTROL_TIMING);
     status.motor=motor; status.source=source; status.encoder_raw=in.raw_angle;
+#if DEMO_BOARD_OPEN_ACTIVE
+    status.waiting_neutral=neutral_wait;
+#endif
     status.magnet_good=in.magnet_good; status.driver_good=in.driver_good;
     status.ticks=ticks; status.max_control_us=max_control_us; status.command_ms=command_ms;
     status.encoder_age_ms=in.now_ms-in.encoder_ms; status.health_age_ms=in.now_ms-in.health_ms;
@@ -152,8 +175,9 @@ void app_foreground(void) {
     HAL_GPIO_WritePin(GPIOB,GPIO_PIN_14,motor.state==MOTOR_FAULT?GPIO_PIN_SET:GPIO_PIN_RESET);
 #if DEMO_BOARD_OPEN_ACTIVE
     bool armed=motor.state==MOTOR_OPEN_IDLE || motor.state==MOTOR_OPEN_WAKE ||
-               motor.state==MOTOR_OPEN_ALIGN || motor.state==MOTOR_OPEN_RUNNING;
-    HAL_GPIO_WritePin(GPIOE,GPIO_PIN_1,armed?GPIO_PIN_SET:GPIO_PIN_RESET);
+               motor.state==MOTOR_OPEN_ALIGN || motor.state==MOTOR_OPEN_RUNNING || motor.state==MOTOR_OPEN_COAST;
+    bool waiting=neutral_wait && motor.state==MOTOR_DISABLED;
+    HAL_GPIO_WritePin(GPIOE,GPIO_PIN_1,(armed || (waiting && ((now/250u)&1u)))?GPIO_PIN_SET:GPIO_PIN_RESET);
 #endif
 }
 void app_status(app_status_t *s) { uint32_t mask=board_lock(); *s=status; board_unlock(mask); }
@@ -164,7 +188,7 @@ size_t app_status_text(char *text,size_t capacity) {
         "state=%s fault=%s source=%s mode=%s cal=%u zero=%u pos_mdeg=%ld target_mdeg=%ld uq_mV=%ld "
         "raw=%u adc=%u magnet=%u nfault=%u ticks=%lu max_us=%lu bus_config_mV=24000 "
         "dir=%d vel_mdeg_s=%ld ref_mdeg=%ld enc_age_ms=%lu health_age_ms=%lu adc_age_ms=%lu eth=%s fw=%s "
-        "pos_valid=%u cmd_mrpm=%ld ramp_mrpm=%ld open_mV=%ld\r\n",
+        "pos_valid=%u cmd_mrpm=%ld ramp_mrpm=%ld open_mV=%ld open_dir=%d wait_neutral=%u\r\n",
         motor_state_name(s.motor.state),motor_fault_name(s.motor.fault),
         s.source==SOURCE_ANALOG?"ANALOG":s.source==SOURCE_SERIAL?"SERIAL":"ETHERNET",
         motor_mode_name(s.motor.mode),
@@ -178,6 +202,6 @@ size_t app_status_text(char *text,size_t capacity) {
         (unsigned)(s.motor.mode==MODE_CLOSED_LOOP && s.motor.zeroed && s.motor.calibrated && s.magnet_good &&
                    s.encoder_age_ms<=DEMO_ENCODER_MAX_AGE_MS && s.health_age_ms<=DEMO_HEALTH_MAX_AGE_MS),
         (long)(s.motor.open_target_speed*9549.296586f),(long)(s.motor.open_speed*9549.296586f),
-        (long)(s.motor.open_volts*1000.0f));
+        (long)(s.motor.open_volts*1000.0f),s.motor.open_direction,(unsigned)s.waiting_neutral);
     return n<0 ? 0 : ((size_t)n<capacity ? (size_t)n : capacity-1u);
 }

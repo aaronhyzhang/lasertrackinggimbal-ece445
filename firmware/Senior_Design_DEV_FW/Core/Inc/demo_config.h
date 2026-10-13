@@ -24,12 +24,15 @@
 #if DEMO_DEFAULT_OPEN_LOOP != 0 && DEMO_DEFAULT_OPEN_LOOP != 1
 #error "DEMO_DEFAULT_OPEN_LOOP must be 0 or 1"
 #endif
-#define DEMO_OPEN_MAX_RPM 100.0f /* 3 V full scale; higher-speed bench validation pending. */
+#define DEMO_OPEN_MAX_RPM 100.0f /* Symmetric +/- full scale; bidirectional bench validation pending. */
 #define DEMO_OPEN_ACCEL_RPM_S 10.0f
 #define DEMO_OPEN_VOLTS 2.0f /* Fixed rotating-vector magnitude, not a current limit. */
 #define DEMO_OPEN_VOLT_SLEW 2.0f /* V/s, from alignment magnitude to running magnitude. */
-#define DEMO_OPEN_ZERO_VOLTS 0.10f /* Pot bottoms near 40 mV; <=100 mV is zero, above uses V/3 scaling. */
-#define DEMO_OPEN_ARM_MAX_VOLTS 0.10f /* Require the zero-speed deadband before ARM. */
+#define DEMO_OPEN_NEUTRAL_LOW 1.3f
+#define DEMO_OPEN_NEUTRAL_HIGH 1.7f
+#define DEMO_OPEN_NEUTRAL_DWELL_MS 200u /* Physical RUN waits for continuously valid neutral. */
+#define DEMO_OPEN_COAST_MS 1000u /* Provisional disabled pause before restart/reversal; not measured standstill. */
+#define DEMO_SCOPE_ZERO_VOLTS 0.10f /* MCU-only scope profile retains unipolar duty mapping. */
 #define DEMO_OPEN_ALIGN_MS 2000u
 #define DEMO_OPEN_ALIGN_RAMP_MS 500u
 #ifndef DEMO_PWM_SCOPE_TEST
@@ -46,7 +49,7 @@
 #endif
 #define DEMO_BOARD_OPEN_ACTIVE (DEMO_OPEN_BOARD_CONTROL && DEMO_DEFAULT_OPEN_LOOP && !DEMO_PWM_SCOPE_TEST)
 #define DEMO_RUN_DEBOUNCE_MS 20u
-#define DEMO_FW_VERSION "0.4.2"
+#define DEMO_FW_VERSION "0.5.0"
 #define DEMO_PWM_ARR 2500u /* 100 MHz / (2 * 2500) = 20 kHz */
 #define DEMO_CONTROL_HZ 1000u
 #define DEMO_UDP_PORT 5005u

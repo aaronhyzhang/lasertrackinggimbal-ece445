@@ -2,15 +2,15 @@
 
 **v0.4.1 wiring change:** INLB now comes from **PE10 / CN12 pin 47**, replacing PB0 / CN11 pin 34. Move that wire with power off before energizing the driver. See [phase-B diagnostics](PHASE_B_PWM_DIAGNOSTIC.md).
 
-Firmware v0.3.0, updated 2026-10-13. Software verification does not establish physical waveforms; bench captures are pending.
+Firmware v0.5.0 (diagnostic behavior retained from v0.3.0), updated 2026-10-13. Software verification does not establish physical waveforms; bench captures are pending.
 
-The user has no command interface on the bench and needs to verify PWM independently of motor startup. Current v0.4.1 normal CubeIDE builds select physical open-loop motor control. Select this diagnostic instead through one line in Core/Inc/demo_config.h:
+The user has no command interface on the bench and needs to verify PWM independently of motor startup. Current v0.5.0 normal CubeIDE builds select physical bidirectional open-loop motor control with wait-for-neutral startup. Select this diagnostic instead through one line in Core/Inc/demo_config.h:
 
 ```c
 #define DEMO_PWM_SCOPE_TEST 1
 ```
 
-1 selects MCU-only automatic ADC-to-duty output. 0 restores motor firmware, where DEMO_DEFAULT_OPEN_LOOP selects speed (1) or position (0). The current motor firmware uses a physical PG2 RUN transition for ARM when DEMO_OPEN_BOARD_CONTROL=1; see OPEN_LOOP_BOARD_CONTROL.md. Scope-test mode still cannot enable the driver.
+1 selects MCU-only automatic ADC-to-duty output. 0 restores motor firmware, where DEMO_DEFAULT_OPEN_LOOP selects speed (1) or position (0). The current motor firmware uses physical PG2 RUN plus 200 ms of valid 1.3–1.7 V neutral input before arming; see OPEN_LOOP_BOARD_CONTROL.md. This scope profile retains unipolar 100 mV off / direct duty control instead. Scope-test mode still cannot enable the driver.
 
 ## Behavior
 

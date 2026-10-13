@@ -1,68 +1,72 @@
 # Open-loop motor control from board inputs
 
-**v0.4.1 wiring change:** INLB now comes from **PE10 / CN12 pin 47**, replacing PB0 / CN11 pin 34. Move that wire with power off before energizing the driver. See [phase-B diagnostics](PHASE_B_PWM_DIAGNOSTIC.md).
+**INLB uses PE10 / CN12 pin 47**, replacing the old PB0 / CN11 pin 34 connection. See [phase-B diagnostics](PHASE_B_PWM_DIAGNOSTIC.md).
 
-Firmware v0.4.2, updated 2026-10-13. Current CubeIDE header defaults select this profile. The user reports seeing MCU PWM and complementary switching; measured deadtime and driver/motor operation remain pending.
+Firmware v0.5.0, updated 2026-10-13. The user reports successful motor rotation and that the preceding 100 RPM range looks good. This revision adds bidirectional commands and wait-for-neutral startup; its physical reversal, speed/current/temperature and shutdown timing still need bench validation.
 
-This uses one RUN switch/jumper and one speed pot. No serial command, Ethernet, encoder feedback, CALIBRATE or ZERO is required. Console/network/encoder transactions are not started in this profile. Shared BSP peripheral setup remains. The existing sinusoidal voltage commutation is reused; identical scope-test duties would produce no rotating field.
+## Configuration and wiring
 
-## Configuration
+The existing defaults in Core/Inc/demo_config.h select motor drive:
 
 ```c
-#define DEMO_PWM_SCOPE_TEST 0      /* Motor drive, rather than identical-duty MCU scope test. */
-#define DEMO_DEFAULT_OPEN_LOOP 1  /* Analog speed and a rotating field. */
-#define DEMO_OPEN_BOARD_CONTROL 1 /* PG2 physical RUN owns ARM; no console needed. */
+#define DEMO_PWM_SCOPE_TEST 0
+#define DEMO_DEFAULT_OPEN_LOOP 1
+#define DEMO_OPEN_BOARD_CONTROL 1
 ```
 
-These are already set. Refresh/build/flash the active Senior_Design_DEV_FW project normally in CubeIDE. Let the MCU run freely; do not halt while the driver/motor is energized. STM32 watchdog and hardware nFAULT break remain enabled.
-
-## Control wiring
+Refresh, rebuild and flash Senior_Design_DEV_FW in CubeIDE, with motor-bus power disconnected. Let the MCU run freely during motor operation. The watchdog and nFAULT hardware break remain enabled. Console, network and encoder transactions are not started in this profile.
 
 | Function | Nucleo | Connection / behavior |
 | --- | --- | --- |
-| Speed pot | PA3, A0 / CN9 pin 1; also CN12 pin 37 | 0–3 V, common GND; <=100 mV commands zero, including the reported 40 mV minimum |
-| Physical RUN | PG2, CN11 pin 42 | HIGH=3.3 V requests ARM; LOW/disconnected disables. Internal pull-down configured; add about 10 kOhm to GND for a bench harness. A 1 kOhm series resistor to the 3.3 V switch/jumper source avoids a hard rail short while testing LOW. |
-| Driver ENABLE output | PG4, CN12 pin 69 | EVM J5 pin 9. Firmware drives this; do not force it externally. Retain effective ~10 kOhm pull-down at driver. |
-| Driver nFAULT input | PE6, CN11 pin 62 | EVM J5 pin 15; active LOW hardware shutdown. Retain effective 3.3 V pull-up. This is real driver fault feedback, not a user RUN switch. |
-| Logic supply / ground | Nucleo 3.3 V / GND | EVM J5 pin 1 VDDIO / J5 pin 4 GND; common analog reference. Verify rail straps/population. |
+| Signed speed pot | PA3, A0 / CN9 pin 1; also CN12 pin 37 | 0–3 V, common GND; 1.3–1.7 V is neutral |
+| Physical RUN | PG2, CN11 pin 42 | HIGH=3.3 V requests operation; LOW/disconnected stops. Internal pull-down; the user's external 4.7 kOhm pull-down is suitable. Switch/jumper connects to 3.3 V; do not short a driven HIGH directly to GND. |
+| Driver ENABLE output | PG4, CN12 pin 69 | EVM J5 pin 9; firmware owns this output. Retain effective ~10 kOhm pull-down at driver. |
+| Driver nFAULT input | PE6, CN11 pin 62 | EVM J5 pin 15; real active-LOW fault feedback. Effective pull-up to 3.3 V, about 4.7 kOhm if needed; never a hard tie masking faults. |
+| Logic supply / ground | Nucleo 3.3 V / GND | EVM J5 pin 1 VDDIO / J5 pin 4 GND; verify straps/population. |
 
-Connect the six PWM wires (v0.4.1 moves INLB from PB0 to PE10) (PE9/PE8, PE11/PE10, PE13/PE12 to INHA/INLA, INHB/INLB, INHC/INLC). Use DRV8304H hardware MODE=AGND/6-PWM and CAL low. Record GAIN/IDRIVE/VDS settings. Encoder can remain disconnected. Motor windings connect to EVM A/B/C; the winding supply is 24 V at the motor-power terminal, independent of encoder/MCU logic supply. See BOARD_CONFIG.md for every header location.
+Six PWM connections: PE9/PE8 -> INHA/INLA, PE11/PE10 -> INHB/INLB, PE13/PE12 -> INHC/INLC. Use hardware MODE=AGND (6-PWM), CAL low, and record GAIN/IDRIVE/VDS settings. Supply motor power terminal J1 from current-limited 24 V; winding leads go to A/B/C at J2. Encoder can remain disconnected. Full header locations are in [BOARD_CONFIG.md](BOARD_CONFIG.md).
 
-Remove any PE6 test fixture that overrides/masks the actual fault signal. A pull-up resistor is appropriate for the open-drain output; a hard tie to 3.3 V is not. Do not repurpose nFAULT as RUN during motor operation.
+Suggested winding record: red=A, black=B, yellow=C, an arbitrary reproducible assignment rather than a verified manufacturer phase/color code. All three are switched winding leads, not supply/ground. Connect or swap only with bus power off and discharged. Physical CW/CCW depends on phase order and viewing side; the high-voltage half retains the existing positive field sequence.
 
-## Start, stop and restart
+## Analog mapping
 
-1. Secure the unloaded motor and establish the bench power/current limit and cutoff. Start with RUN LOW/disconnected and pot at minimum (firmware ADC <=100 mV). Power/reset the Nucleo; it remains disabled. Connect winding leads only with motor power off.
-2. Before a winding connection, use the same RUN/pot sequence to scope the powered EVM gates with the motor disconnected. Verify GH minus SH using an appropriate differential probe, low-side gate-to-source, non-overlap and inhibition. Follow BENCH_SWITCHING_VALIDATION.md stage 2; MCU PWM alone does not verify MOSFET switching.
-3. Once power-stage checks pass, power down/connect the motor, restore current-limited 24 V, and keep RUN LOW for at least 20 ms. Raise RUN to 3.3 V for at least 20 ms with the pot at minimum. Yellow LD2 turns on when armed (OPEN_IDLE); ENABLE/PWM remain off until speed is requested.
-4. Raise the pot gently, initially around 0.15–0.3 V (5–10 RPM commanded). Crossing 100 mV begins driver wake (~10 ms, PWM off), fixed-angle alignment (1 V ramps over 0.5 s, total 2 s), then positive rotating field. Speed ramps at 10 RPM/s; field voltage ramps toward 2 V. Allow the alignment period before expecting continuous rotation. Alignment can initially move either direction.
-5. RUN LOW disables PWM/ENABLE on the next nominal 1 ms control tick, with a final GPIO check before authorization. This is a software bench stop, not a certified hardware emergency stop or brake; the motor coasts. A raw LOW stops immediately at sampling; 20 ms LOW then 20 ms HIGH are required to rearm.
-6. Pot back to <=100 mV ramps commanded speed to zero then coasts to OPEN_IDLE. From 100 RPM this ramp can take approximately 10 seconds; RUN LOW remains the immediate sampled inhibit. With RUN still HIGH, raising the pot again redoes wake/alignment/run. To revoke authorization, lower RUN.
+| PA3 voltage | Commanded mechanical RPM |
+| --- | ---: |
+| 0 V | -100 |
+| 0.04 V (reported pot minimum) | -96.92 |
+| 0.65 V | -50 |
+| 1.3–1.7 V inclusive | 0 |
+| 2.35 V | +50 |
+| 3.0 V | +100 |
 
-Boot/reset with RUN already HIGH never arms. Lower RUN for 20 ms, set the pot to minimum, then raise RUN for 20 ms. A HIGH edge while the pot is above 100 mV, ADC invalid/stale, or the controller is not disabled is consumed/refused; lowering only the pot afterward does not arm. Cycle RUN LOW -> HIGH again. Low/high timing uses unsigned elapsed arithmetic across tick wrap.
+Below 1.3 V: RPM = 100 * (V - 1.3) / 1.3. Above 1.7 V: RPM = 100 * (V - 1.7) / 1.3, clamped to +100. Each active span is 1.3 V: sensitivity is 76.923 RPM/V, 2.308 times the preceding 33.333 RPM/V. These are field-speed commands, not measured shaft speeds. Measure actual PA3 voltage; VDDA scaling uses DEMO_ADC_VREF=3.3 V. Inputs 3.0–3.15 V clamp to +100; above 3.15 V, invalid or stale ADC data faults while armed.
 
-Red LD3 means a latched software fault. Lower RUN, investigate/remove the cause, turn the pot to minimum, and press RESET. Then make a fresh RUN transition. Releasing nFAULT or cycling RUN alone cannot clear/restart a fault. There is no GPIO fault-clear action. Closed-loop behavior remains the previous console/encoder workflow after selecting DEMO_DEFAULT_OPEN_LOOP=0 and rebuilding. Set DEMO_OPEN_BOARD_CONTROL=0 for the prior serial-armed open-loop path. Runtime mode switching is disabled in this standalone profile; select before flashing.
+**0 V now commands full reverse, not stop.** The previous 100 mV motor deadband is removed. An old PA3-to-GND pull-down no longer gives an unplugged-input stop. If an unplugged command wire should bias neutral, use equal resistors (for example 10 kOhm each) from PA3 to Nucleo 3.3 V and GND, giving approximately 1.65 V; remove any previous pull-down and meter-check pot loading/endpoints. Firmware cannot distinguish an intentional low command from a disconnected signal held low once armed. RUN LOW remains the independent stop.
 
-## What the pot controls
+## Start and wait-for-neutral protection
 
-Commanded RPM = V/3 * 100 above the 100 mV deadband. Thus 0.3 V=10 RPM, 0.75 V=25 RPM, 1.5 V=50 RPM, 3 V=100 RPM. Sensitivity is 33.333 RPM/V above the unchanged 100 mV deadband, compared with the original 10 RPM/V. This controls rotating-field speed, not measured rotor speed or duty magnitude. The encoder is not used to prove rotation. Positive phase sequence is fixed; physical direction depends on winding order. Power off before swapping phases.
+1. Secure the unloaded motor and check the power-stage waveforms/inhibition using [BENCH_SWITCHING_VALIDATION.md](BENCH_SWITCHING_VALIDATION.md). Start with RUN LOW and the pot around 1.5 V. Connect winding leads only with motor power off.
+2. Power/reset the Nucleo; PWM and ENABLE remain off. Keep RUN LOW for at least 20 ms, then HIGH for at least 20 ms. This requests operation.
+3. If the pot is outside 1.3–1.7 V, the request waits with PWM/ENABLE off and yellow LD2 blinking at 2 Hz. Bring the pot into the center band and hold it there continuously for 200 ms. A valid/fresh ADC and foreground liveness are required throughout; leaving the band or losing freshness resets the dwell. No second RUN edge is needed for that pending request.
+4. Yellow LD2 becomes steady when armed (OPEN_IDLE). Center still produces no PWM/ENABLE. Move slightly above 1.7 V or below 1.3 V to spin: e.g. 1.83 V -> +10 RPM or 1.17 V -> -10 RPM. Allow 10 ms driver wake, 2 s alignment, then a 10 RPM/s speed ramp. Alignment may initially move the rotor in either direction.
+5. RUN LOW stops on the next nominal 1 ms control sample and cancels any waiting request. A final GPIO check also gates output authorization. This revokes drive immediately at sampling; it is not a mechanical brake. A new start needs stable RUN LOW then HIGH and a fresh center dwell.
 
-The fixed 1 V alignment/2 V run effort and provisional 100 RPM limit are configurable starting points, not motor ratings or a calibrated current limit. Low-side/phase/bus ADC feedback is still unused, so current and loss of synchronism are not regulated/detected. Watch current and unloaded rotor motion; disable if it stalls or behaves unexpectedly. The bench supply's current limit may collapse the bus and cause undervoltage; distinguish that from a timing fault.
+**Boot/reset with RUN already HIGH never arms**, even if the pot later enters neutral. Lower RUN for 20 ms and raise it again to make a fresh request. This boot interlock remains independent of the new analog protection. Software DISABLE/stop also cancels waiting. Faults remain latched: lower RUN, remove the cause, return the pot to center, RESET, then make a fresh RUN transition. A fault release or RUN toggle alone never clears a fault. Red LD3 indicates a latched fault.
 
-To repeat MCU-only scope tests, set DEMO_PWM_SCOPE_TEST=1 and rebuild: driver ENABLE is forced LOW, identical duty follows the pot, and PE6 again acts as a diagnostic permit only with the driver disconnected. Return it to 0 before motor testing.
+## Center stop, restart and reversal
 
-References: [ST UM2407 connectors/LEDs](https://www.st.com/resource/en/user_manual/um2407-stm32h7-nucleo144-boards-mb1364-stmicroelectronics.pdf), [TI DRV8304 6-PWM/wake/fault behavior](https://www.ti.com/lit/ds/symlink/drv8304.pdf). Configured timing/voltage expectations still require physical confirmation.
+Center commands zero field speed. Running speed ramps toward zero at 10 RPM/s; at zero PWM/ENABLE turn off, followed by a 1 s coast pause and return to OPEN_IDLE. From 100 RPM, the commanded ramp takes approximately 10 s. Neutral is **not energized position holding**; the actual rotor can coast independently.
 
-## User-reported gate-driver observations — 2026-10-13
+An opposite-direction request first ramps the existing signed field speed to zero, inhibits all drive for 1 s (OPEN_COAST), then performs a fresh driver wake and 2 s alignment before ramping in the new direction. It never steps directly from positive to negative commutation. If reversal is canceled before reaching zero, it can resume the original direction. Changing direction or entering center during alignment cancels excitation and starts the coast pause. RUN LOW or a fault inhibits during every stage.
 
-The user observed complementary MCU PWM and faster duty-envelope modulation as pot voltage increased. With the EVM connected, GLA-to-GND switched to about 10 V (approximately -150 mV minimum), while GHA-to-GND initially stayed near 0 V (approximately -400 mV minimum). After setting hardware MODE to GND, the user reported GHA-to-GND reaching 34 V with a stated 24 V bus. This is consistent with proper high-side drive, and the MODE configuration was likely responsible for the prior behavior; it is not a direct gate-to-source measurement. Actual simultaneous SHA voltage, GHA-SHA waveform, high/low non-overlap, supply current, other phase gates and loaded switching remain unverified. No scope captures or agent hardware measurements were provided. Motor connection/spin acceptance remains pending.
+The 1 s pause (DEMO_OPEN_COAST_MS) is a provisional bench setting, **not proof of mechanical standstill**. There is no encoder/current feedback here. Begin reversals at low speeds and confirm actual rotor motion/current before trying full speed. Full +100 to -100 command reversal takes roughly 10 s down + 1 s coast + 2 s alignment + 10 s up, plus wake timing. Yellow LD2 stays steady during coast because RUN authorization remains active.
 
-## First motor hookup — 2026-10-13
+## Limits and validation
 
-The user identifies three winding leads as red/black/yellow. For this encoder-free open-loop test, choose and record red=A, black=B, yellow=C at EVM J2; this is a suggested arbitrary mapping, not a verified manufacturer color code. All three are switched phase leads: none is a direct 24 V or ground connection. Interchanging any two winding leads reverses the rotating-field direction relative to the rotor; only change connections with bus power off and discharged. Once closed-loop sensing is introduced, repeat calibration after a phase-order change. Encoder leads are a separate 3.3 V interface and may remain disconnected here.
+Configured 11 pole pairs, 24 V bus, 1 V alignment ramp over 0.5 s within 2 s, 2 V run-vector magnitude, 2 V/s voltage slew, and +/-100 RPM ceiling remain. At either full-scale speed, electrical field frequency magnitude is 18.333 Hz. No phase-current regulation, measured RPM/stall detection or measured standstill is supplied. Supply current limiting can collapse the bus and trigger undervoltage. Check current/temperature and stop for roughness or stall rather than increasing voltage blindly.
 
-Before applying motor power, use a meter to compare the three lead-pair resistances (similar finite values, accounting for meter/lead resistance) and check no winding lead conducts to the motor housing. Reconfirm MODE=AGND, INLB=PE10, gate-to-source non-overlap for all phases, RUN low/reset inhibition and actual nFAULT shutdown. Use an unloaded secured motor with free rotation, current-limited 24 V and accessible cutoff. A 0.5 A bus current limit is a conservative initial bench trial setting, not a motor rating or a regulated phase-current limit; supply limiting can cause bus collapse/undervoltage. Start at the reported 40 mV pot minimum with RUN low, arm with a fresh RUN transition, then try about 0.15–0.3 V (5–10 RPM commanded), allowing the 2 s alignment and slow rotation. Observe current/motion and stop for unexpected heating, repeated jerking or stall. Recheck VGS/ringing/non-overlap with the motor attached. Manufacturer specifies 24 V/1.4 A rated and 4 A maximum; the firmware still does not regulate phase current. [DFRobot FIT1036](https://wiki.dfrobot.com/fit1036/).
+Bench-check startup with the pot at both extremes; RUN request must wait with gates off, brief center visits must not arm, and 200 ms in center must arm without spinning. Check RUN LOW cancels waiting, reset with RUN HIGH stays disabled, both low-speed directions work, center decelerates/coasts, and reversal disables/re-aligns. Record scope/current/RPM evidence in [VALIDATION.md](VALIDATION.md).
 
-## Higher-speed step — 2026-10-13
+For MCU-only scope testing set DEMO_PWM_SCOPE_TEST=1: ENABLE stays LOW, identical duties follow the original unipolar 0–3 V mapping, and <=100 mV disables PWM. That diagnostic profile does not use center-neutral protection and must not drive a motor. Return it to 0 afterward. Set DEMO_DEFAULT_OPEN_LOOP=0 and rebuild for the existing encoder/console-controlled position workflow. Set DEMO_OPEN_BOARD_CONTROL=0 for serial-armed open loop; ARM then requires center input but does not use the physical RUN 200 ms waiting workflow.
 
-The user reports the motor now spins, establishing qualitative open-loop rotation. v0.4.2 changes only the analog maximum to 100 RPM. Alignment, 10 RPM/s acceleration/deceleration, 2 V run magnitude, physical RUN/100 mV ARM and fault behavior remain. Full-scale startup needs approximately 2 s alignment plus 10 s speed ramp. With 11 pole pairs, 100 RPM is 18.333 Hz electrical. Actual shaft RPM, current, temperature and synchronization across the new range remain unverified. Fixed 2 V may be insufficient at higher speed/back-EMF/load; a higher field-speed command can lose synchronization. Reduce the pot or inhibit RUN for roughness/stall, and investigate before increasing voltage/current. The motor rating of 1100 RPM at 24 V is not achievable evidence for this fixed low-voltage open-loop profile. [DFRobot FIT1036](https://wiki.dfrobot.com/fit1036/).
+References: [TI DRV8304 6-PWM/wake/fault behavior](https://www.ti.com/lit/ds/symlink/drv8304.pdf), [ST UM2407 connectors](https://www.st.com/resource/en/user_manual/um2407-stm32h7-nucleo144-boards-mb1364-stmicroelectronics.pdf), [DFRobot FIT1036 parameters](https://wiki.dfrobot.com/fit1036/).

@@ -2,9 +2,9 @@
 
 **v0.4.1 wiring change:** INLB now comes from **PE10 / CN12 pin 47**, replacing PB0 / CN11 pin 34. Move that wire with power off before energizing the driver. See [phase-B diagnostics](PHASE_B_PWM_DIAGNOSTIC.md).
 
-Current v0.4.2 default: **open-loop motor control using PG2 RUN and the PA3 pot**, with no serial commands, encoder or Ethernet required. Scope-test mode is now off. See [OPEN_LOOP_BOARD_CONTROL.md](OPEN_LOOP_BOARD_CONTROL.md) for wiring, low-to-high RUN/zero-speed arming and fault reset.
+Current v0.5.0 default: **bidirectional open-loop motor control using PG2 RUN and the PA3 pot**, without serial commands, encoder or Ethernet. RUN requests wait for 1.3–1.7 V continuously for 200 ms before arming. See [OPEN_LOOP_BOARD_CONTROL.md](OPEN_LOOP_BOARD_CONTROL.md).
 
-Updated 2026-10-12. This is the implemented pin allocation; continuity and waveform checks on the actual board revision remain pending. No BoosterPack stacking: use a labelled harness.
+Updated 2026-10-13. This is the implemented pin allocation; continuity and waveform checks on the actual board revision remain pending. No BoosterPack stacking: use a labelled harness.
 
 ## Harness
 
@@ -32,7 +32,7 @@ Connect the three motor winding leads to EVM phases A/B/C. Do not infer encoder 
 
 Supply the EVM motor power terminal from the 24 V bench supply, with a suitable fuse, conservative current limit and accessible power cutoff. Power the Nucleo from ST-LINK USB. Keep the motor-current return out of the thin signal-ground harness. J5 pin 1 supplies VDDIO; it is not permission to join unrelated regulator outputs. Verify EVM logic rail/strap population before powering.
 
-Add an effective ~10 kΩ ENABLE-to-ground resistor at the EVM so reset/unpowered MCU means disabled. nFAULT is open drain: confirm an effective pull-up to **3.3 V**, adding about 4.7 kΩ if needed. Inspect existing pulls before adding or overriding them. A 10 kΩ PA3-to-ground pull-down is useful for a disconnected target lead, although unplug still looks like a valid 0° command.
+Add an effective ~10 kΩ ENABLE-to-ground resistor at the EVM so reset/unpowered MCU means disabled. nFAULT is open drain: confirm an effective pull-up to **3.3 V**, adding about 4.7 kΩ if needed. Inspect existing pulls before adding or overriding them. For bidirectional open loop, do not use the old PA3-to-ground pull-down as an unplugged-input stop: 0 V now means full reverse. Equal 10 kOhm resistors from PA3 to 3.3 V and GND bias an unplugged signal near 1.65 V (neutral); remove any old pull-down and verify pot loading/endpoints. Firmware cannot identify a disconnected analog wire held low once armed. In closed-loop position mode, 0 V remains a valid 0 degree command.
 
 ## DRV8304H straps
 
@@ -60,7 +60,7 @@ GAIN (J4 pin 18), IDRIVE (J5 pin 18) and VDS (J5 pin 20) retain a deliberately v
 | Ethernet | Nucleo LAN8742, PHY address 0; PA1/2/7, PB13, PC1/4/5, PG11/13, AF11 |
 | Watchdog | IWDG1, LSI /32, reload 999: nominal ~1 s, LSI tolerance applies; no debug freeze |
 | Fault indicator | Nucleo LD3, PB14, high on software fault |
-| Open-loop armed indicator | Nucleo yellow LD2, PE1, high while armed/waking/aligning/running in physical profile |
+| Open-loop armed indicator | Nucleo yellow LD2, PE1, 2 Hz blink while waiting for neutral; steady while armed/waking/aligning/running/coasting |
 
 The AS5600 remains powered continuously. Angle reads are asynchronous and launched once per servo tick when I2C is idle; health reads replace occasional angle reads. Expect occasional 2 ms angle spacing. A failed boot configuration requires fixing the encoder wiring and rebooting. There is no automatic active-drive I2C recovery; stale data inhibits drive.
 
@@ -82,7 +82,7 @@ References: [ST UM2407, connectors and VCP](https://www.st.com/resource/en/user_
 
 ## Open-loop profile assumptions — 2026-10-12
 
-No new pin/harness allocation is needed. PA3 becomes a one-way speed command only when mode OPEN_LOOP is selected; fixed positive A/B/C sequence, 11 pole pairs, 24 V configured bus, 6-PWM straps and 3.3 V digital interface remain assumptions to verify on the bench. Encoder may be absent for open-loop drive; its power/pulls and boot readback must work before closed-loop calibration. PB6/PB7 have no fitted Nucleo external I2C pull-ups; inspect the encoder-board pulls or provide appropriate pulls to 3.3 V. EVM current/protection settings remain unverified and are not replaced by a voltage clamp. Full limits, mode sequence and a correction table are in [OPEN_LOOP_GUIDE.md](OPEN_LOOP_GUIDE.md).
+No new pin/harness allocation is needed. PA3 is a signed speed command in OPEN_LOOP (0 V=-100 RPM, 1.3–1.7 V=neutral, 3 V=+100 RPM); signed generated phase sequence, 11 pole pairs, 24 V configured bus, 6-PWM straps and 3.3 V digital interface remain assumptions to verify on the bench. Encoder may be absent for open-loop drive; its power/pulls and boot readback must work before closed-loop calibration. PB6/PB7 have no fitted Nucleo external I2C pull-ups; inspect the encoder-board pulls or provide appropriate pulls to 3.3 V. EVM current/protection settings remain unverified and are not replaced by a voltage clamp. Full limits, mode sequence and a correction table are in [OPEN_LOOP_GUIDE.md](OPEN_LOOP_GUIDE.md).
 
 ## One-line selection and scope sequence — 2026-10-13
 
