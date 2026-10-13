@@ -1,5 +1,7 @@
 # PWM, gate-driver and first-spin validation
 
+Current v0.3.0 default: **automatic MCU-only PWM scope test** (`DEMO_PWM_SCOPE_TEST=1`). No serial/encoder/Ethernet or ARM is required; PG4/driver ENABLE remains LOW. PA3 controls duty, not motor speed. See [PWM_SCOPE_TEST.md](PWM_SCOPE_TEST.md). Set the test switch to 0 and rebuild before using the motor procedures below.
+
 Updated 2026-10-13. Firmware v0.2.2. All figures below are configured expectations, not scope measurements. Record measured results in [VALIDATION.md](VALIDATION.md). Wiring and EVM straps are in [BOARD_CONFIG.md](BOARD_CONFIG.md).
 
 ## Change one line before flashing

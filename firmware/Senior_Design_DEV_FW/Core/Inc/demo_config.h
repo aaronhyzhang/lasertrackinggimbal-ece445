@@ -32,7 +32,13 @@
 #define DEMO_OPEN_ARM_MAX_VOLTS 0.10f /* Require the zero-speed deadband before ARM. */
 #define DEMO_OPEN_ALIGN_MS 2000u
 #define DEMO_OPEN_ALIGN_RAMP_MS 500u
-#define DEMO_FW_VERSION "0.2.2"
+#ifndef DEMO_PWM_SCOPE_TEST
+#define DEMO_PWM_SCOPE_TEST 1 /* 1=automatic MCU PWM scope test, driver ENABLE always LOW; 0=motor firmware. */
+#endif
+#if DEMO_PWM_SCOPE_TEST != 0 && DEMO_PWM_SCOPE_TEST != 1
+#error "DEMO_PWM_SCOPE_TEST must be 0 or 1"
+#endif
+#define DEMO_FW_VERSION "0.3.0"
 #define DEMO_PWM_ARR 2500u /* 100 MHz / (2 * 2500) = 20 kHz */
 #define DEMO_CONTROL_HZ 1000u
 #define DEMO_UDP_PORT 5005u

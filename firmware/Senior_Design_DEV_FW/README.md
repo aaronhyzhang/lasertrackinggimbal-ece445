@@ -1,8 +1,10 @@
 # H753 motor demo firmware
 
-Updated 2026-10-12. Firmware v0.2.2. Target: NUCLEO-H753ZI / STM32H753ZIT6, BOOSTXL-DRV8304H, one DFRobot FIT1036 with AS5600, 24 V motor bus.
+Current v0.3.0 default: **automatic MCU-only PWM scope test** (`DEMO_PWM_SCOPE_TEST=1`). No serial/encoder/Ethernet or ARM is required; PG4/driver ENABLE remains LOW. PA3 controls duty, not motor speed. See [PWM_SCOPE_TEST.md](docs/PWM_SCOPE_TEST.md). Set the test switch to 0 and rebuild before using the motor procedures below.
 
-Change one line in `Core/Inc/demo_config.h`: `#define DEMO_DEFAULT_OPEN_LOOP 1` selects open-loop speed; change 1 to 0 for closed-loop position. Normal CubeIDE and CLI builds use that line. Current setting is 1; startup remains disabled.
+Updated 2026-10-12. Firmware v0.3.0. Target: NUCLEO-H753ZI / STM32H753ZIT6, BOOSTXL-DRV8304H, one DFRobot FIT1036 with AS5600, 24 V motor bus.
+
+For motor firmware (`DEMO_PWM_SCOPE_TEST=0`), change one line in `Core/Inc/demo_config.h`: `#define DEMO_DEFAULT_OPEN_LOOP 1` selects open-loop speed; change 1 to 0 for closed-loop position. Normal CubeIDE and CLI builds use that line. Current setting is 1; startup remains disabled.
 
 For MCU PWM -> driver -> motor scope checks and startup timing, read [BENCH_SWITCHING_VALIDATION.md](docs/BENCH_SWITCHING_VALIDATION.md).
 

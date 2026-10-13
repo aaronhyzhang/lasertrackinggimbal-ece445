@@ -1,5 +1,7 @@
 # Nucleo / BOOSTXL wiring and configuration
 
+Current v0.3.0 default: **automatic MCU-only PWM scope test** (`DEMO_PWM_SCOPE_TEST=1`). No serial/encoder/Ethernet or ARM is required; PG4/driver ENABLE remains LOW. PA3 controls duty, not motor speed. See [PWM_SCOPE_TEST.md](PWM_SCOPE_TEST.md). Set the test switch to 0 and rebuild before using the motor procedures below.
+
 Updated 2026-10-12. This is the implemented pin allocation; continuity and waveform checks on the actual board revision remain pending. No BoosterPack stacking: use a labelled harness.
 
 ## Harness

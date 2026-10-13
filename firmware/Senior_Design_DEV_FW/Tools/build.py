@@ -22,7 +22,9 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", choices=["Debug", "Release"], default="Debug")
     parser.add_argument("--profile", choices=["configured", "closed-loop", "open-loop"], default="configured",
-                        help="Default uses demo_config.h; explicit profiles override only the boot mode")
+                        help="Default uses demo_config.h; explicit profiles select motor firmware and override its boot mode")
+    parser.add_argument("--scope-test", choices=["configured", "on", "off"], default="configured",
+                        help="Default follows header; on builds MCU-only ADC/PWM test; off builds motor firmware")
     parser.add_argument("--toolchain", type=pathlib.Path, help="ARM GCC bin directory")
     parser.add_argument("--project", type=pathlib.Path, default=pathlib.Path(__file__).resolve().parents[1])
     args = parser.parse_args()
@@ -46,6 +48,10 @@ def main():
                    "-DUSE_HAL_DRIVER", "-DUSE_PWR_LDO_SUPPLY", "-DSTM32H753xx"]
     if args.profile != "configured":
         flags += [f"-DDEMO_DEFAULT_OPEN_LOOP={int(args.profile == 'open-loop')}"]
+    if args.scope_test != "configured":
+        flags += [f"-DDEMO_PWM_SCOPE_TEST={int(args.scope_test == 'on')}"]
+    elif args.profile != "configured":
+        flags += ["-DDEMO_PWM_SCOPE_TEST=0"]
     for inc in ["Core/Inc", "Drivers/STM32H7xx_HAL_Driver/Inc",
                 "Drivers/STM32H7xx_HAL_Driver/Inc/Legacy", "Drivers/CMSIS/Device/ST/STM32H7xx/Include",
                 "Drivers/CMSIS/Include", "Middlewares/LwIP/src/include"]:

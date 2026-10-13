@@ -29,7 +29,7 @@ def main():
                    str(root / "Core/Src/open_loop.c"),
                    "-lm", "-o", str(app_executable)], check=True)
     subprocess.run([str(app_executable)], check=True)
-    for name, defines in [("test_open_loop", []), ("test_defaults", []),
+    for name, defines in [("test_open_loop", []), ("test_pwm_scope", []), ("test_defaults", []),
                           ("test_defaults", ["-DDEMO_DEFAULT_OPEN_LOOP=0"]),
                           ("test_defaults", ["-DDEMO_DEFAULT_OPEN_LOOP=1"])]:
         label = name + ("_override_" + defines[0].split("=")[-1] if defines else "")

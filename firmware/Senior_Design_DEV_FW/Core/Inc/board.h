@@ -8,6 +8,7 @@ extern UART_HandleTypeDef huart3;
 extern TIM_HandleTypeDef htim1, htim7;
 void board_init(void);
 void board_start_control(void);
+void board_pwm_scope_poll(void);
 void board_sensors_start(void);
 void board_sensor_tick(void);
 void board_inputs(motor_input_t *in, uint16_t *adc);

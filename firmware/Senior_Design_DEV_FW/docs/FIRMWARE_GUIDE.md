@@ -1,5 +1,7 @@
 # Firmware and bench bring-up guide
 
+Current v0.3.0 default: **automatic MCU-only PWM scope test** (`DEMO_PWM_SCOPE_TEST=1`). No serial/encoder/Ethernet or ARM is required; PG4/driver ENABLE remains LOW. PA3 controls duty, not motor speed. See [PWM_SCOPE_TEST.md](PWM_SCOPE_TEST.md). Set the test switch to 0 and rebuild before using the motor procedures below.
+
 Updated 2026-10-12. Firmware v0.2.2. Software builds/tests pass; all electrical and motion checks below remain pending. This is a single unloaded-motor proof of concept on dev boards.
 
 For the one-line pre-flash mode choice and MCU/gate-driver/motor scope sequence, read [BENCH_SWITCHING_VALIDATION.md](BENCH_SWITCHING_VALIDATION.md).

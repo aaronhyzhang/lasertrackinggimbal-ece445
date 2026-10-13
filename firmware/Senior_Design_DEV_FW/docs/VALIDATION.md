@@ -1,8 +1,12 @@
 # Validation record
 
+## Current v0.3.0 MCU-only PWM test — 2026-10-13
+
+Added an automatic ADC-to-duty path with no ARM, comms, encoder, alignment or rotating field. Driver ENABLE stays LOW, including in board_apply. Hardware break remains active; PE6 is a pull-high permit/pull-low stop with automatic diagnostic resume. ADC invalid/stale/overrange inhibits all outputs. Scope captures and physical GPIO/gate checks are pending. See [PWM_SCOPE_TEST.md](PWM_SCOPE_TEST.md). Configured scope-test Debug/Release and explicit open/closed-loop motor Debug/Release builds pass. Active DEV native CubeIDE Debug/Release report zero errors/warnings. All 33 recorded source hashes match the active DEV copy. The existing motor/app/client tests plus scope duty/40–100 mV/ADC-age/range/permit tests pass. Current software build/test evidence is in build_evidence.json.
+
 Updated 2026-10-13. Software evidence only; no flash or physical bench validation performed.
 
-## Current v0.2.2 threshold update — 2026-10-13
+## Historical v0.2.2 threshold update — 2026-10-13
 
 The analog pot minimum was reported near 40 mV. The zero-speed deadband and ARM maximum are now both 100 mV; at or below this measured ADC voltage the open-loop command is zero. Above it the existing V/3 speed scaling and wake/alignment sequence apply. Rebuild and flash; verify the ADC reading at pot minimum and confirm OPEN_IDLE after ARM. No physical threshold/switching checks have been performed. Configured ARM GCC Debug/Release builds and the retained host/client tests pass. All 31 source hashes match the active DEV copy. Build/test results and source/BIN hashes for this update are recorded in build_evidence.json. Rebuild in CubeIDE before flashing; its existing generated output folders may still hold the preceding revision. The native CubeIDE evidence below is from the preceding revision.
 

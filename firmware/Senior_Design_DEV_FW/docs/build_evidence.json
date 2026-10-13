@@ -1,28 +1,51 @@
 {
   "date": "2026-10-13",
-  "firmware": "0.2.2",
+  "firmware": "0.3.0",
   "toolchain": "ARM GCC 13.3.1 / STM32CubeIDE 1.18.0",
-  "configured_header_default": "OPEN_LOOP (DEMO_DEFAULT_OPEN_LOOP=1)",
-  "native_cubeide": "Historical v0.2.1 Debug/Release zero errors/warnings; native IDE was not rerun for v0.2.2",
-  "dma_region": {
-    "start": "0x30000000",
-    "end_exclusive": "0x30004B40",
-    "bytes": 19264
-  },
+  "configured_header_default": "MCU_PWM_SCOPE_TEST (DEMO_PWM_SCOPE_TEST=1), motor default OPEN_LOOP when scope test=0",
+  "native_cubeide": "Active DEV native Debug/Release MCU scope builds: zero errors/warnings",
   "binaries": {
     "ConfiguredDebug": {
       "path": "build/Debug/Senior_Design_DEV_FW.bin",
       "profile": "configured",
-      "boot_mode": "OPEN_LOOP",
-      "bytes": 102364,
-      "sha256": "7b2007000cd28630bbca352a28ff77ad153cb6f60f301488bb9a26235e744d52"
+      "boot_mode": "MCU_PWM_SCOPE_TEST",
+      "bytes": 60956,
+      "sha256": "932b3b956923e3de2d565a4d834a7a808e520d2c913dd431b6cd86ab0adc8e4b"
     },
     "ConfiguredRelease": {
       "path": "build/Release/Senior_Design_DEV_FW.bin",
       "profile": "configured",
+      "boot_mode": "MCU_PWM_SCOPE_TEST",
+      "bytes": 36116,
+      "sha256": "293ec1ad8cf17bd89cd14a91e1dcf4ca52895f1f2ddeb7e2ac146d70d778f59b"
+    },
+    "OpenLoopDebug": {
+      "path": "build/OpenLoop/Debug/Senior_Design_DEV_FW.bin",
+      "profile": "open-loop",
+      "boot_mode": "OPEN_LOOP",
+      "bytes": 102364,
+      "sha256": "01bb451292cb101d4e04ac6cd90f4ef04cbb706f8e3adbdda4af9e73d1976ee5"
+    },
+    "OpenLoopRelease": {
+      "path": "build/OpenLoop/Release/Senior_Design_DEV_FW.bin",
+      "profile": "open-loop",
       "boot_mode": "OPEN_LOOP",
       "bytes": 61568,
-      "sha256": "d0de7cd2e0d7488e676fab87470b5ccf74dd042d40f191e708e13ee7e33e0a64"
+      "sha256": "32b155f8fc59cce8401f2465710a47924093daadb6a6560665a385d7974e38f6"
+    },
+    "ClosedLoopDebug": {
+      "path": "build/ClosedLoop/Debug/Senior_Design_DEV_FW.bin",
+      "profile": "closed-loop",
+      "boot_mode": "CLOSED_LOOP",
+      "bytes": 102364,
+      "sha256": "6d4146caa4abb6587b7b43594b5e5df05be7f3d5b11c6ad71139f31d39ddc49a"
+    },
+    "ClosedLoopRelease": {
+      "path": "build/ClosedLoop/Release/Senior_Design_DEV_FW.bin",
+      "profile": "closed-loop",
+      "boot_mode": "CLOSED_LOOP",
+      "bytes": 61568,
+      "sha256": "5b09691c0e044c2997ad9c2a64ff903a0552cb761f3873dd902f5ef9e8bf482b"
     }
   },
   "sources": [
@@ -32,7 +55,7 @@
     },
     {
       "path": "Core/Inc/board.h",
-      "sha256": "a0b9c723dc299f8aa8568c83cb034819c9e0d2c3ec392cbe458b8e17be670f5e"
+      "sha256": "c79bacf34793f24eeb62f0ee92bb397a2cbc7d298ddcdb831e29f897940c2636"
     },
     {
       "path": "Core/Inc/demo_app.h",
@@ -40,7 +63,7 @@
     },
     {
       "path": "Core/Inc/demo_config.h",
-      "sha256": "4b1c2c9603301c6cbcd2acb376847816cb6964f917a4289c4faf9e19cbb5cc03"
+      "sha256": "0e1edc6fb7a45ca13526128de62be11d2d0155a000d90ae977094ab3d59241bd"
     },
     {
       "path": "Core/Inc/demo_console.h",
@@ -76,7 +99,7 @@
     },
     {
       "path": "Core/Src/board.c",
-      "sha256": "5456535724db294651b5a0d8440b7e14fb1ccc1b526610f6a322aaf452850011"
+      "sha256": "966ceeaeae73adc42a7fa05a8e5d8a32c77b396758b15274250a768f59df2e2c"
     },
     {
       "path": "Core/Src/demo_app.c",
@@ -96,7 +119,7 @@
     },
     {
       "path": "Core/Src/main.c",
-      "sha256": "3d078ae4d22191bb30bbe44f974c97340728476730491b1b20e4012214539bee"
+      "sha256": "53190e508a29d97f1ca1422c0a56d75d750c90cd908d6d406c20cbd10dab357a"
     },
     {
       "path": "Core/Src/motor_control.c",
@@ -140,22 +163,56 @@
     },
     {
       "path": "Tools/build.py",
-      "sha256": "44a0a206cb2d83c4af03e8dd8f30ee9ae8895052ca5f4a7277e97d30440c0331"
+      "sha256": "39666e8fee43122ab7604738e77e1054145bc39b00bbe84f2e50e10a0ca30cd0"
     },
     {
       "path": "Tools/test.py",
-      "sha256": "29ca79d94ac500a5a11b3be0f668074087320357d9456135e1ed3653ac4449a0"
+      "sha256": "fb17067a00802412de89833e63aab82a8b8f7b2614bce4063caeb428f4fdd1b5"
     },
     {
       "path": "Tools/udp_client.py",
       "sha256": "25041141decc4e1323059d5ac0e4abd6aeaff24e4ed1f68ef820001703ac816a"
+    },
+    {
+      "path": "Core/Inc/pwm_scope.h",
+      "sha256": "6ef578bcf37b437b370ace6521be58271594f3c3374d1f5a762077bf0da0e295"
+    },
+    {
+      "path": "Tests/test_pwm_scope.c",
+      "sha256": "682e25b3732711721099e1f29a54f5b8ba64f1d33166e75d3db8aef947f47f4b"
     }
   ],
-  "active_dev_verification": "v0.2.2 source synchronized; user must rebuild in CubeIDE before flashing. Active prior build outputs are not v0.2.2 evidence.",
+  "active_dev_verification": "v0.3.0 source synchronized and native Debug/Release rebuilt in active DEV; physical waveforms not tested.",
   "open_loop_thresholds": {
     "zero_speed_max_volts": 0.1,
     "arm_max_volts": 0.1,
     "reported_pot_minimum_volts": 0.04
   },
-  "tests": "Retained portable C controller/application/open-loop/default tests and both Python client tests pass with 100 mV thresholds."
+  "tests": "Portable C controller/application/open-loop/default tests, new PWM scope mapping/permit/ADC tests, and both Python client tests pass.",
+  "dma_regions": {
+    "scope_test": {
+      "start": "0x30000000",
+      "end_exclusive": "0x30000000",
+      "bytes": 0
+    },
+    "motor_profiles": {
+      "start": "0x30000000",
+      "end_exclusive": "0x30004B40",
+      "bytes": 19264
+    }
+  },
+  "native_elfs": {
+    "Debug": {
+      "path": "Debug/Senior_Design_DEV_FW.elf",
+      "bytes": 2410524,
+      "sha256": "b9048e8f0da8ebac541381dcb3f13b8aa5907ff7d46a633c09849785b7eaf02d",
+      "profile": "MCU_PWM_SCOPE_TEST"
+    },
+    "Release": {
+      "path": "Release/Senior_Design_DEV_FW.elf",
+      "bytes": 62128,
+      "sha256": "7fdcc9330675030c7bb00556b2d4df95337858d425aa29346fdf8ada83cabea1",
+      "profile": "MCU_PWM_SCOPE_TEST"
+    }
+  }
 }

@@ -25,3 +25,5 @@ The build uses STM32CubeIDE's ARM GCC; `--toolchain <bin-directory>` supports an
 The dev project uses hand-owned HAL initialization, with the old IOC archived for reference. It boots inhibited and requires calibration, mechanical zero and explicit arm. The initial servo uses bounded voltage effort; current FOC, CAN, two-axis control and vision integration are deferred. Bench checks must precede motor operation.
 
 Build outputs, workspace state, runtime caches, local logs, downloaded vendor PDFs and local schematic attachments are not part of this source upload. Vendor source licenses are retained. Local validation metadata identifies the pre-upload snapshot; portable builds/tests should be rerun when source or board configuration changes.
+
+Current H753 v0.3.0 default is an automatic MCU-only ADC-to-duty scope test (driver ENABLE held LOW). See [PWM_SCOPE_TEST.md](Senior_Design_DEV_FW/docs/PWM_SCOPE_TEST.md); set DEMO_PWM_SCOPE_TEST=0 to restore motor firmware.

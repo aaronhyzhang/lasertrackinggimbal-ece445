@@ -1,6 +1,7 @@
 /* Hand-owned NUCLEO-H753ZI BSP. See docs/BOARD_CONFIG.md before changing pins. */
 #include "board.h"
 #include "demo_config.h"
+#include "pwm_scope.h"
 #include <string.h>
 ADC_HandleTypeDef hadc1;
 I2C_HandleTypeDef hi2c1;
@@ -15,7 +16,9 @@ static volatile uint16_t encoder_raw, adc_raw;
 static volatile bool encoder_valid, magnet_good, adc_valid;
 static uint8_t encoder_data[2], health_data;
 static bool read_health;
+#if !DEMO_PWM_SCOPE_TEST
 static uint32_t health_due;
+#endif
 uint32_t board_lock(void) { uint32_t m = __get_PRIMASK(); __disable_irq(); return m; }
 void board_unlock(uint32_t m) { __set_PRIMASK(m); }
 uint32_t board_us(void) { return TIM2->CNT; }
@@ -80,7 +83,7 @@ static void pins_init(void) {
     gpio(GPIOE,GPIO_PIN_8|GPIO_PIN_9|GPIO_PIN_11|GPIO_PIN_12|GPIO_PIN_13,
          GPIO_MODE_AF_PP,GPIO_PULLDOWN,GPIO_AF1_TIM1);
     gpio(GPIOB,GPIO_PIN_0,GPIO_MODE_AF_PP,GPIO_PULLDOWN,GPIO_AF1_TIM1);
-    /* PE6 is TIM1_BKIN2; no polarity inversion in AF2, active LOW in BDTR. */
+    /* PE6 is TIM1_BKIN2 on AF1, active LOW in BDTR. */
     gpio(GPIOE,GPIO_PIN_6,GPIO_MODE_AF_PP,GPIO_PULLUP,GPIO_AF1_TIM1);
     gpio(GPIOB,GPIO_PIN_6|GPIO_PIN_7,GPIO_MODE_AF_OD,GPIO_NOPULL,GPIO_AF4_I2C1);
     gpio(GPIOD,GPIO_PIN_8|GPIO_PIN_9,GPIO_MODE_AF_PP,GPIO_PULLUP,GPIO_AF7_USART3);
@@ -180,6 +183,7 @@ void board_sensors_start(void) {
     else encoder_valid=true;
 }
 void board_sensor_tick(void) {
+#if !DEMO_PWM_SCOPE_TEST
     if (HAL_I2C_GetState(&hi2c1)==HAL_I2C_STATE_READY) {
         uint32_t now=HAL_GetTick(); read_health=(int32_t)(now-health_due)>=0;
         HAL_StatusTypeDef s=HAL_I2C_Mem_Read_IT(&hi2c1,0x36u<<1,
@@ -187,6 +191,7 @@ void board_sensor_tick(void) {
             read_health?&health_data:encoder_data,read_health?1:2);
         if (s==HAL_OK && read_health) health_due=now+20u;
     }
+#endif
     if ((HAL_ADC_GetState(&hadc1)&HAL_ADC_STATE_REG_BUSY)==0u)
         (void)HAL_ADC_Start_IT(&hadc1);
 }
@@ -216,6 +221,9 @@ void board_inputs(motor_input_t *in,uint16_t *adc) {
     board_unlock(m);
 }
 void board_apply(const motor_output_t *out) {
+#if DEMO_PWM_SCOPE_TEST
+    (void)out; board_inhibit(); /* This build cannot authorize driver ENABLE. */
+#else
     uint32_t mask=board_lock();
     if (!out->enable || latched_fault!=FAULT_NONE || stop_latched) { board_inhibit(); board_unlock(mask); return; }
     GPIOG->BSRR=GPIO_PIN_4;
@@ -236,11 +244,40 @@ void board_apply(const motor_output_t *out) {
         }
     } else board_trip(FAULT_DRIVER);
     board_unlock(mask);
+#endif
 }
 void TIM1_BRK_IRQHandler(void) {
     if ((TIM1->SR&(TIM_SR_BIF|TIM_SR_B2IF))!=0) {
         board_trip(FAULT_DRIVER); __HAL_TIM_CLEAR_FLAG(&htim1,TIM_FLAG_BREAK|TIM_FLAG_BREAK2);
     }
+}
+
+void board_pwm_scope_poll(void) {
+#if DEMO_PWM_SCOPE_TEST
+    uint32_t mask=board_lock();
+    /* No path in this profile raises ENABLE, even when MOE is set. */
+    GPIOG->BSRR=(uint32_t)GPIO_PIN_4<<16;
+    bool permit=(GPIOE->IDR&GPIO_PIN_6)!=0 && latched_fault==FAULT_NONE;
+    uint32_t compare=pwm_scope_compare(adc_raw,adc_valid,HAL_GetTick()-adc_ms,permit);
+    if (!compare) {
+        board_inhibit();
+    } else {
+        /* Break hardware remains active; BIE is intentionally OFF in scope mode.
+         * PE6 low stops pulses; releasing it high allows this test to resume. */
+        CLEAR_BIT(TIM1->DIER,TIM_DIER_BIE);
+        SET_BIT(TIM1->CR1,TIM_CR1_UDIS);
+        TIM1->CCR1=compare; TIM1->CCR2=compare; TIM1->CCR3=compare;
+        CLEAR_BIT(TIM1->CR1,TIM_CR1_UDIS);
+        if ((TIM1->BDTR&TIM_BDTR_MOE)==0) {
+            /* Load the desired compare before the first visible pulse. */
+            TIM1->EGR=TIM_EGR_UG;
+            __HAL_TIM_CLEAR_FLAG(&htim1,TIM_FLAG_BREAK|TIM_FLAG_BREAK2);
+            __DSB(); SET_BIT(TIM1->BDTR,TIM_BDTR_MOE);
+        }
+    }
+    board_unlock(mask);
+    board_sensor_tick(); /* ADC only in this profile; no encoder dependency. */
+#endif
 }
 void board_watchdog_start(void) {
     watchdog.Instance=IWDG1; watchdog.Init.Prescaler=IWDG_PRESCALER_32;
