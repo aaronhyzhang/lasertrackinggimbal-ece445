@@ -1,6 +1,6 @@
 # PWM, gate-driver and first-spin validation
 
-Updated 2026-10-13. Firmware v0.2.1. All figures below are configured expectations, not scope measurements. Record measured results in [VALIDATION.md](VALIDATION.md). Wiring and EVM straps are in [BOARD_CONFIG.md](BOARD_CONFIG.md).
+Updated 2026-10-13. Firmware v0.2.2. All figures below are configured expectations, not scope measurements. Record measured results in [VALIDATION.md](VALIDATION.md). Wiring and EVM straps are in [BOARD_CONFIG.md](BOARD_CONFIG.md).
 
 ## Change one line before flashing
 
@@ -30,8 +30,8 @@ On an ordinary bench scope, channel ground clips are typically common and earth-
 
 ## Stage 1 — Nucleo PWM, no EVM or motor
 
-1. Select open loop in the header, rebuild, flash with the EVM disconnected, and open VCP at 115200 8N1. STATUS should show OPEN_LOOP, DISABLED, firmware 0.2.1. ENABLE/PG4 must remain low at boot.
-2. Set analog input to 0 V. Meter/check the ADC at 0/0.75/1.5/2.25/3 V. The deadband is 30 mV. ARM at zero should give OPEN_IDLE with **all six PWM outputs inactive**. It must not start automatically at reset.
+1. Select open loop in the header, rebuild, flash with the EVM disconnected, and open VCP at 115200 8N1. STATUS should show OPEN_LOOP, DISABLED, firmware 0.2.2. ENABLE/PG4 must remain low at boot.
+2. Set analog input to its minimum (approximately 40 mV on the reported pot, within the 100 mV deadband). Meter/check the ADC at 0/0.75/1.5/2.25/3 V. The deadband is 100 mV. ARM at zero should give OPEN_IDLE with **all six PWM outputs inactive**. It must not start automatically at reset.
 3. For this MCU-only test, hold PE6/nFAULT high with an appropriate pull-up resistor to 3.3 V (about 4.7 kΩ; the BSP also requests an internal pull-up). This is a test fixture for the absent driver, not a bypass to leave in place against a real fault output. Do not tie nFAULT directly to the supply. A real EVM's open-drain fault output must still be able to pull the line low.
 4. Issue ARM with input at zero, then raise the analog command. After 10 ms wake and the 2 s alignment stage, the generated field rotates. Check each pair below at roughly 50–100 ns/div for edge timing, then about 10 µs/div for the carrier. Use appropriate trigger levels near the logic thresholds and capture both edges.
 

@@ -1,6 +1,6 @@
 # Firmware and bench bring-up guide
 
-Updated 2026-10-12. Firmware v0.2.1. Software builds/tests pass; all electrical and motion checks below remain pending. This is a single unloaded-motor proof of concept on dev boards.
+Updated 2026-10-12. Firmware v0.2.2. Software builds/tests pass; all electrical and motion checks below remain pending. This is a single unloaded-motor proof of concept on dev boards.
 
 For the one-line pre-flash mode choice and MCU/gate-driver/motor scope sequence, read [BENCH_SWITCHING_VALIDATION.md](BENCH_SWITCHING_VALIDATION.md).
 

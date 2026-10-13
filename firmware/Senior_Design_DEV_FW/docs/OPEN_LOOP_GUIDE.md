@@ -1,6 +1,6 @@
 # Open-loop speed bring-up and mode selection
 
-Updated 2026-10-13. Firmware v0.2.1. One unloaded FIT1036 motor, NUCLEO-H753ZI, BOOSTXL-DRV8304H, configured 24 V bus. Software tests/builds pass; actual waveforms, current, alignment and motor synchronization remain unverified.
+Updated 2026-10-13. Firmware v0.2.2. One unloaded FIT1036 motor, NUCLEO-H753ZI, BOOSTXL-DRV8304H, configured 24 V bus. Software tests/builds pass; actual waveforms, current, alignment and motor synchronization remain unverified.
 
 ## One-line operating-mode choice before flashing
 
@@ -49,7 +49,7 @@ The previously reserved **PA3 / ADC1_INP15** remains the analog input. The measu
 | 2.25 V | 22.5 RPM | 4.125 Hz |
 | 3 V | 30 RPM | 5.5 Hz |
 
-The 30 RPM maximum is a provisional configurable bring-up choice, not the FIT1036 rated speed or a user-confirmed performance requirement. Adjust `DEMO_OPEN_MAX_RPM` after review/bench evidence. Above the zero deadband, speed = `V/3 * max_RPM`. A 0–30 mV deadband commands zero to avoid ADC noise starting a motor. Small readings from 3.0 to 3.15 V clamp to the maximum; above 3.15 V, negative/nonfinite values or stale/invalid ADC data fault while armed. Electrical input protection still has to keep PA3 within its supply limits.
+The 30 RPM maximum is a provisional configurable bring-up choice, not the FIT1036 rated speed or a user-confirmed performance requirement. Adjust `DEMO_OPEN_MAX_RPM` after review/bench evidence. Above the zero deadband, speed = `V/3 * max_RPM`. A 0–100 mV deadband commands zero, accommodating the reported approximately 40 mV pot minimum and ADC noise. Small readings from 3.0 to 3.15 V clamp to the maximum; above 3.15 V, negative/nonfinite values or stale/invalid ADC data fault while armed. Electrical input protection still has to keep PA3 within its supply limits.
 
 Defaults in `Core/Inc/demo_config.h`:
 
@@ -58,7 +58,7 @@ Defaults in `Core/Inc/demo_config.h`:
 - Open-loop rotating vector: **2 V** magnitude, using generated d voltage and zero q voltage. These are generated-frame coordinates, not rotor-oriented torque/current measurements.
 - Startup alignment: **1 V**, ramped over 0.5 s and held within a total 2 s timed stage.
 - Running voltage slew from alignment to 2 V: **2 V/s**.
-- ARM requires input in the **≤30 mV zero-speed region**; calibration/ZERO are not required in this mode.
+- ARM requires input in the **≤100 mV zero-speed region**; calibration/ZERO are not required in this mode.
 - Driver wake: **10 ms**, PWM inhibited; fault must be high before alignment.
 - ADC, foreground, external driver faults and control timing/watchdog checks remain active. Encoder faults/health do not gate open-loop drive.
 

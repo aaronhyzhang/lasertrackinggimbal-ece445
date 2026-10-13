@@ -2,7 +2,11 @@
 
 Updated 2026-10-13. Software evidence only; no flash or physical bench validation performed.
 
-## Current v0.2.1 verification — 2026-10-13
+## Current v0.2.2 threshold update — 2026-10-13
+
+The analog pot minimum was reported near 40 mV. The zero-speed deadband and ARM maximum are now both 100 mV; at or below this measured ADC voltage the open-loop command is zero. Above it the existing V/3 speed scaling and wake/alignment sequence apply. Rebuild and flash; verify the ADC reading at pot minimum and confirm OPEN_IDLE after ARM. No physical threshold/switching checks have been performed. Configured ARM GCC Debug/Release builds and the retained host/client tests pass. All 31 source hashes match the active DEV copy. Build/test results and source/BIN hashes for this update are recorded in build_evidence.json. Rebuild in CubeIDE before flashing; its existing generated output folders may still hold the preceding revision. The native CubeIDE evidence below is from the preceding revision.
+
+## Historical v0.2.1 verification — 2026-10-13
 
 Normal CLI builds and native CubeIDE builds use the header mode line, now 1/open loop. Both normal BIN files match the explicit open-loop override files byte-for-byte and differ from the explicit closed-loop override files. Debug and Release build for all three workflows; native Debug/Release report zero errors/warnings. The retained controller/app/client tests pass, including default header selection and both override values. The active Senior_Design_DEV_FW project is synchronized and independently rebuilt: all 31 source hashes and six BIN hashes match repository evidence; its native CubeIDE Debug/Release builds also report zero errors/warnings. No physical PWM/gate/motor checks have been performed.
 
@@ -66,7 +70,7 @@ The source-only repository checkout passed the C control/protocol/application te
 
 ## New open-loop bench gates
 
-- [ ] Meter-match zero/3 V and confirm 30 mV deadband/zero-start ARM; confirm default boot profile.
+- [ ] Meter-match zero/3 V and confirm 100 mV deadband/zero-start ARM; confirm default boot profile.
 - [ ] With windings disconnected, verify six-PWM/deadtime, positive phase sequence and nominal 5.5 Hz field envelope at the provisional 30 RPM ceiling.
 - [ ] Verify wake/fault/stop/reset/ADC-loss/watchdog physical inhibition.
 - [ ] Secure unloaded motor, verify alignment/synchronization, actual RPM, direction, supply limit, current/temp and zero coast.

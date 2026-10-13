@@ -1,6 +1,6 @@
 # H753 motor demo firmware
 
-Updated 2026-10-12. Firmware v0.2.1. Target: NUCLEO-H753ZI / STM32H753ZIT6, BOOSTXL-DRV8304H, one DFRobot FIT1036 with AS5600, 24 V motor bus.
+Updated 2026-10-12. Firmware v0.2.2. Target: NUCLEO-H753ZI / STM32H753ZIT6, BOOSTXL-DRV8304H, one DFRobot FIT1036 with AS5600, 24 V motor bus.
 
 Change one line in `Core/Inc/demo_config.h`: `#define DEMO_DEFAULT_OPEN_LOOP 1` selects open-loop speed; change 1 to 0 for closed-loop position. Normal CubeIDE and CLI builds use that line. Current setting is 1; startup remains disabled.
 
