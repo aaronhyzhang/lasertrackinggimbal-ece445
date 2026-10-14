@@ -1,0 +1,371 @@
+{
+  "platform": "macOS-14.6.1-arm64-arm-64bit",
+  "machine": "arm64",
+  "torch": "2.14.0",
+  "ultralytics": "8.4.154",
+  "opencv": "5.0.0",
+  "device": "cpu",
+  "warmup": 3,
+  "measured_repeats": 7,
+  "conf": 0.25,
+  "classes": [
+    32
+  ],
+  "rect": true,
+  "results": [
+    {
+      "model": "yolo26n",
+      "imgsz": 640,
+      "image": "test2",
+      "source_shape": [
+        558,
+        992,
+        3
+      ],
+      "tensor_shape": [
+        1,
+        3,
+        384,
+        640
+      ],
+      "threads": 8,
+      "interop_threads": 11,
+      "predict_ms_median": 27.383499778807163,
+      "predict_ms_min": 23.516541346907616,
+      "predict_ms_max": 30.596833676099777,
+      "inference_ms_median": 25.811167433857918,
+      "preprocess_ms_median": 0.6629163399338722,
+      "postprocess_ms_median": 0.393708236515522,
+      "boxes": [
+        [
+          494.03424072265625,
+          452.4400939941406,
+          576.4002075195312,
+          528.9559936523438,
+          0.8713405132293701,
+          32.0
+        ]
+      ]
+    },
+    {
+      "model": "yolo26n",
+      "imgsz": 640,
+      "image": "capture",
+      "source_shape": [
+        1080,
+        1920,
+        3
+      ],
+      "tensor_shape": [
+        1,
+        3,
+        384,
+        640
+      ],
+      "threads": 8,
+      "interop_threads": 11,
+      "predict_ms_median": 28.677208349108696,
+      "predict_ms_min": 23.406166583299637,
+      "predict_ms_max": 31.74908272922039,
+      "inference_ms_median": 27.04183291643858,
+      "preprocess_ms_median": 0.8946657180786133,
+      "postprocess_ms_median": 0.3838753327727318,
+      "boxes": []
+    },
+    {
+      "model": "yolo26n",
+      "imgsz": 960,
+      "image": "test2",
+      "source_shape": [
+        558,
+        992,
+        3
+      ],
+      "tensor_shape": [
+        1,
+        3,
+        544,
+        960
+      ],
+      "threads": 8,
+      "interop_threads": 11,
+      "predict_ms_median": 55.60795869678259,
+      "predict_ms_min": 51.59179214388132,
+      "predict_ms_max": 59.47662424296141,
+      "inference_ms_median": 53.456250578165054,
+      "preprocess_ms_median": 1.3027498498558998,
+      "postprocess_ms_median": 0.5153324455022812,
+      "boxes": [
+        [
+          493.12371826171875,
+          452.4140930175781,
+          575.9422607421875,
+          528.986328125,
+          0.9224286079406738,
+          32.0
+        ]
+      ]
+    },
+    {
+      "model": "yolo26n",
+      "imgsz": 960,
+      "image": "capture",
+      "source_shape": [
+        1080,
+        1920,
+        3
+      ],
+      "tensor_shape": [
+        1,
+        3,
+        544,
+        960
+      ],
+      "threads": 8,
+      "interop_threads": 11,
+      "predict_ms_median": 55.98691664636135,
+      "predict_ms_min": 50.209708511829376,
+      "predict_ms_max": 59.59950014948845,
+      "inference_ms_median": 53.992291912436485,
+      "preprocess_ms_median": 1.2972094118595123,
+      "postprocess_ms_median": 0.39112474769353867,
+      "boxes": []
+    },
+    {
+      "model": "yolo26n",
+      "imgsz": 1280,
+      "image": "test2",
+      "source_shape": [
+        558,
+        992,
+        3
+      ],
+      "tensor_shape": [
+        1,
+        3,
+        736,
+        1280
+      ],
+      "threads": 8,
+      "interop_threads": 11,
+      "predict_ms_median": 100.30937474220991,
+      "predict_ms_min": 92.48325042426586,
+      "predict_ms_max": 108.74662548303604,
+      "inference_ms_median": 95.50387505441904,
+      "preprocess_ms_median": 3.131208010017872,
+      "postprocess_ms_median": 0.9167073294520378,
+      "boxes": [
+        [
+          492.810791015625,
+          452.1531982421875,
+          575.9376831054688,
+          530.9472045898438,
+          0.9338255524635315,
+          32.0
+        ]
+      ]
+    },
+    {
+      "model": "yolo26n",
+      "imgsz": 1280,
+      "image": "capture",
+      "source_shape": [
+        1080,
+        1920,
+        3
+      ],
+      "tensor_shape": [
+        1,
+        3,
+        736,
+        1280
+      ],
+      "threads": 8,
+      "interop_threads": 11,
+      "predict_ms_median": 99.37350079417229,
+      "predict_ms_min": 93.37699972093105,
+      "predict_ms_max": 207.95204117894173,
+      "inference_ms_median": 95.64050007611513,
+      "preprocess_ms_median": 2.264709211885929,
+      "postprocess_ms_median": 0.9637502953410149,
+      "boxes": []
+    },
+    {
+      "model": "yolo26n",
+      "imgsz": 1920,
+      "image": "test2",
+      "source_shape": [
+        558,
+        992,
+        3
+      ],
+      "tensor_shape": [
+        1,
+        3,
+        1088,
+        1920
+      ],
+      "threads": 8,
+      "interop_threads": 11,
+      "predict_ms_median": 221.42674960196018,
+      "predict_ms_min": 204.35629226267338,
+      "predict_ms_max": 295.40487471967936,
+      "inference_ms_median": 213.1547499448061,
+      "preprocess_ms_median": 6.255540996789932,
+      "postprocess_ms_median": 1.3887090608477592,
+      "boxes": [
+        [
+          492.81756591796875,
+          451.4668273925781,
+          576.3666381835938,
+          530.1892700195312,
+          0.9363470673561096,
+          32.0
+        ]
+      ]
+    },
+    {
+      "model": "yolo26n",
+      "imgsz": 1920,
+      "image": "capture",
+      "source_shape": [
+        1080,
+        1920,
+        3
+      ],
+      "tensor_shape": [
+        1,
+        3,
+        1088,
+        1920
+      ],
+      "threads": 8,
+      "interop_threads": 11,
+      "predict_ms_median": 210.48208232969046,
+      "predict_ms_min": 200.44045895338058,
+      "predict_ms_max": 247.77566734701395,
+      "inference_ms_median": 205.9817910194397,
+      "preprocess_ms_median": 3.461708314716816,
+      "postprocess_ms_median": 1.0826252400875092,
+      "boxes": []
+    },
+    {
+      "model": "yolo26s",
+      "imgsz": 640,
+      "image": "test2",
+      "source_shape": [
+        558,
+        992,
+        3
+      ],
+      "tensor_shape": [
+        1,
+        3,
+        384,
+        640
+      ],
+      "threads": 8,
+      "interop_threads": 11,
+      "predict_ms_median": 52.23820824176073,
+      "predict_ms_min": 49.87095855176449,
+      "predict_ms_max": 54.816291667521,
+      "inference_ms_median": 50.75425002723932,
+      "preprocess_ms_median": 0.7583750411868095,
+      "postprocess_ms_median": 0.43283309787511826,
+      "boxes": [
+        [
+          493.017333984375,
+          452.014404296875,
+          576.0167846679688,
+          529.5869750976562,
+          0.9198898673057556,
+          32.0
+        ]
+      ]
+    },
+    {
+      "model": "yolo26s",
+      "imgsz": 640,
+      "image": "capture",
+      "source_shape": [
+        1080,
+        1920,
+        3
+      ],
+      "tensor_shape": [
+        1,
+        3,
+        384,
+        640
+      ],
+      "threads": 8,
+      "interop_threads": 11,
+      "predict_ms_median": 49.26624987274408,
+      "predict_ms_min": 44.935958459973335,
+      "predict_ms_max": 53.17225027829409,
+      "inference_ms_median": 47.774999402463436,
+      "preprocess_ms_median": 0.8559580892324448,
+      "postprocess_ms_median": 0.30504167079925537,
+      "boxes": []
+    },
+    {
+      "model": "yolo26m",
+      "imgsz": 640,
+      "image": "test2",
+      "source_shape": [
+        558,
+        992,
+        3
+      ],
+      "tensor_shape": [
+        1,
+        3,
+        384,
+        640
+      ],
+      "threads": 8,
+      "interop_threads": 11,
+      "predict_ms_median": 117.30741616338491,
+      "predict_ms_min": 108.81045833230019,
+      "predict_ms_max": 134.01625026017427,
+      "inference_ms_median": 115.33983331173658,
+      "preprocess_ms_median": 0.6780410185456276,
+      "postprocess_ms_median": 0.5111675709486008,
+      "boxes": [
+        [
+          492.8385314941406,
+          451.646484375,
+          576.3744506835938,
+          530.292724609375,
+          0.9344735145568848,
+          32.0
+        ]
+      ]
+    },
+    {
+      "model": "yolo26m",
+      "imgsz": 640,
+      "image": "capture",
+      "source_shape": [
+        1080,
+        1920,
+        3
+      ],
+      "tensor_shape": [
+        1,
+        3,
+        384,
+        640
+      ],
+      "threads": 8,
+      "interop_threads": 11,
+      "predict_ms_median": 115.42375013232231,
+      "predict_ms_min": 111.43100075423717,
+      "predict_ms_max": 164.32141698896885,
+      "inference_ms_median": 113.93579095602036,
+      "preprocess_ms_median": 0.807042233645916,
+      "postprocess_ms_median": 0.35458337515592575,
+      "boxes": []
+    }
+  ]
+}

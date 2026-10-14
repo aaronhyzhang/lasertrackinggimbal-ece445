@@ -1,0 +1,6 @@
+numpy>=1.23,<3
+opencv-contrib-python>=4.8,<6
+ultralytics>=8.4,<9
+
+# Ultralytics also requests opencv-python. After installation, keep only the
+# contrib wheel that supplies cv2, rather than multiple OpenCV wheels.
