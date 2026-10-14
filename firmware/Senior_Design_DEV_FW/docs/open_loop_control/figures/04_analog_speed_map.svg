@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="510pt" height="235pt" viewBox="0 0 510 235">
+<rect width="100%" height="100%" fill="white"/>
+<text x="10" y="16.0" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="bold" text-anchor="start" fill="#18252D">Pot voltage to signed field-speed command</text>
+<rect x="244.83333333333334" y="43" width="55.333333333333286" height="142" rx="5" fill="#E7F2ED" stroke="#D2E3D9" stroke-width=".8"/>
+<polyline points="65.000,185.000 480.000,185.000" fill="none" stroke="#D9DFE3" stroke-width="0.6"/>
+<text x="56" y="188.0" font-family="Arial, Helvetica, sans-serif" font-size="9" font-weight="normal" text-anchor="end" fill="#18252D">-100</text>
+<polyline points="65.000,149.500 480.000,149.500" fill="none" stroke="#D9DFE3" stroke-width="0.6"/>
+<text x="56" y="152.5" font-family="Arial, Helvetica, sans-serif" font-size="9" font-weight="normal" text-anchor="end" fill="#18252D">-50</text>
+<polyline points="65.000,114.000 480.000,114.000" fill="none" stroke="#D9DFE3" stroke-width="0.6"/>
+<text x="56" y="117.0" font-family="Arial, Helvetica, sans-serif" font-size="9" font-weight="normal" text-anchor="end" fill="#18252D">0</text>
+<polyline points="65.000,78.500 480.000,78.500" fill="none" stroke="#D9DFE3" stroke-width="0.6"/>
+<text x="56" y="81.5" font-family="Arial, Helvetica, sans-serif" font-size="9" font-weight="normal" text-anchor="end" fill="#18252D">50</text>
+<polyline points="65.000,43.000 480.000,43.000" fill="none" stroke="#D9DFE3" stroke-width="0.6"/>
+<text x="56" y="46.0" font-family="Arial, Helvetica, sans-serif" font-size="9" font-weight="normal" text-anchor="end" fill="#18252D">100</text>
+<polyline points="65.000,43.000 65.000,185.000 480.000,185.000" fill="none" stroke="#18252D" stroke-width="1"/>
+<polyline points="65.000,185.000 244.833,114.000 300.167,114.000 480.000,43.000" fill="none" stroke="#245A81" stroke-width="2"/>
+<polyline points="65.000,185.000 65.000,189.000" fill="none" stroke="#18252D" stroke-width="0.7"/>
+<text x="65.0" y="202.0" font-family="Arial, Helvetica, sans-serif" font-size="9" font-weight="normal" text-anchor="middle" fill="#18252D">0</text>
+<polyline points="154.917,185.000 154.917,189.000" fill="none" stroke="#18252D" stroke-width="0.7"/>
+<text x="154.91666666666669" y="202.0" font-family="Arial, Helvetica, sans-serif" font-size="9" font-weight="normal" text-anchor="middle" fill="#18252D">0.65</text>
+<polyline points="244.833,185.000 244.833,189.000" fill="none" stroke="#18252D" stroke-width="0.7"/>
+<text x="244.83333333333334" y="202.0" font-family="Arial, Helvetica, sans-serif" font-size="9" font-weight="normal" text-anchor="middle" fill="#18252D">1.3</text>
+<polyline points="300.167,185.000 300.167,189.000" fill="none" stroke="#18252D" stroke-width="0.7"/>
+<text x="300.16666666666663" y="202.0" font-family="Arial, Helvetica, sans-serif" font-size="9" font-weight="normal" text-anchor="middle" fill="#18252D">1.7</text>
+<polyline points="390.083,185.000 390.083,189.000" fill="none" stroke="#18252D" stroke-width="0.7"/>
+<text x="390.0833333333333" y="202.0" font-family="Arial, Helvetica, sans-serif" font-size="9" font-weight="normal" text-anchor="middle" fill="#18252D">2.35</text>
+<polyline points="480.000,185.000 480.000,189.000" fill="none" stroke="#18252D" stroke-width="0.7"/>
+<text x="480.0" y="202.0" font-family="Arial, Helvetica, sans-serif" font-size="9" font-weight="normal" text-anchor="middle" fill="#18252D">3</text>
+<text x="272" y="227.0" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="normal" text-anchor="middle" fill="#18252D">PA3 input voltage (V)</text>
+<text x="65" y="33.0" font-family="Arial, Helvetica, sans-serif" font-size="9" font-weight="normal" text-anchor="start" fill="#18252D">RPM command</text>
+<text x="272.5" y="61.0" font-family="Arial, Helvetica, sans-serif" font-size="8" font-weight="normal" text-anchor="middle" fill="#18252D">Neutral</text>
+<text x="137" y="124.0" font-family="Arial, Helvetica, sans-serif" font-size="8" font-weight="normal" text-anchor="middle" fill="#245A81">76.923 RPM/V</text>
+<text x="409" y="104.0" font-family="Arial, Helvetica, sans-serif" font-size="8" font-weight="normal" text-anchor="middle" fill="#245A81">76.923 RPM/V</text>
+</svg>

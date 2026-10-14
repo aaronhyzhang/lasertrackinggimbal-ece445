@@ -1,5 +1,7 @@
 # Open-loop firmware and mode selection
 
+For the full working-principles explanation, see the [LaTeX guide and separate diagrams](open_loop_control/README.md).
+
 **INLB uses PE10 / CN12 pin 47**, replacing the old PB0 / CN11 pin 34 connection. See [phase-B diagnostics](PHASE_B_PWM_DIAGNOSTIC.md).
 
 Current v0.5.0 default: **bidirectional open-loop motor control using PG2 RUN and the PA3 pot**, without serial commands, encoder or Ethernet. RUN requests wait for 1.3–1.7 V continuously for 200 ms before arming. See [OPEN_LOOP_BOARD_CONTROL.md](OPEN_LOOP_BOARD_CONTROL.md).

@@ -1,5 +1,7 @@
 # Open-loop motor control from board inputs
 
+For the full working-principles explanation, see the [LaTeX guide and separate diagrams](open_loop_control/README.md).
+
 **INLB uses PE10 / CN12 pin 47**, replacing the old PB0 / CN11 pin 34 connection. See [phase-B diagnostics](PHASE_B_PWM_DIAGNOSTIC.md).
 
 Firmware v0.5.0, updated 2026-10-13. The user reports successful motor rotation and that the preceding 100 RPM range looks good. This revision adds bidirectional commands and wait-for-neutral startup; its physical reversal, speed/current/temperature and shutdown timing still need bench validation.

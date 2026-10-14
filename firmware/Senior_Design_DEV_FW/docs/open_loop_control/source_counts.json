@@ -1,0 +1,83 @@
+{
+  "firmware": "0.5.0",
+  "source_commit": "e0acf5c962c5c35e43c126dc870b25a3903abaed",
+  "method": "Physical lines including comments, blank lines and preprocessor branches; not executable statements or open-loop-only reachable lines.",
+  "files": [
+    {
+      "file": "Core/Src/open_loop.c",
+      "physical": 105,
+      "nonblank": 105
+    },
+    {
+      "file": "Core/Inc/run_switch.h",
+      "physical": 25,
+      "nonblank": 25
+    },
+    {
+      "file": "Core/Src/demo_app.c",
+      "physical": 207,
+      "nonblank": 207
+    },
+    {
+      "file": "Core/Src/board.c",
+      "physical": 297,
+      "nonblank": 296
+    },
+    {
+      "file": "Core/Src/motor_control.c",
+      "physical": 197,
+      "nonblank": 197
+    },
+    {
+      "file": "Core/Src/main.c",
+      "physical": 35,
+      "nonblank": 35
+    },
+    {
+      "file": "Core/Src/stm32h7xx_it.c",
+      "physical": 20,
+      "nonblank": 20
+    },
+    {
+      "file": "Core/Src/stm32h7xx_hal_msp.c",
+      "physical": 3,
+      "nonblank": 3
+    },
+    {
+      "file": "Core/Inc/demo_config.h",
+      "physical": 56,
+      "nonblank": 56
+    },
+    {
+      "file": "Core/Inc/motor_control.h",
+      "physical": 58,
+      "nonblank": 58
+    },
+    {
+      "file": "Core/Inc/board.h",
+      "physical": 29,
+      "nonblank": 29
+    },
+    {
+      "file": "Core/Inc/demo_app.h",
+      "physical": 25,
+      "nonblank": 25
+    },
+    {
+      "file": "Core/Inc/motor_internal.h",
+      "physical": 8,
+      "nonblank": 8
+    },
+    {
+      "file": "Tests/test_open_loop.c",
+      "physical": 160,
+      "nonblank": 160
+    },
+    {
+      "file": "Tests/test_board_run.c",
+      "physical": 120,
+      "nonblank": 120
+    }
+  ],
+  "total_runtime_inventory_lines": 1065
+}

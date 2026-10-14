@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="510pt" height="395pt" viewBox="0 0 510 395">
+<rect width="100%" height="100%" fill="white"/>
+<text x="10" y="16.0" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="bold" text-anchor="start" fill="#18252D">Startup and motor states</text>
+<rect x="12" y="40" width="130" height="54" rx="5" fill="#EDF3F7" stroke="#245A81" stroke-width=".8"/>
+<text x="77.0" y="57.0" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="bold" text-anchor="middle" fill="#18252D">DISABLED</text>
+<text x="77.0" y="72.0" font-family="Arial, Helvetica, sans-serif" font-size="9" font-weight="normal" text-anchor="middle" fill="#18252D">ENABLE=0, PWM=0</text>
+<rect x="190" y="40" width="130" height="54" rx="5" fill="#EDF3F7" stroke="#245A81" stroke-width=".8"/>
+<text x="255.0" y="57.0" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="bold" text-anchor="middle" fill="#18252D">WAIT FOR NEUTRAL</text>
+<text x="255.0" y="72.0" font-family="Arial, Helvetica, sans-serif" font-size="9" font-weight="normal" text-anchor="middle" fill="#18252D">application flag</text>
+<text x="255.0" y="83.52" font-family="Arial, Helvetica, sans-serif" font-size="9" font-weight="normal" text-anchor="middle" fill="#18252D">ENABLE=0, PWM=0</text>
+<rect x="368" y="40" width="130" height="54" rx="5" fill="#EDF3F7" stroke="#245A81" stroke-width=".8"/>
+<text x="433.0" y="57.0" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="bold" text-anchor="middle" fill="#18252D">OPEN_IDLE</text>
+<text x="433.0" y="72.0" font-family="Arial, Helvetica, sans-serif" font-size="9" font-weight="normal" text-anchor="middle" fill="#18252D">armed, drive off</text>
+<polyline points="142.000,66.000 190.000,66.000" fill="none" stroke="#18252D" stroke-width="1.15"/>
+<polyline points="185.612,68.397 190.000,66.000 185.612,63.603" fill="none" stroke="#18252D" stroke-width="1.15"/>
+<text x="166" y="39.0" font-family="Arial, Helvetica, sans-serif" font-size="8" font-weight="normal" text-anchor="middle" fill="#18252D">fresh RUN</text>
+<polyline points="320.000,66.000 368.000,66.000" fill="none" stroke="#18252D" stroke-width="1.15"/>
+<polyline points="363.612,68.397 368.000,66.000 363.612,63.603" fill="none" stroke="#18252D" stroke-width="1.15"/>
+<text x="344" y="29.0" font-family="Arial, Helvetica, sans-serif" font-size="8" font-weight="normal" text-anchor="middle" fill="#18252D">center valid</text>
+<text x="344" y="39.0" font-family="Arial, Helvetica, sans-serif" font-size="8" font-weight="normal" text-anchor="middle" fill="#18252D">for 200 ms</text>
+<rect x="368" y="130" width="130" height="54" rx="5" fill="#EDF3F7" stroke="#245A81" stroke-width=".8"/>
+<text x="433.0" y="147.0" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="bold" text-anchor="middle" fill="#18252D">OPEN_WAKE</text>
+<text x="433.0" y="162.0" font-family="Arial, Helvetica, sans-serif" font-size="9" font-weight="normal" text-anchor="middle" fill="#18252D">ENABLE=1, PWM=0</text>
+<polyline points="433.000,94.000 433.000,130.000" fill="none" stroke="#18252D" stroke-width="1.15"/>
+<polyline points="430.603,125.612 433.000,130.000 435.397,125.612" fill="none" stroke="#18252D" stroke-width="1.15"/>
+<text x="429" y="115.0" font-family="Arial, Helvetica, sans-serif" font-size="8" font-weight="normal" text-anchor="end" fill="#18252D">nonzero target</text>
+<rect x="368" y="220" width="130" height="54" rx="5" fill="#EDF3F7" stroke="#245A81" stroke-width=".8"/>
+<text x="433.0" y="237.0" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="bold" text-anchor="middle" fill="#18252D">OPEN_ALIGN</text>
+<text x="433.0" y="252.0" font-family="Arial, Helvetica, sans-serif" font-size="9" font-weight="normal" text-anchor="middle" fill="#18252D">fixed angle, 1 V ramp</text>
+<polyline points="433.000,184.000 433.000,220.000" fill="none" stroke="#18252D" stroke-width="1.15"/>
+<polyline points="430.603,215.612 433.000,220.000 435.397,215.612" fill="none" stroke="#18252D" stroke-width="1.15"/>
+<text x="429" y="204.0" font-family="Arial, Helvetica, sans-serif" font-size="8" font-weight="normal" text-anchor="end" fill="#18252D">10 ms, nFAULT high</text>
+<rect x="190" y="220" width="130" height="54" rx="5" fill="#EDF3F7" stroke="#245A81" stroke-width=".8"/>
+<text x="255.0" y="237.0" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="bold" text-anchor="middle" fill="#18252D">OPEN_RUNNING</text>
+<text x="255.0" y="252.0" font-family="Arial, Helvetica, sans-serif" font-size="9" font-weight="normal" text-anchor="middle" fill="#18252D">signed speed / angle ramp</text>
+<polyline points="368.000,247.000 320.000,247.000" fill="none" stroke="#18252D" stroke-width="1.15"/>
+<polyline points="324.388,244.603 320.000,247.000 324.388,249.397" fill="none" stroke="#18252D" stroke-width="1.15"/>
+<text x="344" y="239.0" font-family="Arial, Helvetica, sans-serif" font-size="8" font-weight="normal" text-anchor="middle" fill="#18252D">2 s</text>
+<rect x="12" y="220" width="130" height="54" rx="5" fill="#EDF3F7" stroke="#245A81" stroke-width=".8"/>
+<text x="77.0" y="237.0" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="bold" text-anchor="middle" fill="#18252D">OPEN_COAST</text>
+<text x="77.0" y="252.0" font-family="Arial, Helvetica, sans-serif" font-size="9" font-weight="normal" text-anchor="middle" fill="#18252D">ENABLE=0, PWM=0</text>
+<polyline points="190.000,247.000 142.000,247.000" fill="none" stroke="#18252D" stroke-width="1.15"/>
+<polyline points="146.388,244.603 142.000,247.000 146.388,249.397" fill="none" stroke="#18252D" stroke-width="1.15"/>
+<text x="166" y="203.0" font-family="Arial, Helvetica, sans-serif" font-size="8" font-weight="normal" text-anchor="middle" fill="#18252D">center / reverse:</text>
+<text x="166" y="214.0" font-family="Arial, Helvetica, sans-serif" font-size="8" font-weight="normal" text-anchor="middle" fill="#18252D">ramp reaches zero</text>
+<polyline points="77.000,220.000 77.000,111.000 350.000,111.000 350.000,66.000 368.000,66.000" fill="none" stroke="#18252D" stroke-width="1.15"/>
+<polyline points="363.612,68.397 368.000,66.000 363.612,63.603" fill="none" stroke="#18252D" stroke-width="1.15"/>
+<text x="165" y="106.0" font-family="Arial, Helvetica, sans-serif" font-size="8" font-weight="normal" text-anchor="middle" fill="#18252D">1 s disabled pause, then idle</text>
+<polyline points="433.000,274.000 433.000,297.000 77.000,297.000 77.000,274.000" fill="none" stroke="#52616B" stroke-width="1.15"/>
+<polyline points="79.397,278.388 77.000,274.000 74.603,278.388" fill="none" stroke="#52616B" stroke-width="1.15"/>
+<text x="255" y="292.0" font-family="Arial, Helvetica, sans-serif" font-size="8" font-weight="normal" text-anchor="middle" fill="#52616B">center or opposite sign during alignment</text>
+<text x="12" y="324.0" font-family="Arial, Helvetica, sans-serif" font-size="9" font-weight="bold" text-anchor="start" fill="#18252D">RUN LOW / stop: disable and cancel waiting from every stage.</text>
+<rect x="190" y="345" width="130" height="38" rx="5" fill="#F7EEEE" stroke="#925050" stroke-width=".8"/>
+<text x="255" y="361.0" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="bold" text-anchor="middle" fill="#18252D">FAULT</text>
+<text x="255" y="375.0" font-family="Arial, Helvetica, sans-serif" font-size="8" font-weight="normal" text-anchor="middle" fill="#18252D">latched, drive off</text>
+<text x="12" y="360.0" font-family="Arial, Helvetica, sans-serif" font-size="9" font-weight="normal" text-anchor="start" fill="#18252D">Any latched fault</text>
+<polyline points="105.000,356.000 190.000,356.000" fill="none" stroke="#925050" stroke-width="1.15"/>
+<polyline points="185.612,358.397 190.000,356.000 185.612,353.603" fill="none" stroke="#925050" stroke-width="1.15"/>
+<text x="337" y="358.0" font-family="Arial, Helvetica, sans-serif" font-size="8" font-weight="normal" text-anchor="start" fill="#18252D">Recover: fix cause, RUN LOW,</text>
+<text x="337" y="371.0" font-family="Arial, Helvetica, sans-serif" font-size="8" font-weight="normal" text-anchor="start" fill="#18252D">RESET, fresh RUN + center.</text>
+</svg>
