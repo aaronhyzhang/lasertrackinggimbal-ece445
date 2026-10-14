@@ -9,7 +9,7 @@ import cv2 as cv
 import numpy as np
 
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 VISION = ROOT / "vision"
 IMAGE = VISION / "media/test2.jpg"
 MODEL = VISION / "weights/yolo26s.pt"

@@ -5,7 +5,7 @@ from unittest.mock import patch
 import numpy as np
 
 from vision.position import Position, PositionResult
-from unit_tests.helpers import VisionTest
+from vision.unit_tests.helpers import VisionTest
 
 
 class PositionTests(VisionTest):

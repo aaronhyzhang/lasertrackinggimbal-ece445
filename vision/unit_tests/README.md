@@ -3,14 +3,14 @@
 From the project root, with the vision environment active:
 
 ```bash
-python -m unittest discover -s unit_tests -t . -v
+python -m unittest discover -s vision/unit_tests -t . -v
 ```
 
 Run one module, for example:
 
 ```bash
-python -m unittest unit_tests.test_position -v
-python -m unittest unit_tests.test_image_integration -v
+python -m unittest vision.unit_tests.test_position -v
+python -m unittest vision.unit_tests.test_image_integration -v
 ```
 
 Uses Python's built-in `unittest` and the existing vision dependencies; no extra

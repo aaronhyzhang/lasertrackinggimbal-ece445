@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 
 from vision.detect import Detect
-from unit_tests.helpers import IMAGE, MODEL, VisionTest
+from vision.unit_tests.helpers import IMAGE, MODEL, VisionTest
 
 
 class DetectTests(VisionTest):

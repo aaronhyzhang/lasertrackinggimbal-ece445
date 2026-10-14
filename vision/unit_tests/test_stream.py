@@ -4,7 +4,7 @@ import cv2 as cv
 import numpy as np
 
 from vision.stream import Stream
-from unit_tests.helpers import VisionTest
+from vision.unit_tests.helpers import VisionTest
 
 
 class StreamTests(VisionTest):

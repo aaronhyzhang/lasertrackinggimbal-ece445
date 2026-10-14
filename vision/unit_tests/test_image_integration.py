@@ -8,7 +8,7 @@ from vision import run
 from vision.detect import Detect
 from vision.position import Position
 from vision.utils.draw import draw_result, draw_text
-from unit_tests.helpers import IMAGE, MODEL, VISION, VisionTest, mock_gui
+from vision.unit_tests.helpers import IMAGE, MODEL, VISION, VisionTest, mock_gui
 
 
 class ImageIntegrationTests(VisionTest):

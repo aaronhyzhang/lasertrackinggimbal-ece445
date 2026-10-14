@@ -87,5 +87,5 @@ to 640 pixels. Keep `--imgsz`, `--model`, and `--confidence` at their defaults
 unless deliberately comparing accuracy and processing speed. Use `--help` for
 all available options.
 
-Run the automated vision tests with `python -m unittest discover -s unit_tests -t . -v`.
-See [unit_tests/README.md](../unit_tests/README.md) for scope and individual test commands.
+Run the automated vision tests with `python -m unittest discover -s vision/unit_tests -t . -v`.
+See [unit_tests/README.md](unit_tests/README.md) for scope and individual test commands.

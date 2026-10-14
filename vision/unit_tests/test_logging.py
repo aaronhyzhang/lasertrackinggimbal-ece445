@@ -6,7 +6,7 @@ import numpy as np
 
 from vision.position import Position
 from vision.utils.logging import CSV_FIELDS, Measurement, MeasurementLogger
-from unit_tests.helpers import VisionTest
+from vision.unit_tests.helpers import VisionTest
 
 
 class LoggingTests(VisionTest):

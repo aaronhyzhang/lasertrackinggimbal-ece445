@@ -4,7 +4,7 @@ import cv2 as cv
 import numpy as np
 
 from vision.utils import capture
-from unit_tests.helpers import VisionTest, mock_gui
+from vision.unit_tests.helpers import VisionTest, mock_gui
 
 
 class CaptureTests(VisionTest):

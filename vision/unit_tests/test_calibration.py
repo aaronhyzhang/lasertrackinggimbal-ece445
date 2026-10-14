@@ -6,7 +6,7 @@ import numpy as np
 
 from vision.utils import calibration
 from vision.utils.calibration import Calibration
-from unit_tests.helpers import VISION, VisionTest, mock_gui
+from vision.unit_tests.helpers import VISION, VisionTest, mock_gui
 
 
 class CalibrationTests(VisionTest):

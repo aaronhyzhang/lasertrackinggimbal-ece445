@@ -9,7 +9,7 @@ import numpy as np
 
 from vision import run
 from vision.utils import draw, logging
-from unit_tests.helpers import ROOT, VISION, VisionTest, mock_gui
+from vision.unit_tests.helpers import ROOT, VISION, VisionTest, mock_gui
 
 
 class RunTests(VisionTest):

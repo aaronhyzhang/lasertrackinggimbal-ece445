@@ -4,7 +4,7 @@ import numpy as np
 
 from vision.position import Position
 from vision.utils.draw import draw_result, draw_text
-from unit_tests.helpers import VisionTest
+from vision.unit_tests.helpers import VisionTest
 
 
 class DrawTests(VisionTest):
