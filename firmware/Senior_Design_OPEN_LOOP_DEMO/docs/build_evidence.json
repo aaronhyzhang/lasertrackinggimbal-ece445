@@ -1,0 +1,418 @@
+{
+  "date": "2026-10-14",
+  "project": "Senior_Design_OPEN_LOOP_DEMO",
+  "firmware": "0.5.0-open-demo",
+  "derived_from": {
+    "project": "Senior_Design_DEV_FW",
+    "commit": "ee0ee5af944eaa02811046e40f6dc68751c2cce1",
+    "firmware": "0.5.0"
+  },
+  "toolchain": "ARM GCC 13.3.1 / STM32CubeIDE 1.18.0",
+  "source_counts": {
+    "method": "Physical lines including comments and blanks; excludes vendor startup/system, Drivers, tests, tools and docs; includes application HAL configuration.",
+    "files": [
+      {
+        "path": "Core/Src/board.c",
+        "lines": 220
+      },
+      {
+        "path": "Core/Src/demo_app.c",
+        "lines": 123
+      },
+      {
+        "path": "Core/Src/main.c",
+        "lines": 10
+      },
+      {
+        "path": "Core/Src/modulation.c",
+        "lines": 22
+      },
+      {
+        "path": "Core/Src/open_loop.c",
+        "lines": 116
+      },
+      {
+        "path": "Core/Src/runtime_support.c",
+        "lines": 14
+      },
+      {
+        "path": "Core/Src/stm32h7xx_hal_msp.c",
+        "lines": 3
+      },
+      {
+        "path": "Core/Src/stm32h7xx_it.c",
+        "lines": 17
+      },
+      {
+        "path": "Core/Inc/board.h",
+        "lines": 23
+      },
+      {
+        "path": "Core/Inc/demo_app.h",
+        "lines": 16
+      },
+      {
+        "path": "Core/Inc/demo_config.h",
+        "lines": 24
+      },
+      {
+        "path": "Core/Inc/open_loop.h",
+        "lines": 41
+      },
+      {
+        "path": "Core/Inc/run_switch.h",
+        "lines": 25
+      },
+      {
+        "path": "Core/Inc/stm32h7xx_hal_conf.h",
+        "lines": 37
+      }
+    ],
+    "total": 691
+  },
+  "tests": {
+    "host": "Controller and actual physical RUN application pass with -Wall -Wextra -Werror.",
+    "equivalence_ticks": 84462,
+    "equivalence_max_numeric_difference": 0,
+    "equivalence_discrete": "states, fault classes, ENABLE/PWM, waiting flag, direction and LEDs match",
+    "hardware_bodies_identical": [
+      "pwm_init",
+      "board_inhibit",
+      "board_trip",
+      "board_kill",
+      "board_release_stop",
+      "HAL_ADC_ConvCpltCallback",
+      "HAL_ADC_ErrorCallback",
+      "TIM1_BRK_IRQHandler",
+      "board_watchdog_start",
+      "board_watchdog_feed",
+      "board_apply active path"
+    ],
+    "dependency_audit": "Self-contained project/toolchain; no original-project or middleware dependencies.",
+    "linked_symbol_audit": "No removed controller, mode-selection, console/network or I2C/UART/ETH initialization functions."
+  },
+  "builds": {
+    "standalone_Debug": {
+      "path": "build/Debug/Senior_Design_OPEN_LOOP_DEMO.bin",
+      "bytes": 38972,
+      "sha256": "a4e9ae9f4431b3d67e3f38f24dad1818fad80c1c823da2c03b74b81f7882785f"
+    },
+    "native_Debug": {
+      "path": "Debug/Senior_Design_OPEN_LOOP_DEMO.elf",
+      "bytes": 2001740,
+      "sha256": "0e9254e68e3f9791f5696d9a3996dbe357b031e4bb115e1fc99c41979153c3c9"
+    },
+    "standalone_Release": {
+      "path": "build/Release/Senior_Design_OPEN_LOOP_DEMO.bin",
+      "bytes": 24048,
+      "sha256": "44cf8d87cd2b3467080462c39ea44457480fbb3443ff61a3604668745e7f9656"
+    },
+    "native_Release": {
+      "path": "Release/Senior_Design_OPEN_LOOP_DEMO.elf",
+      "bytes": 47864,
+      "sha256": "844070a91051387c3c347cecda88b930f01026574620e67a911c261c774a49f8"
+    }
+  },
+  "native_cubeide": "Independent active project Debug/Release clean builds: zero errors and warnings",
+  "flash_and_ram": {
+    "standalone_debug_flash_bytes": 38972,
+    "standalone_release_flash_bytes": 24048,
+    "standalone_debug_d1_bytes": 9536,
+    "standalone_release_d1_bytes": 9536,
+    "dma_bytes": 0,
+    "ram_note": "Includes linker heap/stack reserves, not measured peak runtime use."
+  },
+  "hardware_validation": "No agent flash or physical validation of extracted image; low-speed startup, inhibit and reversal bench recheck pending.",
+  "limits": {
+    "bus_volts": 24,
+    "neutral_low_volts": 1.3,
+    "neutral_high_volts": 1.7,
+    "neutral_dwell_ms": 200,
+    "max_abs_command_rpm": 100,
+    "accel_rpm_per_second": 10,
+    "coast_ms": 1000,
+    "alignment_ms": 2000,
+    "alignment_volts": 1,
+    "run_vector_volts": 2,
+    "pwm_hz": 20000,
+    "nominal_deadtime_ns": 500
+  },
+  "sources": [
+    {
+      "path": ".cproject",
+      "sha256": "f93853ca1651fb024850ca76c9bf7f737beb2c906d4b976c3816ed8ed9cc3186"
+    },
+    {
+      "path": ".project",
+      "sha256": "aec61fe7e8dcee01967b1f37a325622b008f4b44e84c8a4de6eecc54c57fd147"
+    },
+    {
+      "path": "Core/Inc/board.h",
+      "sha256": "a6eddac65104130c70b7308275710cf1864d2adf014a1baa10768c75e0ceab6f"
+    },
+    {
+      "path": "Core/Inc/demo_app.h",
+      "sha256": "bac7d4c5aa8986591e663fd418c61104c72bd14fcca4e4a4b824ddea4de96b0a"
+    },
+    {
+      "path": "Core/Inc/demo_config.h",
+      "sha256": "6b105fbfc8066b4410f606647c11756a0498c9ee6ec6c3efb1bd71f7d6b2aeda"
+    },
+    {
+      "path": "Core/Inc/open_loop.h",
+      "sha256": "826bdf882e5d8390cbc64946796f12eccbd6c2d2dfbae6013a602555623dee96"
+    },
+    {
+      "path": "Core/Inc/run_switch.h",
+      "sha256": "e8da2371a91bf9fde1580d9012b8f93487f85a205b7673b82ee903a82490c6e1"
+    },
+    {
+      "path": "Core/Inc/stm32h7xx_hal_conf.h",
+      "sha256": "c1b82da341f8887f9f4e290d0ee7b23259d97710725aa37f251c31e2fbbbdd65"
+    },
+    {
+      "path": "Core/Src/board.c",
+      "sha256": "601c67437c029fd9a9a25a247a224ebb7073c6e932b4c59308e1741e1b3b280b"
+    },
+    {
+      "path": "Core/Src/demo_app.c",
+      "sha256": "f0feea207f4f279206912df2149591e2a258ca99db6e375ace497f3283e3ec23"
+    },
+    {
+      "path": "Core/Src/main.c",
+      "sha256": "017afc488281d488d1d1aa32f93844a54968471ad6e57919b20afe37e093309d"
+    },
+    {
+      "path": "Core/Src/modulation.c",
+      "sha256": "3762deb0150659e7ec53870a3d432b90295e465d51b3e384266920c349d8173a"
+    },
+    {
+      "path": "Core/Src/open_loop.c",
+      "sha256": "86d9a9864e05355738dfd507a83b4bb797a1e6db0e00a13d4a29279377ba6966"
+    },
+    {
+      "path": "Core/Src/runtime_support.c",
+      "sha256": "87d203592cf33d4f655a6505ceae8d73d6f3bc535f6c7869d940b19b12e49c19"
+    },
+    {
+      "path": "Core/Src/stm32h7xx_hal_msp.c",
+      "sha256": "a08168822207db031f13be63f98fe4e95e228511a82e12ef58e9f41046f8bf4d"
+    },
+    {
+      "path": "Core/Src/stm32h7xx_it.c",
+      "sha256": "bc9999458e308c2ce39017e87f0925d72b1735690c6cf991d171b68096e97478"
+    },
+    {
+      "path": "Core/Startup/startup_stm32h753zitx.s",
+      "sha256": "5a0b92665d40a2d838673d1c425054aa711a6947a8a5479233349e235dbe53e3"
+    },
+    {
+      "path": "Drivers/CMSIS/Device/ST/STM32H7xx/Include/stm32h753xx.h",
+      "sha256": "2ecc821785b069e543db6e98bbb1c4b4abbe0647948ee66e53562e878cfddd93"
+    },
+    {
+      "path": "Drivers/CMSIS/Device/ST/STM32H7xx/Include/stm32h7xx.h",
+      "sha256": "9bad4fffca7a09b179e6be9d55204eff634cda7e2cec620a79002f6f4d0e0bcf"
+    },
+    {
+      "path": "Drivers/CMSIS/Device/ST/STM32H7xx/Include/system_stm32h7xx.h",
+      "sha256": "edbd2ae253530241ca82470fde1db4de1b0ba856590d69b17d3342b952c1fcba"
+    },
+    {
+      "path": "Drivers/CMSIS/Device/ST/STM32H7xx/LICENSE.txt",
+      "sha256": "135fb2d86e9ecdf6824cc3bba21c72b8e380c07b055fbebb6b995463eb609baf"
+    },
+    {
+      "path": "Drivers/CMSIS/Device/ST/STM32H7xx/Source/Templates/system_stm32h7xx.c",
+      "sha256": "2ea5c2bd1c55e454fcbe26612c0b2a57f321fffb857ccd92844682288dd62518"
+    },
+    {
+      "path": "Drivers/CMSIS/Include/cmsis_compiler.h",
+      "sha256": "b51963d271c1571ca3463654c76aa7ea50c4eac5d0a2710df10414ac64d9e0f8"
+    },
+    {
+      "path": "Drivers/CMSIS/Include/cmsis_gcc.h",
+      "sha256": "1fba3e120e5c0a439e0982bd37fae04bd033dbd14187428214462a1707c56252"
+    },
+    {
+      "path": "Drivers/CMSIS/Include/cmsis_version.h",
+      "sha256": "1b2c47a90e9ae741c8fd4d0f323495327b25ff5d555a6c7afd6749a65ba1bb8e"
+    },
+    {
+      "path": "Drivers/CMSIS/Include/core_cm7.h",
+      "sha256": "34d91327a5f1b251c54fa6bb532d9f5ec0423bf3b7f2b679c8f7b3df95af0fc8"
+    },
+    {
+      "path": "Drivers/CMSIS/Include/mpu_armv7.h",
+      "sha256": "c9ad7cc99ba0481365550ae997c63cde9732d067d9ec0de28b0d6ac39280656d"
+    },
+    {
+      "path": "Drivers/CMSIS/LICENSE.txt",
+      "sha256": "b40930bbcf80744c86c46a12bc9da056641d722716c378f5659b9e555ef833e1"
+    },
+    {
+      "path": "Drivers/STM32H7xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h",
+      "sha256": "7fff96faed90c81364225132389b1865f67ceac8e65381b60459264c4136ee6e"
+    },
+    {
+      "path": "Drivers/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal.h",
+      "sha256": "97aeb9e9e0c3acde0c91d025e89c7972b9ad13ab3cb735d40ad852dc395f6980"
+    },
+    {
+      "path": "Drivers/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_adc.h",
+      "sha256": "7a67f8a941d0d6e1803a2d59e3f4134c1e863f62142a2ff42b35a1761b1b42b0"
+    },
+    {
+      "path": "Drivers/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_adc_ex.h",
+      "sha256": "5f54fbf0716a5aabe1fab44acaa65553bbc96538038bdb629e7a203cffad6332"
+    },
+    {
+      "path": "Drivers/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_cortex.h",
+      "sha256": "8b61853cb8eb65dabf5181e9f4a2effb3be70974800f6ddc38ae62f0310e78ae"
+    },
+    {
+      "path": "Drivers/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_def.h",
+      "sha256": "f7e6ad2cff1b770393ad76961fbb220bef0a52593e9035746e7961137061ebfc"
+    },
+    {
+      "path": "Drivers/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_dma.h",
+      "sha256": "564d6d26015155743f4990a354d26124d5d434673813c75df5da9572e4ac2eae"
+    },
+    {
+      "path": "Drivers/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_dma_ex.h",
+      "sha256": "bc906d5cf9ed149185aa77a80a793e50aa4b2c7e0606f88df1a4b8900a8a26fa"
+    },
+    {
+      "path": "Drivers/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_flash.h",
+      "sha256": "96340bb9572f6c53554323795b3aa8c86962d14b0596dab550322f34dfccba7c"
+    },
+    {
+      "path": "Drivers/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_flash_ex.h",
+      "sha256": "a5634068e887b72f39c9f18816d5ca4534b1c0103c9847db5067dd866fa42ba6"
+    },
+    {
+      "path": "Drivers/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_gpio.h",
+      "sha256": "75c7e634ec0b5fa2ad6ef90b9b010a4dbac1cdd9876daf80cab2253774c092bb"
+    },
+    {
+      "path": "Drivers/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_gpio_ex.h",
+      "sha256": "81b441ab0ef72718230fc3b259a120c57e253018863d9aa9e50f4f6456c866f3"
+    },
+    {
+      "path": "Drivers/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_iwdg.h",
+      "sha256": "ae8490b6c1243af8f35707c591f304337d0bf626fc0eabf912e411c16ba91f3a"
+    },
+    {
+      "path": "Drivers/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_pwr.h",
+      "sha256": "65a883328691a724d5163403e5e7db38d5a1e8ec11f7bdcf5620329bf779cdfa"
+    },
+    {
+      "path": "Drivers/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_pwr_ex.h",
+      "sha256": "76ec9d62421667db5a499309f50c8145d086d76b5529a7ece37331fe5de05842"
+    },
+    {
+      "path": "Drivers/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_rcc.h",
+      "sha256": "27c198869e9a02d059427189d0897130172c10d64a8c993cb57ee9231ebd44cf"
+    },
+    {
+      "path": "Drivers/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_rcc_ex.h",
+      "sha256": "cbebc9c87db8acada7da2fd06994a998528d447960ec62737fd65cace4fd34bf"
+    },
+    {
+      "path": "Drivers/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_tim.h",
+      "sha256": "90eaea9d79e3e69afa3d1ef8758a07ef8809eab28e6502e46d15201f8ffa7c38"
+    },
+    {
+      "path": "Drivers/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_tim_ex.h",
+      "sha256": "c6e76b135cc6bff07ad4b84a76d7eedb3a63ddba472131595c4655ac37ed7196"
+    },
+    {
+      "path": "Drivers/STM32H7xx_HAL_Driver/Inc/stm32h7xx_ll_adc.h",
+      "sha256": "cb252eef4c35038adc1ed634b7acdb7067e4984ef7f399eb6432916756481920"
+    },
+    {
+      "path": "Drivers/STM32H7xx_HAL_Driver/LICENSE.txt",
+      "sha256": "d5a162f3eaf2b7b6762f00700017cae5695ebbdce7932fead8316448baafd9c1"
+    },
+    {
+      "path": "Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal.c",
+      "sha256": "3e46894e1870c682b6362c0536d5a5ded6cf5541f54559e5cc591e90352f0bfc"
+    },
+    {
+      "path": "Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_adc.c",
+      "sha256": "f816ffa452a24e62b8c3cf681f5658bbf1a383327022fbeb7faf5c7815a9f85c"
+    },
+    {
+      "path": "Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_adc_ex.c",
+      "sha256": "d6e09ac1293ae3d20806fa04b9abd162144c6b6fc57c4e8d87c11b97c71ba0b6"
+    },
+    {
+      "path": "Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_cortex.c",
+      "sha256": "9df95c02feab163763ac752c17c07f0a10f6bd7d303f659e950dd8b6b4cce2c9"
+    },
+    {
+      "path": "Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_flash.c",
+      "sha256": "f5d7fae3a1dce51e81c099a48a39c2076ee79932a7d369a76a2dd1d5b0e8103f"
+    },
+    {
+      "path": "Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_flash_ex.c",
+      "sha256": "aea2f7cf88a97ff6e9eb6afd542ee9aa1f1be2946db834625df176f2a383497f"
+    },
+    {
+      "path": "Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_gpio.c",
+      "sha256": "e8cb800d746479f9b768e6845dfd2c84867a0b264101afb21f5ad799e3a65ae2"
+    },
+    {
+      "path": "Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_iwdg.c",
+      "sha256": "d1888de61e2c808611905653738a3341eaad160eae46cc1a79a2e57ac00cde4a"
+    },
+    {
+      "path": "Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_pwr.c",
+      "sha256": "87dc25ff1b0a58773eeed5a87de133167cfe4306bf54aa884889a61d8a5bd7f4"
+    },
+    {
+      "path": "Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_pwr_ex.c",
+      "sha256": "15469705b458ee696d3ca241ea85ec371c2463a5ac629ab9078d2912dab19c8c"
+    },
+    {
+      "path": "Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_rcc.c",
+      "sha256": "99c51eaf3e01a9040e3080b2d0f537fd546e63792b571f74fc39bdc481d82116"
+    },
+    {
+      "path": "Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_rcc_ex.c",
+      "sha256": "ba3ffa42989a60a93e8de7f148cde4fa22c6853223d00d5d9954ad370c6012fe"
+    },
+    {
+      "path": "Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_tim.c",
+      "sha256": "a629504942e13c443324ebf9efa301a003ce2880c57b7aeb59bff5a643ec829f"
+    },
+    {
+      "path": "Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_tim_ex.c",
+      "sha256": "f00d3730972ebc50ced69c9c40bfb2d5e2bbc2026e33818bc97cf2048dc47837"
+    },
+    {
+      "path": "STM32H753ZITX_FLASH.ld",
+      "sha256": "3118ef88e9034f6ee8ff1e3f41357928c50ca9167c15924518899ee56d0db071"
+    },
+    {
+      "path": "Tests/fakes/board.h",
+      "sha256": "c827e11d60f53ff570410f44960be270097b0135c1e543f844b3b4809ad71c7c"
+    },
+    {
+      "path": "Tests/test_app.c",
+      "sha256": "20eaf4805ddb8022fda55818c07852860bc9df9e9b469c575457f757e319345b"
+    },
+    {
+      "path": "Tests/test_motor.c",
+      "sha256": "b212d4d8361f0376d8e73bdc69c08c78d962d7931a50c681357f341d87991b80"
+    },
+    {
+      "path": "Tools/build.py",
+      "sha256": "72a9eea0a294b9dab59e8e69cee08cdc39951769cf900568125c4250de68898b"
+    },
+    {
+      "path": "Tools/test.py",
+      "sha256": "49af9e12339a5ddf0215470885d29aea82b593eeecd5b25fa56f31086d007b12"
+    }
+  ]
+}

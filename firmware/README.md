@@ -2,30 +2,24 @@
 
 | Project | Target | Purpose |
 | --- | --- | --- |
-| [Senior_Design_DEV_FW](Senior_Design_DEV_FW/README.md) | NUCLEO-H753ZI / STM32H753ZIT6 | One FIT1036 motor with AS5600 and BOOSTXL-DRV8304H; analog position bring-up, then Ethernet |
-| Senior_Design_FW | STM32H743ZIT6 custom PCB | Existing custom-board baseline; two-axis integration is later work |
+| [Senior_Design_OPEN_LOOP_DEMO](Senior_Design_OPEN_LOOP_DEMO/README.md) | NUCLEO-H753ZI / STM32H753ZIT6 | Standalone physical RUN/pot bidirectional open-loop demo and presentation code |
+| [Senior_Design_DEV_FW](Senior_Design_DEV_FW/README.md) | NUCLEO-H753ZI / STM32H753ZIT6 | Full development project, including the later feedback/communications paths |
+| Senior_Design_FW | STM32H743ZIT6 custom PCB | Existing custom-board baseline and project context |
 
-Normal builds use the one-line `DEMO_DEFAULT_OPEN_LOOP` setting in the dev header (1=open loop, 0=closed loop). See [PWM/driver/motor scope validation](Senior_Design_DEV_FW/docs/BENCH_SWITCHING_VALIDATION.md).
+For the current bench demonstration, import **Senior_Design_OPEN_LOOP_DEMO** into CubeIDE as an existing project. It is self-contained and can coexist with Senior_Design_DEV_FW. No encoder, console or network is required. The isolated source has no position-control implementation or mode switch.
 
-For encoder-free analog-speed bring-up, start with the [open-loop guide](Senior_Design_DEV_FW/docs/OPEN_LOOP_GUIDE.md). `MODE OPEN_LOOP|CLOSED_LOOP` switches while disabled. `Tools/build.py --profile open-loop` produces a separate default-open image.
+The standalone copy preserves v0.5.0 behavior: PA3 maps 0 V to -100 RPM, 1.3–1.7 V to neutral and 3 V to +100 RPM. A fresh PG2 RUN request requires 200 ms of valid center input before arming; boot-high RUN never arms until a LOW/HIGH sequence. Alignment, ramps, timed disabled reversal, hardware break and watchdog remain. Its README contains import, wiring and operating instructions.
 
-Start with the dev project's [firmware guide](Senior_Design_DEV_FW/docs/FIRMWARE_GUIDE.md), [wiring record](Senior_Design_DEV_FW/docs/BOARD_CONFIG.md), and [validation record](Senior_Design_DEV_FW/docs/VALIDATION.md). Shared project intent, hardware review, architecture and vendor research live in [Senior_Design_FW/docs](Senior_Design_FW/docs/DEV_BOARD_VALIDATION_PLAN.md).
+From firmware/Senior_Design_OPEN_LOOP_DEMO:
 
-From `firmware/Senior_Design_DEV_FW`, use:
+    python Tools/build.py --config Debug
+    python Tools/build.py --config Release
+    python Tools/test.py --cc clang
 
-```powershell
-python Tools/build.py --config Debug
-python Tools/build.py --config Release
-python Tools/test.py --cc clang
-# Or for tests: python Tools/test.py --zig <path-to-zig.exe>
-```
+Or pass --zig <path-to-zig.exe> for portable tests. ARM GCC can be discovered from CubeIDE under C:/ST or specified with --toolchain. Native IDE output remains Debug/ and Release/; CLI output is build/Debug and build/Release. No build command flashes hardware.
 
-The build uses STM32CubeIDE's ARM GCC; `--toolchain <bin-directory>` supports another installation. A native compiler is required for the portable C tests. Python tools use the standard library. CubeIDE can import the dev project's `.project`; close/remove any same-named workspace project before importing a second copy.
+The projects use hand-owned HAL initialization. The standalone extraction retains only the selected HAL/CMSIS modules and headers with vendor licenses; no libraries/sources are linked to another project. ST support lives under Drivers, the application/BSP under Core, and host utilities under Tests/Tools.
 
-The dev project uses hand-owned HAL initialization, with the old IOC archived for reference. It boots inhibited and requires calibration, mechanical zero and explicit arm. The initial servo uses bounded voltage effort; current FOC, CAN, two-axis control and vision integration are deferred. Bench checks must precede motor operation.
+The standalone copy is intentionally separate: future open-loop fixes must be ported to both trees or re-extracted. The development project's [LaTeX explanation and separate diagrams](Senior_Design_DEV_FW/docs/open_loop_control/README.md) cover the motor physics and v0.5.0 behavior; its earlier file/count tables describe the full development tree, not the smaller standalone project. The standalone [source map](Senior_Design_OPEN_LOOP_DEMO/docs/SOURCE_MAP.md) and [validation record](Senior_Design_OPEN_LOOP_DEMO/docs/VALIDATION.md) describe the extraction.
 
-Build outputs, workspace state, runtime caches, local logs, downloaded vendor PDFs and local schematic attachments are not part of this source upload. Vendor source licenses are retained. Local validation metadata identifies the pre-upload snapshot; portable builds/tests should be rerun when source or board configuration changes.
-
-Historical H753 v0.3.0 default is an automatic MCU-only ADC-to-duty scope test (driver ENABLE held LOW). See [PWM_SCOPE_TEST.md](Senior_Design_DEV_FW/docs/PWM_SCOPE_TEST.md); set DEMO_PWM_SCOPE_TEST=0 to restore motor firmware.
-
-Current H753 v0.4.0 default is physical open-loop control: PG2 RUN low/high plus PA3 analog speed, with no console, Ethernet or encoder transactions required. Scope test is now off. See [OPEN_LOOP_BOARD_CONTROL.md](Senior_Design_DEV_FW/docs/OPEN_LOOP_BOARD_CONTROL.md).
+Project intent, hardware review and research remain in [Senior_Design_FW/docs](Senior_Design_FW/docs/DEV_BOARD_VALIDATION_PLAN.md). Build outputs, local workspace state and vendor reference PDFs are excluded from source control. Hardware acceptance is separate from software build/test results.

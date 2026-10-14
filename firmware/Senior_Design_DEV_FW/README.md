@@ -1,5 +1,7 @@
 # H753 motor demo firmware
 
+For the isolated presentation/build project containing only the physical open-loop application, use [Senior_Design_OPEN_LOOP_DEMO](../Senior_Design_OPEN_LOOP_DEMO/README.md). It preserves the current bidirectional demo and keeps vendor support separate.
+
 For a complete explanation of the current bidirectional open-loop firmware, see the [LaTeX technical guide and separate vector figures](docs/open_loop_control/README.md). It covers the motor physics, command mapping, PWM, startup/reversal, dependencies and measured code inventory.
 
 **v0.4.1 wiring change:** INLB now comes from **PE10 / CN12 pin 47**, replacing PB0 / CN11 pin 34. Move that wire with power off before energizing the driver. See [phase-B diagnostics](docs/PHASE_B_PWM_DIAGNOSTIC.md).
