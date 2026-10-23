@@ -14,6 +14,7 @@ static bool read_reg(drv8304_transfer_t transfer, void *ctx, unsigned address,
         s->failed_address=(uint8_t)address; return false;
     }
     s->reg[address]=rx & 0x07ffu;
+    s->read_mask|=(uint8_t)(1u<<address);
     return true;
 }
 static bool write_check(drv8304_transfer_t transfer, void *ctx, unsigned address,
@@ -26,9 +27,14 @@ static bool write_check(drv8304_transfer_t transfer, void *ctx, unsigned address
     return true;
 }
 bool drv8304_verify(drv8304_transfer_t transfer, void *ctx, drv8304_snapshot_t *s) {
-    s->verified=false;
+    s->verified=false; s->read_mask=0;
+    /* Capture both status registers before rejecting a reported fault. A
+     * summary-only FAULT in reg[0] can have its cause solely in reg[1].
+     * Do not leave an unread, zero-initialized reg[1] looking fault-free. */
     for (unsigned a=0; a<7; ++a) {
         if (!read_reg(transfer,ctx,a,s)) return false;
+    }
+    for (unsigned a=0; a<7; ++a) {
         if (s->reg[a] != profile[a]) { s->failed_address=(uint8_t)a; return false; }
     }
     s->verified=true; return true;

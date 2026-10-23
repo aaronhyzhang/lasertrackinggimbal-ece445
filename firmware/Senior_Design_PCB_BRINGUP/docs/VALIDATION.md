@@ -15,3 +15,7 @@ This is software evidence for the H743 custom-PCB port. No agent flash, oscillos
 Source hashes, compiler output sizes and software-test scope are recorded in [build_evidence.json](build_evidence.json). Host test results do not verify the BSP's real timer/ADC/SPI registers, electrical pin continuity, propagation delay, phase current, thermal behavior or reset defaults. Those require the staged checks in [BRINGUP.md](BRINGUP.md).
 
 The two-ADC pair is kept owned until both conversion callbacks commit, preventing a higher-priority control interrupt from starting a new pair while the HAL marks the previous conversion ready but its callback is still completing. The driver wake permission has a generation counter: STOP/fault invalidates in-flight foreground configuration before it can mark the driver ready. These paths were reviewed in the BSP; physical interrupt timing still requires bench validation.
+
+## Fault-capture correction - 2026-10-23
+
+Hardware bring-up exposed an early return at the summary fault before detailed status register 1 was read. The verifier now captures all registers before comparison and provides a read-valid mask. New regressions cover summary FAULT plus CPUV in register 1, summary-only fault inhibition, and failure of the second status read. The electrical fault remains unclassified pending a new complete hardware capture. Follow-up build/test evidence is in fault_capture_evidence.json.

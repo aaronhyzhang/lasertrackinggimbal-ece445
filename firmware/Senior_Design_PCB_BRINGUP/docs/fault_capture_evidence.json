@@ -1,0 +1,47 @@
+{
+  "date": "2026-10-23",
+  "change": "Capture detailed driver faults before failing summary-status verification",
+  "base_commit": "be6d6bb0aead91bab59b800f745404093bcc7a87",
+  "host_tests": "PASS: controller, driver backend and actual app in all four stages; new summary/CPUV/read-mask regressions passed",
+  "cli_builds": [
+    {
+      "stage": "driver",
+      "config": "Debug",
+      "flash_bytes": 44028,
+      "bin_sha256": "55188273784e5f471bb9b1247301142fe84765df98989f212bf0ac138895a9b3"
+    },
+    {
+      "stage": "driver",
+      "config": "Release",
+      "flash_bytes": 27120,
+      "bin_sha256": "da269ca213e5233f9c1ee4137d886f7f3849cb9f21b2430549328bb3c87a2a60"
+    },
+    {
+      "stage": "motor",
+      "config": "Debug",
+      "flash_bytes": 44044,
+      "bin_sha256": "529674842c8f7ba974ced9698e9c7abf6ece7dbaa79860cde11214e1949d2805"
+    },
+    {
+      "stage": "motor",
+      "config": "Release",
+      "flash_bytes": 27328,
+      "bin_sha256": "26522e554290f4de0ce6e0644f0320fe9b41384ffcf47e81bf2077f0cc0d6798"
+    }
+  ],
+  "active_native_builds": {
+    "Debug": "0 errors, 0 warnings",
+    "Release": "0 errors, 0 warnings",
+    "g_driver_status_symbol": "2400016c 00000012 B g_driver_status"
+  },
+  "changed_source_sha256": {
+    "Core/Inc/drv8304.h": "85c956a7abbce321ed4ce6e0cb0e504bd349658e15d167e50e2fe68f3c54c861",
+    "Core/Src/drv8304.c": "c2da80e2532185cf9754c916a197ecc18349fe418a28ad5296f2b3b8946774cf",
+    "Tests/test_driver.c": "f0d30b40e5ac0605d085bdb4c327b406648a8619004db6f9d478df0f619e34c5"
+  },
+  "active_stage": "PCB_DRIVER_CHECK (user selection preserved)",
+  "repository_default": "PCB_IO_CHECK (unchanged)",
+  "protection_change": false,
+  "agent_flashed": false,
+  "hardware_fault_cause": "Pending complete updated snapshot"
+}
