@@ -2,6 +2,8 @@
 
 2026-10-23. User confirms the PCB matches the nine-page schematic reviewed in `Senior_Design_FW/docs/HARDWARE_REFERENCE.md`; no changes were reported. User selected J3, center-stop bidirectional VR1, S1 ARM, S2 STOP, DRV8304S CSA gain 20 V/V and lowest gate-drive current. MOSFETs confirmed SiS890ADN-T1-GE3. Supply is 24 V, proposed **2 A bus current limit**; programmer is STLINK-V3MINI. Initial power checks reportedly look good; measured values are still to be recorded.
 
+**Current follow-up:** user reports both driver checks pass and J3 spins. Selectable J4 PWM is now implemented; the active workspace is J4 / MOTOR_RUN / strict verification. Follow [J4_MOTOR_TEST.md](J4_MOTOR_TEST.md) for first J4 PWM/shutdown checks. The dated fault/debug sections below retain the earlier sequence, not current settings.
+
 ## Pin audit
 
 The schematic's physical pages 3/5/6/7 were rechecked, including the inter-sheet nets. H743 pin functions were cross-checked against ST DS12110 and the baseline IOC. The following are the bindings implemented by this target:
@@ -14,10 +16,13 @@ The schematic's physical pages 3/5/6/7 were rechecked, including the inter-sheet
 | J3 ENABLE / CAL | PG4 / PG5 | Active high / held low; TP30 / TP29 |
 | J3 chip select | PE5 | Active low, idle high |
 | J3 enable / fault LEDs | PE3 / PE2 | Active high, MCU indicators; TP32 / TP31 |
+| J4 A high / low | PC6 / PA5 | TIM8_CH1 / CH1N AF3; TP23 / TP24 |
+| J4 B high / low | PC7 / PB14 | TIM8_CH2 / CH2N AF3; TP25 / TP26 |
+| J4 C high / low | PC8 / PB15 | TIM8_CH3 / CH3N AF3; TP27 / TP28 |
 | J4 ENABLE / CAL | PG7 / PG6 | Active high / held low; TP34 / TP33 |
 | J4 chip select | PA9 | Active low, idle high |
 | J4 enable / fault LEDs | PC10 / PC11 | Active high, selected-driver indicators |
-| Shared nFAULT | PE6 | Active low, TIM1_BKIN2 AF1 |
+| Shared nFAULT | PE6 | Active low; J3 TIM1_BKIN2 AF1, J4 falling-edge EXTI6 |
 | SPI2 clock / MISO / MOSI | PB10 / PC2_C / PC3_C | AF5; `_C` switches explicitly closed |
 | **VR1 / POT1** | **PA4, ADC1_INP18** | **TP12, motor command**, first ADC rank |
 | VR2 / POT0 | PA0, ADC1_INP16 | TP13, diagnostics only, second ADC rank |
@@ -26,7 +31,7 @@ The schematic's physical pages 3/5/6/7 were rechecked, including the inter-sheet
 
 The phase test-point identities follow page 5, including its embedded net metadata. VR1 was traced through R84/TP12/POT1 to U1 pin 40 (PA4); VR2 through R85/TP13/POT0 to pin 34 (PA0). Reference-designator numbering and POT net numbering are reversed. Verify silkscreen/continuity before placing probes.
 
-J4 PWM pins PC6/PA5 (A high/low), PC7/PB14 (B), PC8/PB15 (C) always remain GPIO outputs low; TIM8 is not initialized. PCB_TEST_AXIS=1 can wake J4 only in DRIVER_CHECK. The unselected ENABLE stays low and its nCS stays high; both CALs stay low. In DRIVER_CHECK, all 12 PWM pins are GPIO outputs low. PE6 is a GPIO input for the J4 driver check. Its TIM1 hardware-break route remains used for J3 motor operation; no equivalent TIM8 shutdown route has been established. Axis 1 PWM/motor stages are rejected at compile time.
+PCB_TEST_AXIS=0 selects J3/TIM1; 1 selects J4/TIM8 in every stage. The unselected six PWM pins and ENABLE stay low, and its nCS stays high; both CALs stay low. In DRIVER_CHECK, all 12 PWM pins are GPIO outputs low. J3 uses PE6 TIM1_BKIN2 hardware break. J4 uses PE6 falling-edge EXTI at priority 0; the ISR clears both timers and ENABLEs during authorized PWM, with no automatic restart. This is software shutdown alongside driver protections, not a direct TIM8 hardware break. See the [J4 procedure](J4_MOTOR_TEST.md#fault-shutdown-differs-between-axes).
 
 ## First flash with STLINK-V3MINI
 
@@ -59,7 +64,7 @@ The ADC uses two regular conversions with a long 387.5-cycle acquisition at nomi
 
 ## Stage 2: MCU PWM check
 
-Set `PCB_TEST_AXIS 0` and `PCB_STAGE PCB_PWM_CHECK`, rebuild/flash. Motors remain disconnected. Verify PG4 and PG7 stay low in every state. Let go of both buttons, press S1, center VR1 if green is blinking. After 200 ms of valid neutral input, green is steady and gates are still off. Move VR1 slightly out of center. After the wake allowance, the six J3 MCU inputs show complementary 20 kHz PWM, nominal 500 ns MCU dead time; the duty envelope changes slowly with field rotation. Scope each high/low pair and all three phase identities. Returning to neutral ramps to zero and turns PWM off after coast; S2 disables immediately.
+Set `PCB_TEST_AXIS 0` for J3 or `1` for J4, and `PCB_STAGE PCB_PWM_CHECK`, rebuild/flash. Motors remain disconnected. Verify PG4 and PG7 stay low in every state. Let go of both buttons, press S1, center VR1 if green is blinking. After 200 ms of valid neutral input, green is steady and gates are still off. Move VR1 slightly out of center. After the wake allowance, the six selected MCU inputs show complementary 20 kHz PWM, nominal 500 ns MCU dead time; the duty envelope changes slowly with field rotation. Scope each high/low pair and all three phase identities. Returning to neutral ramps to zero and turns PWM off after coast; S2 disables immediately.
 
 No driver is enabled in this stage. nFAULT is not used as a power-stage break in this MCU-only check. The physical STOP interrupt, ADC freshness, control timing, foreground freshness and watchdog remain active.
 
@@ -82,13 +87,13 @@ COAST is set while configuration is written, then cleared with physical PWM stil
 
 Minimum gate current was user-selected. For the confirmed SiS890ADN, published Qg(max)=29 nC at 10 V gives a rough 29 nC/15 mA = 1.93 us charging estimate, inside 4 us TDRIVE. Actual gate switching, ringing, losses and fault behavior must still be scoped. A 0.15 V VDS threshold is a conservative initial selection, not a calibrated current limit; false trips must be diagnosed rather than disabling protections.
 
-Verify nFAULT high after wake and the driver supply rails. With PWM held off, gate-to-source voltages should remain off. S2 lowers both ENABLEs immediately; normal sleep/wake can pulse shared nFAULT. In this stage firmware does not set TIM1 MOE, so the bridge never receives PWM.
+Verify nFAULT high after wake and the driver supply rails. With PWM held off, gate-to-source voltages should remain off. S2 lowers both ENABLEs immediately; normal sleep/wake can pulse shared nFAULT. In this stage firmware does not set the selected timer MOE, so the bridge never receives PWM.
 
 ## Stage 4: motor run
 
-Set `PCB_TEST_AXIS 0` and `PCB_STAGE PCB_MOTOR_RUN` only after IO, MCU PWM, driver readback, reset behavior and component checks pass. Axis 1 MOTOR_RUN is not implemented and is rejected at compile time. Power off, connect one unloaded FIT1036 to J3 A/B/C. Wire order determines the physical direction; establish labels at low speed. Start with the user's proposed 24 V / 2 A bus limit and monitor current. Current limiting must still allow the logic rail to remain stable; a supply foldback/reset can invalidate startup observations.
+Set `PCB_TEST_AXIS 0` for J3 or `1` for J4, `PCB_STAGE PCB_MOTOR_RUN` and `PCB_BENCH_ALLOW_CPUV_HISTORY 0` only after IO, MCU PWM, driver readback, reset/shutdown behavior and component checks pass. Follow the [J4 procedure](J4_MOTOR_TEST.md) for its first switching/interrupt checks. Initially leave motors disconnected and scope the selected phase outputs. Then power off, connect one unloaded FIT1036 to the selected connector A/B/C. Wire order determines the physical direction; establish labels at low speed. Start with the user's proposed 24 V / 2 A bus limit and monitor current. Current limiting must still allow the logic rail to remain stable; a supply foldback/reset can invalidate startup observations.
 
-Release both buttons; center VR1; press/release S1. Green steady means armed. Moving VR1 out of neutral wakes/configures the driver, aligns the rotor for 2 s (1 V phase-amplitude target, ramped over 0.5 s), then ramps the rotating field at 10 RPM/s to the selected command. Run phase-voltage amplitude is 2 V with 2 V/s slew, using the configured nominal 24 V bus. PWM is center-aligned 20 kHz; duties are `0.5 + phase_voltage/24`, clamped to 5..95%. At 2 V amplitude that is about 41.7..58.3%. The sine references are separated by 120 electrical degrees; the carrier timers are synchronous.
+Release both buttons; center VR1; press/release S1. Green steady means armed. Moving VR1 out of neutral wakes/configures the driver, aligns the rotor for 2 s (1 V phase-amplitude target, ramped over 0.5 s), then ramps the rotating field at 10 RPM/s to the selected command. Run phase-voltage amplitude is 2 V with 2 V/s slew, using the configured nominal 24 V bus. PWM is center-aligned 20 kHz; duties are `0.5 + phase_voltage/24`, clamped to 5..95%. At 2 V amplitude that is about 41.7..58.3%. The sine references are separated by 120 electrical degrees; the three selected phase channels share one carrier counter.
 
 | Nominal VR1 voltage | Command |
 | --- | --- |

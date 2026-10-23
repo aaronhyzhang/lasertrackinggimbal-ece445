@@ -1,5 +1,7 @@
 # Custom PCB initial bring-up
 
+Current result: user reports both driver checks pass and J3 motor rotation. J4 TIM8 motor testing is now prepared; see the latest dated section and linked J4 procedure.
+
 Started 2026-10-23. Target MCU: STM32H743ZIT6. This record separates schematic facts, software verification and measurements still needed on the assembled board.
 
 ## Source and applicability
@@ -159,3 +161,11 @@ For J4 measurements use C44_I_1 pad 1 / VCP, C44_I_1 pad 2 / VM, and C45_I_1 pad
 If J4 remains healthy after the 20 ms wake check, ENABLE can stay high for measurement while VR1 is outside neutral. If its fault remains active, the same existing wake deadline still inhibits it. No longer observation interval or automatic fault clear was added. The motor model may advance to ALIGN/RUN in DRIVER_CHECK, but physical PWM remains off: **no phase switching or motor spin is expected on J4 in this build**.
 
 Restore PCB_TEST_AXIS=0 to compare J3 using the same DRIVER_CHECK stage and history setting. J4 success would point toward an issue local to J3; matching failures would leave shared supply, configuration and measurement factors under investigation. No J4 hardware result or assembly diagnosis is established yet.
+
+## J3 spin result and J4 motor implementation - 2026-10-23
+
+User reports J4 passed after desoldering/resoldering following its register-2 `0x7ff` readback failure. That earlier configure attempt stopped before reading status registers; zero entries were not evidence of no fault. The exact joint/cause is unconfirmed. User then reported both driver checks good and a motor spinning on J3. The active J3 MOTOR_RUN header had strict CPUV-history verification (option=0) before this change. No measured phase current, RPM or shutdown latency was supplied.
+
+Selectable PWM now uses TIM1 for axis 0/J3 or TIM8 for axis 1/J4, preserving VR1, S1/S2, neutral guard, alignment, ramp and reversal behavior. All other PWM pins and the unselected ENABLE remain low. The active workspace is J4 / MOTOR_RUN / CPUV-history option=0; repository defaults remain J3 / IO_CHECK / option=0. Both timer MOE/BIE bits are cleared on inhibit if their clocks are enabled.
+
+PE6 has no TIM8 break AF. J3 retains direct TIM1_BKIN2 shutdown; J4 uses PE6 falling-edge EXTI priority 0 during authorized PWM, plus the existing driver protections, live-level gate and strict SPI status checks. Wake edges do not latch before authorization; live fault must be high before MOE. This is interrupt-based shutdown with unmeasured latency, not a direct TIM8 break. Physical waveform, STOP and nFAULT-injection checks precede J4 motor attachment. See [the J4 test procedure](../../Senior_Design_PCB_BRINGUP/docs/J4_MOTOR_TEST.md). No J4 motor result or agent flash is claimed.

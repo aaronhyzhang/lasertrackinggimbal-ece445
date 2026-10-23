@@ -3,7 +3,7 @@
 #include "stm32h7xx_hal.h"
 #include "open_loop.h"
 extern ADC_HandleTypeDef hadc1;
-extern TIM_HandleTypeDef htim1,htim7;
+extern TIM_HandleTypeDef htim7;
 void board_init(void);
 void board_start_control(void);
 void board_adc_tick(void);

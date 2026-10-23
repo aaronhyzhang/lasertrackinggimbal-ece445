@@ -1,8 +1,9 @@
-/* STM32H743 PCB support: selected driver / VR1 / S1 / S2; PWM on J3 only. */
+/* STM32H743 PCB support: selected driver / VR1 / S1 / S2; one-axis TIM1/TIM8 PWM. */
 #include "board.h"
 #include "demo_config.h"
 #include "pcb_config.h"
 #include "pcb_pins.h"
+#include "pcb_pwm.h"
 #include "drv8304.h"
 #include "demo_app.h"
 ADC_HandleTypeDef hadc1;
@@ -11,7 +12,8 @@ volatile drv8304_snapshot_t g_driver_status;
 static volatile bool wake_requested, driver_ready;
 static volatile uint32_t wake_ms, wake_epoch;
 static uint32_t last_verify;
-TIM_HandleTypeDef htim1, htim7;
+static TIM_HandleTypeDef htim_pwm;
+TIM_HandleTypeDef htim7;
 static IWDG_HandleTypeDef watchdog;
 static volatile motor_fault_t latched_fault;
 static volatile bool bridge_authorized;
@@ -32,9 +34,7 @@ uint32_t board_us(void) { return TIM2->CNT; }
 void board_inhibit(void) {
     uint32_t mask = board_lock();
     bridge_authorized = false;
-    if (__HAL_RCC_TIM1_IS_CLK_ENABLED()) {
-        CLEAR_BIT(TIM1->DIER, TIM_DIER_BIE); CLEAR_BIT(TIM1->BDTR,TIM_BDTR_MOE);
-    }
+    pcb_pwm_stop_all();
     if (__HAL_RCC_GPIOG_IS_CLK_ENABLED()) pcb_driver_enable(false);
     if (wake_requested) ++wake_epoch;
     wake_requested=driver_ready=false;
@@ -113,11 +113,19 @@ static void pins_init(void) {
     gpio(GPIOA,PCB_VR1_PIN|PCB_VR2_PIN,GPIO_MODE_ANALOG,GPIO_NOPULL,0);
     gpio(GPIOE,PCB_NFAULT,GPIO_MODE_INPUT,GPIO_PULLUP,0);
     if (PCB_STAGE==PCB_PWM_CHECK || PCB_STAGE==PCB_MOTOR_RUN) {
+#if PCB_TEST_AXIS == 0
         gpio(GPIOE,PCB_PWM0_E,GPIO_MODE_AF_PP,GPIO_PULLDOWN,GPIO_AF1_TIM1);
         gpio(GPIOB,PCB_PWM0_B,GPIO_MODE_AF_PP,GPIO_PULLDOWN,GPIO_AF1_TIM1);
+#else
+        gpio(GPIOA,PCB_PWM1_A,GPIO_MODE_AF_PP,GPIO_PULLDOWN,GPIO_AF3_TIM8);
+        gpio(GPIOB,PCB_PWM1_B,GPIO_MODE_AF_PP,GPIO_PULLDOWN,GPIO_AF3_TIM8);
+        gpio(GPIOC,PCB_PWM1_C,GPIO_MODE_AF_PP,GPIO_PULLDOWN,GPIO_AF3_TIM8);
+#endif
     }
     if (PCB_TEST_AXIS==0 && (PCB_STAGE==PCB_MOTOR_RUN || PCB_STAGE==PCB_DRIVER_CHECK))
         gpio(GPIOE,PCB_NFAULT,GPIO_MODE_AF_PP,GPIO_PULLUP,GPIO_AF1_TIM1);
+    if (PCB_TEST_AXIS==1 && (PCB_STAGE==PCB_MOTOR_RUN || PCB_STAGE==PCB_DRIVER_CHECK))
+        gpio(GPIOE,PCB_NFAULT,GPIO_MODE_IT_FALLING,GPIO_PULLUP,0); /* No TIM8 break on PE6. */
 }
 
 static void spi_init(void) {
@@ -141,18 +149,22 @@ static void spi_init(void) {
 }
 
 static void pwm_init(void) {
+#if PCB_TEST_AXIS == 0
     __HAL_RCC_TIM1_CLK_ENABLE();
-    htim1.Instance=TIM1; htim1.Init.Prescaler=0;
-    htim1.Init.CounterMode=TIM_COUNTERMODE_CENTERALIGNED1; htim1.Init.Period=DEMO_PWM_ARR;
-    htim1.Init.ClockDivision=TIM_CLOCKDIVISION_DIV1; htim1.Init.RepetitionCounter=0;
-    htim1.Init.AutoReloadPreload=TIM_AUTORELOAD_PRELOAD_ENABLE;
-    check(HAL_TIM_PWM_Init(&htim1));
+#else
+    __HAL_RCC_TIM8_CLK_ENABLE();
+#endif
+    htim_pwm.Instance=PCB_PWM_TIMER; htim_pwm.Init.Prescaler=0;
+    htim_pwm.Init.CounterMode=TIM_COUNTERMODE_CENTERALIGNED1; htim_pwm.Init.Period=DEMO_PWM_ARR;
+    htim_pwm.Init.ClockDivision=TIM_CLOCKDIVISION_DIV1; htim_pwm.Init.RepetitionCounter=0;
+    htim_pwm.Init.AutoReloadPreload=TIM_AUTORELOAD_PRELOAD_ENABLE;
+    check(HAL_TIM_PWM_Init(&htim_pwm));
     TIM_OC_InitTypeDef oc={0}; oc.OCMode=TIM_OCMODE_PWM1; oc.Pulse=1250;
     oc.OCPolarity=TIM_OCPOLARITY_HIGH; oc.OCNPolarity=TIM_OCNPOLARITY_HIGH;
     oc.OCIdleState=TIM_OCIDLESTATE_RESET; oc.OCNIdleState=TIM_OCNIDLESTATE_RESET;
-    check(HAL_TIM_PWM_ConfigChannel(&htim1,&oc,TIM_CHANNEL_1));
-    check(HAL_TIM_PWM_ConfigChannel(&htim1,&oc,TIM_CHANNEL_2));
-    check(HAL_TIM_PWM_ConfigChannel(&htim1,&oc,TIM_CHANNEL_3));
+    check(HAL_TIM_PWM_ConfigChannel(&htim_pwm,&oc,TIM_CHANNEL_1));
+    check(HAL_TIM_PWM_ConfigChannel(&htim_pwm,&oc,TIM_CHANNEL_2));
+    check(HAL_TIM_PWM_ConfigChannel(&htim_pwm,&oc,TIM_CHANNEL_3));
     TIM_BreakDeadTimeConfigTypeDef b={0};
     b.OffStateRunMode=TIM_OSSR_ENABLE; b.OffStateIDLEMode=TIM_OSSI_ENABLE;
     b.LockLevel=TIM_LOCKLEVEL_1; b.DeadTime=50; /* 500 ns at 100 MHz tDTS */
@@ -163,14 +175,16 @@ static void pwm_init(void) {
     TIMEx_BreakInputConfigTypeDef input={0};
     input.Source=TIM_BREAKINPUTSOURCE_BKIN; input.Enable=TIM_BREAKINPUTSOURCE_ENABLE;
     input.Polarity=TIM_BREAKINPUTSOURCE_POLARITY_HIGH;
-    check(HAL_TIMEx_ConfigBreakInput(&htim1,TIM_BREAKINPUT_BRK2,&input));
-    check(HAL_TIMEx_ConfigBreakDeadTime(&htim1,&b));
+    check(HAL_TIMEx_ConfigBreakInput(&htim_pwm,TIM_BREAKINPUT_BRK2,&input));
+    check(HAL_TIMEx_ConfigBreakDeadTime(&htim_pwm,&b));
     /* HAL PWM_Start would assert MOE. Start the counter/channels explicitly OFF. */
-    SET_BIT(TIM1->CCER,TIM_CCER_CC1E|TIM_CCER_CC1NE|TIM_CCER_CC2E|
+    SET_BIT(PCB_PWM_TIMER->CCER,TIM_CCER_CC1E|TIM_CCER_CC1NE|TIM_CCER_CC2E|
              TIM_CCER_CC2NE|TIM_CCER_CC3E|TIM_CCER_CC3NE);
-    TIM1->EGR=TIM_EGR_UG; CLEAR_BIT(TIM1->BDTR,TIM_BDTR_MOE);
-    SET_BIT(TIM1->CR1,TIM_CR1_CEN);
+    PCB_PWM_TIMER->EGR=TIM_EGR_UG; CLEAR_BIT(PCB_PWM_TIMER->BDTR,TIM_BDTR_MOE);
+    SET_BIT(PCB_PWM_TIMER->CR1,TIM_CR1_CEN);
+#if PCB_TEST_AXIS == 0
     HAL_NVIC_SetPriority(TIM1_BRK_IRQn,0,0); HAL_NVIC_EnableIRQ(TIM1_BRK_IRQn);
+#endif
 }
 
 static void adc_init(void) {
@@ -249,8 +263,7 @@ bool board_arm_pressed(void) { return (GPIOD->IDR&PCB_ARM)==0; }
 bool board_stop_pressed(void) { return (GPIOD->IDR&PCB_STOP)==0; }
 
 static void pwm_off(void) {
-    bridge_authorized=false; CLEAR_BIT(TIM1->DIER,TIM_DIER_BIE);
-    CLEAR_BIT(TIM1->BDTR,TIM_BDTR_MOE);
+    bridge_authorized=false; pcb_pwm_stop_all();
 }
 
 void board_apply(const motor_output_t *out) {
@@ -270,17 +283,22 @@ void board_apply(const motor_output_t *out) {
     bool drive=out->pwm && (PCB_STAGE==PCB_MOTOR_RUN || PCB_STAGE==PCB_PWM_CHECK);
     if (!drive) pwm_off();
     else if (PCB_STAGE==PCB_PWM_CHECK || (driver_ready && (GPIOE->IDR&PCB_NFAULT)!=0)) {
-        SET_BIT(TIM1->CR1,TIM_CR1_UDIS);
-        TIM1->CCR1=(uint32_t)(out->duty[0]*DEMO_PWM_ARR);
-        TIM1->CCR2=(uint32_t)(out->duty[1]*DEMO_PWM_ARR);
-        TIM1->CCR3=(uint32_t)(out->duty[2]*DEMO_PWM_ARR);
-        CLEAR_BIT(TIM1->CR1,TIM_CR1_UDIS);
+        pcb_pwm_write(out->duty);
         if (!bridge_authorized) {
-            __HAL_TIM_CLEAR_FLAG(&htim1,TIM_FLAG_BREAK|TIM_FLAG_BREAK2);
+#if PCB_TEST_AXIS == 0
+            __HAL_TIM_CLEAR_FLAG(&htim_pwm,TIM_FLAG_BREAK|TIM_FLAG_BREAK2);
             HAL_NVIC_ClearPendingIRQ(TIM1_BRK_IRQn);
+            if (PCB_STAGE==PCB_MOTOR_RUN) SET_BIT(PCB_PWM_TIMER->DIER,TIM_DIER_BIE);
+#else
+            /* Ignore only wake/sleep edges recorded before PWM authorization.
+             * Recheck the live level after clearing; a later edge remains pending. */
+            __HAL_GPIO_EXTI_CLEAR_IT(PCB_NFAULT);
+            if (PCB_STAGE==PCB_MOTOR_RUN && (GPIOE->IDR&PCB_NFAULT)==0) {
+                board_trip(FAULT_DRIVER); board_unlock(mask); return;
+            }
+#endif
             bridge_authorized=true;
-            if (PCB_STAGE==PCB_MOTOR_RUN) SET_BIT(TIM1->DIER,TIM_DIER_BIE);
-            __DSB(); SET_BIT(TIM1->BDTR,TIM_BDTR_MOE);
+            __DSB(); SET_BIT(PCB_PWM_TIMER->BDTR,TIM_BDTR_MOE);
         }
     } else board_trip(FAULT_DRIVER);
     board_unlock(mask);
@@ -340,13 +358,23 @@ void EXTI9_5_IRQHandler(void) {
     if (__HAL_GPIO_EXTI_GET_IT(PCB_STOP)!=0u) {
         __HAL_GPIO_EXTI_CLEAR_IT(PCB_STOP); app_stop();
     }
+#if PCB_TEST_AXIS == 1
+    if (__HAL_GPIO_EXTI_GET_IT(PCB_NFAULT)!=0u) {
+        __HAL_GPIO_EXTI_CLEAR_IT(PCB_NFAULT);
+        /* Wake has a normal fault pulse. Before PWM, SPI/live checks gate it.
+         * During drive, latch even a brief pulse; no automatic restart. */
+        if (PCB_STAGE==PCB_MOTOR_RUN && bridge_authorized) board_trip(FAULT_DRIVER);
+    }
+#endif
 }
 
+#if PCB_TEST_AXIS == 0
 void TIM1_BRK_IRQHandler(void) {
-    if ((TIM1->SR&(TIM_SR_BIF|TIM_SR_B2IF))!=0) {
-        board_trip(FAULT_DRIVER); __HAL_TIM_CLEAR_FLAG(&htim1,TIM_FLAG_BREAK|TIM_FLAG_BREAK2);
+    if ((PCB_PWM_TIMER->SR&(TIM_SR_BIF|TIM_SR_B2IF))!=0) {
+        board_trip(FAULT_DRIVER); __HAL_TIM_CLEAR_FLAG(&htim_pwm,TIM_FLAG_BREAK|TIM_FLAG_BREAK2);
     }
 }
+#endif
 
 void board_watchdog_start(void) {
     watchdog.Instance=IWDG1; watchdog.Init.Prescaler=IWDG_PRESCALER_32;

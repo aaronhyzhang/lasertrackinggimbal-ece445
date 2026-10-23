@@ -22,6 +22,8 @@ def main():
     parser.add_argument("--toolchain", type=pathlib.Path, help="ARM GCC bin directory")
     parser.add_argument("--stage", choices=["io", "pwm", "driver", "motor"],
                         help="Explicit CLI override; CubeIDE uses pcb_config.h")
+    parser.add_argument("--axis", type=int, choices=[0, 1],
+                        help="Explicit CLI axis override: 0=J3, 1=J4")
     args = parser.parse_args()
     root = pathlib.Path(__file__).resolve().parents[1]
     if args.toolchain:
@@ -35,6 +37,8 @@ def main():
     output = root / "build" / args.config
     if args.stage:
         output = root / "build" / args.stage.upper() / args.config
+    if args.axis is not None:
+        output = output.parent / f"AXIS{args.axis}" / args.config
     output.mkdir(parents=True, exist_ok=True)
     cpu = ["-mcpu=cortex-m7", "-mthumb", "-mfpu=fpv5-d16", "-mfloat-abi=hard"]
     flags = cpu + ["-std=gnu11", "-g3", "-O0" if args.config == "Debug" else "-O2",
@@ -42,6 +46,8 @@ def main():
                    "-DUSE_HAL_DRIVER", "-DUSE_PWR_LDO_SUPPLY", "-DSTM32H743xx"]
     if args.stage:
         flags += [f"-DPCB_STAGE={['io', 'pwm', 'driver', 'motor'].index(args.stage)}"]
+    if args.axis is not None:
+        flags += [f"-DPCB_TEST_AXIS={args.axis}"]
     for inc in ["Core/Inc", "Drivers/STM32H7xx_HAL_Driver/Inc",
                 "Drivers/STM32H7xx_HAL_Driver/Inc/Legacy", "Drivers/CMSIS/Device/ST/STM32H7xx/Include",
                 "Drivers/CMSIS/Include"]:

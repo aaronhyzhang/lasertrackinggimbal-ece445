@@ -1,0 +1,47 @@
+{
+  "date": "2026-10-23",
+  "base_commit": "8f74d3fe25d0982d28e458ec94b2446a6c4c461b",
+  "change": "Single-axis selectable J3 TIM1 / J4 TIM8 PWM and J4 PE6 EXTI fault shutdown",
+  "user_report": "Both driver checks pass; motor spins on J3. J4 readback failure cleared after resoldering; exact joint/cause unconfirmed.",
+  "active_config": {
+    "stage": "PCB_MOTOR_RUN",
+    "axis": 1,
+    "cpuv_history_option": 0,
+    "sha256": "547ed3276a9a13627c2425d1a226e5e6a5c24e32190b03676e32903a42a3e605"
+  },
+  "repository_config": {
+    "stage": "PCB_IO_CHECK",
+    "axis": 0,
+    "cpuv_history_option": 0,
+    "sha256": "9ae3127022c5f3ccae0eb6eb16c5fdb9dfaffda62d3a54be7e64c00b026ee0d1"
+  },
+  "host": "18 executables passed: both-axis motor, driver strict/bench, all-stage app, app bench and actual routing/shutdown helper tests; 4 invalid-config compile rejections",
+  "helper_scope": "Actual selected ENABLE/CS and PWM compare helpers tested on simulated GPIO/timer registers; both-MOE/BIE inhibition with all four timer clock combinations. No physical pin/timing validation.",
+  "active_cubeide_builds": {
+    "Debug": {
+      "result": "0 errors / 0 warnings",
+      "elf_sha256": "66e07eb442929c0b802df55ab79d270e4ac39d5f292b117ad111e854cf064055"
+    },
+    "Release": {
+      "result": "0 errors / 0 warnings",
+      "elf_sha256": "943a8915b7118c4b2317e96ca71d50b2d0d664c99195db9e2ab3a85c1076b64c"
+    }
+  },
+  "cli_builds": {
+    "J3 MOTOR_RUN Debug": "94021e1aaeeaf2546097224aab084a1ad820d85664a16646a2d9b62d4de462ce",
+    "J4 PWM_CHECK Debug": "333352490c70ac55a6389d0ff84d4edccf641328687122c03f54bfd12487362d"
+  },
+  "source_sha256": {
+    "Core/Src/board.c": "428edfdfa95e50a808f99cd0c738fcb814d23959a2dbc9de8451c70359724f70",
+    "Core/Inc/board.h": "b8d69faaadeca6453aa181bce8d5fc6d5ce50050b9b9fe83c97c99cc181d0b33",
+    "Core/Inc/pcb_pwm.h": "1a8fd849780b8bb9e3f75b0d26b95e1c7779e40a8197782c256cc288a8056312",
+    "Tests/test_axis.c": "55364ffc317aa2ffd31281890bf82503e303100e6f486e0f31adbb3fd990ed6f",
+    "Tools/test.py": "f870c33893965c37f2c89bb049ba112372c693408b051a87fad1fa5f27efd5f0",
+    "Tools/build.py": "85297fdb969bd4ced9bf575a5a588fa57c9b779ee50c4f68429622de01e58839"
+  },
+  "unchanged": "Motor/app/driver core, phase duty algorithm, driver profile, gain 20, lowest gate current, speed/voltage limits, 20 ms wake, S1/neutral, S2, watchdog.",
+  "shutdown": "J3 direct TIM1_BKIN2; J4 PE6 falling-edge EXTI priority 0 during authorized PWM. Driver hardware protections remain enabled. TIM8 does not have a direct nFAULT hardware-break connection.",
+  "limitations": "Real J4 pin modes/carrier/dead time, nFAULT/STOP interrupt timing, phase current and motor behavior require bench checks. No J4 hardware result/production response-time guarantee.",
+  "agent_flashed": false,
+  "working_J3_backup": "C:\\Users\\colin\\OneDrive\\Documents\\STM32CubeIDE_Workspace_2025\\Senior_Design_FW\\tmp\\pcb_bringup\\j3_spin_working_backup"
+}
