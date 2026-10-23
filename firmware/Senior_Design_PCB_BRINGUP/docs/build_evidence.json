@@ -1,0 +1,118 @@
+{
+  "date": "2026-10-23",
+  "target": "STM32H743ZIT6 custom PCB / J3 / VR1 (PA4)",
+  "default": "PCB_IO_CHECK",
+  "hardware_validated": false,
+  "agent_flashed": false,
+  "schematic_sha256": "2d538235485d3f2e2b304468b9ff6afa6fb7fc8a22f0789b6c701709f734a144",
+  "compiler": "STM32CubeIDE ARM GNU 13.3",
+  "host_tests": [
+    "PASS: symmetric signed RPM, neutral ARM, both field directions/wraps, bounded ramps, coast/realign reversal, stop/fault interlocks and reset-only fault recovery.",
+    "PASS: SPI framing/masks, COAST during setup, gain/protections, readback mismatch/fault status, every transfer failure, stuck-high/low MISO.",
+    "PASS: IO profile cannot arm or request a bridge, both ADC diagnostics available.",
+    "PASS: actual app boot-held inhibit, momentary ARM/STOP priority, neutral dwell, VR1 isolation, +/- ramp/reversal, wake cancellation, stale ADC/foreground, fault latch, time wrap.",
+    "PASS: actual app boot-held inhibit, momentary ARM/STOP priority, neutral dwell, VR1 isolation, +/- ramp/reversal, wake cancellation, stale ADC/foreground, fault latch, time wrap.",
+    "PASS: actual app boot-held inhibit, momentary ARM/STOP priority, neutral dwell, VR1 isolation, +/- ramp/reversal, wake cancellation, stale ADC/foreground, fault latch, time wrap."
+  ],
+  "cli_builds": [
+    {
+      "stage": "configured_io",
+      "config": "Debug",
+      "flash_bytes": 34440,
+      "bin_sha256": "4023d2c6a211c6046e85adf594d726e8570d15bd8a83da67b1b7f328b283f104"
+    },
+    {
+      "stage": "configured_io",
+      "config": "Release",
+      "flash_bytes": 20508,
+      "bin_sha256": "40d0025627ec98b34c931cd5d6d9f78afb3db525c762139eafd27831dab07fe2"
+    },
+    {
+      "stage": "io",
+      "config": "Debug",
+      "flash_bytes": 34440,
+      "bin_sha256": "4023d2c6a211c6046e85adf594d726e8570d15bd8a83da67b1b7f328b283f104"
+    },
+    {
+      "stage": "io",
+      "config": "Release",
+      "flash_bytes": 20508,
+      "bin_sha256": "40d0025627ec98b34c931cd5d6d9f78afb3db525c762139eafd27831dab07fe2"
+    },
+    {
+      "stage": "pwm",
+      "config": "Debug",
+      "flash_bytes": 39764,
+      "bin_sha256": "f26e5df0c5881867e4fcd754100b41c5db81fd2489e424d8116bcc55eeeeb08b"
+    },
+    {
+      "stage": "pwm",
+      "config": "Release",
+      "flash_bytes": 24584,
+      "bin_sha256": "c5c9680df4789d13ec0658cecc9891c66d535078b3dae9d46b6d05c3e364e58f"
+    },
+    {
+      "stage": "driver",
+      "config": "Debug",
+      "flash_bytes": 43980,
+      "bin_sha256": "eb22f796cc5258f9b7c081fe2502b00e512de4df67afff98e44e04b3ed05641e"
+    },
+    {
+      "stage": "driver",
+      "config": "Release",
+      "flash_bytes": 27056,
+      "bin_sha256": "5fabf5d39420ab6c338e59ecaa72e3a9a1cdbeae89396e4f8f18098ec939b154"
+    },
+    {
+      "stage": "motor",
+      "config": "Debug",
+      "flash_bytes": 43988,
+      "bin_sha256": "68efe1ccc21e37392adf16a8141539f59679d144dfa4d0bb128bb5e7df58907f"
+    },
+    {
+      "stage": "motor",
+      "config": "Release",
+      "flash_bytes": 27264,
+      "bin_sha256": "b2f3bd7de7dbabb61669e54bc725d068c4af48952a1eb5eb1cf4bc35a1f846dc"
+    }
+  ],
+  "native_cubeide": {
+    "version": "1.18.0",
+    "independent_active_project": "C:\\Users\\colin\\OneDrive\\Documents\\STM32CubeIDE_Workspace_2025\\Senior_Design_PCB_BRINGUP",
+    "configs": [
+      "Debug (-O0)",
+      "Release (-Os)"
+    ],
+    "errors": 0,
+    "warnings": 0
+  },
+  "source_sha256": {
+    "Core/Inc/arm_button.h": "d9198177b1e1e0eef86cc75f945d423f02dec99f729b25adf686157a0a21ff09",
+    "Core/Inc/board.h": "b13cfd8777b13d64e1baf6bd473d9cdb889e311f34e6a7330cf41d254e061889",
+    "Core/Inc/demo_app.h": "4594e7d89fef14f9b1c632b014bb7cf798b877e878cb6d23993a25290e0d3cfe",
+    "Core/Inc/demo_config.h": "8afaa7b10a5afa33145ce3939db65170f50f1e09f6b6a20c958c96396c93bf6f",
+    "Core/Inc/drv8304.h": "dbd057ec6213d3be3098aa8097a84e80b279f92c3e0e95c478d292c54eccd8b9",
+    "Core/Inc/open_loop.h": "1cbe7af9e72f8206f8f1f779bb90db750f887b2a21de8b6f7d045d212361552d",
+    "Core/Inc/pcb_config.h": "4e6850a8ed217b7d623766b2857e0dff3d60279d22e7db4e9778178b980d87f2",
+    "Core/Inc/pcb_pins.h": "9d3f2d297630852389a8fe8cd92ff2ad3f337af9d0f6b987e255c4b9cc7e2c18",
+    "Core/Inc/stm32h7xx_hal_conf.h": "482d83c4d3edaaaedb1d3edb1272eb66161a335df8a6153342a118c4fb3d5bae",
+    "Core/Src/board.c": "3f5da8e392a72c07bc386aba68f24288b2f9ba9ef1e6fbd8d7ab1ef127a697c5",
+    "Core/Src/demo_app.c": "a994b74d6f98477e2a7df57d19f7945745d6fae9badb39463edd74b688787b5c",
+    "Core/Src/drv8304.c": "775387b38049971d774e238a7d3d55c0b8a970259154bb34cd21d4ec228c54a7",
+    "Core/Src/main.c": "017afc488281d488d1d1aa32f93844a54968471ad6e57919b20afe37e093309d",
+    "Core/Src/modulation.c": "3762deb0150659e7ec53870a3d432b90295e465d51b3e384266920c349d8173a",
+    "Core/Src/open_loop.c": "9b9c5d02e6352fdbb11c4542d4b96b1455a71ae0e33da3a7d8ab02970cf8232f",
+    "Core/Src/runtime_support.c": "87d203592cf33d4f655a6505ceae8d73d6f3bc535f6c7869d940b19b12e49c19",
+    "Core/Src/stm32h7xx_hal_msp.c": "a08168822207db031f13be63f98fe4e95e228511a82e12ef58e9f41046f8bf4d",
+    "Core/Src/stm32h7xx_it.c": "bc9999458e308c2ce39017e87f0925d72b1735690c6cf991d171b68096e97478",
+    "Core/Startup/startup_stm32h743zitx.s": "c6d08258e2e6a8ed52cd75e3b3d8188108710edfdbe2cd71a25dc608568a7d8d",
+    "STM32H743ZITX_FLASH.ld": "f2384404fd32e183492c7696aeeabf5dd290165a8bbf216c60b1873a85060ef8",
+    "Tests/fakes/board.h": "828db37a4a884d2822f89d8da72c43fd96fafe26bfc52d1748623e61d4325ab8",
+    "Tests/test_app.c": "59c3c112059b2bef5ad7ca6ee7b4b0da5eda916b500e01bde38ee7b1ab2fb744",
+    "Tests/test_driver.c": "54ae58510fbf474eb8f1209c44bdb433ef2b37c2b46b510e8c975328076b7ac5",
+    "Tests/test_motor.c": "cd3b6f80e6926fb72e15f47d0bc444d2d114b0369726db578b8710503d9c1dc7",
+    "Tools/build.py": "ba3b3330709fd4f81b726f01b05230b4b00be5cff2c072f7678e47c98238e77f",
+    "Tools/test.py": "b79708b70e3319cfe8e9e0f0f3c53307944da2562af16072e0d27933161ca638"
+  },
+  "limits": "Host fakes do not verify electrical connections, real BSP register behavior, latency, switching, current, temperature or actual motor RPM."
+}

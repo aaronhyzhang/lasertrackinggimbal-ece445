@@ -4,3 +4,6 @@ firmware/Senior_Design_DEV_FW/** -text
 
 # Keep extracted source and vendor bytes consistent with build evidence.
 firmware/Senior_Design_OPEN_LOOP_DEMO/** -text
+
+# Preserve the independent H743 bring-up source and vendor checksums.
+firmware/Senior_Design_PCB_BRINGUP/** -text

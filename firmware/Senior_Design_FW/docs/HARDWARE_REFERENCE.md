@@ -1,7 +1,7 @@
 # Custom PCB hardware reference and schematic review
 
 Reviewed: 2026-10-07. Target: STM32H743ZIT6, two motor axes.
-Source: local attachment `Schematic PDF_[No Variations] (1) (1).pdf` (not committed in this dev-firmware source branch).
+Source: [schematic PDF](../Datasheets_UserManuals/Schematic%20PDF_%5BNo%20Variations%5D%20(1)%20(1).pdf).
 SHA-256: `2d538235485d3f2e2b304468b9ff6afa6fb7fc8a22f0789b6c701709f734a144`.
 
 All nine PDF pages were rendered and visually inspected, with higher-resolution views of the MCU, channel buffers, inverters and power. Page references below mean physical PDF page numbers, not the inconsistent sheet counters. This is a schematic-level review; no BOM, PCB layout, ERC report or assembled-board measurements were available. Population choices below include the user-confirmed initial assembly; physical inspection should still verify the built board. No firmware or hardware was changed.
@@ -174,6 +174,14 @@ MCU buttons PD8/PD9 have pull-ups and switch to GND. LEDs PD12/PD11/PD10 are cus
 8. PCB layout, MOSFET/shunt thermal performance, component derating and fault propagation latency require later hardware review.
 
 Related notes: [dev project review](DEV_PROJECT_REVIEW.md), [firmware architecture](FIRMWARE_ARCHITECTURE.md), [motor control design](MOTOR_CONTROL_DESIGN.md), [demo plan](DEV_BOARD_VALIDATION_PLAN.md).
+
+## Assembled-PCB bring-up update - 2026-10-23
+
+User confirms this PDF matches the received PCB, including DRV8304S and SiS890ADN-T1-GE3 MOSFETs. First open-loop target is J3 / TIM1, with VR1 and S1 ARM / S2 STOP, CSA gain 20 V/V and minimum gate-drive current. STLINK-V3MINI, 24 V bus, proposed 2 A supply limit. Power reportedly checks out; switching and numeric measurements remain pending.
+
+**Pot numbering clarification:** VR1 is **POT1 / PA4 / ADC1_INP18 / TP12** through R84; VR2 is **POT0 / PA0 / ADC1_INP16 / TP13** through R85. The earlier ADC table lists net/pin candidates, not a required pot-to-motor-axis assignment. The new firmware reads VR1 first and uses it for J3. This mapping was rechecked against embedded schematic net metadata and the MCU package pins (40 and 34).
+
+J3 MCU PWM test points are TP17/18 (A high/low), TP19/20 (B high/low), TP21/22 (C high/low); CAL0 is TP29 and ENABLE0 TP30. See [PCB_BRINGUP.md](PCB_BRINGUP.md) for the pin audit, hardware boundaries and link to the independent H743 bring-up firmware. The original generated SPI mode/speed and initially-low chip selects are not suitable driver configuration; the new target uses mode 1 at 781.25 kHz and verifies every register setting. J4 remains inhibited pending its own shutdown-path validation.
 
 Vendor checks: [TI DRV8304 datasheet](https://www.ti.com/lit/ds/symlink/drv8304.pdf), [TI LM22676 datasheet](https://www.ti.com/lit/ds/symlink/lm22676.pdf), [Microchip LAN8742A datasheet](https://www.microchip.com/content/dam/mchp/documents/OTH/ProductDocuments/DataSheets/DS_LAN8742_00001989A.pdf).
 
