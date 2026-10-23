@@ -215,3 +215,17 @@ For J4 measurements use C44_I_1 pad 1 / VCP, C44_I_1 pad 2 / VM, and C45_I_1 pad
 If J4 remains healthy after the 20 ms wake check, ENABLE can stay high for measurement while VR1 is outside neutral. If its fault remains active, the same existing wake deadline still inhibits it. No longer observation interval or automatic fault clear was added. The motor model may advance to ALIGN/RUN in DRIVER_CHECK, but physical PWM remains off: **no phase switching or motor spin is expected on J4 in this build**.
 
 Restore PCB_TEST_AXIS=0 to compare J3 using the same DRIVER_CHECK stage and history setting. J4 success would point toward an issue local to J3; matching failures would leave shared supply, configuration and measurement factors under investigation. No J4 hardware result or assembly diagnosis is established yet.
+
+## J4 startup fault and MCU PWM check - 2026-10-23
+
+The new J4 MOTOR_RUN attempt faults with no motor connected; user sees green briefly before red. Snapshot: verified=true, driver_good=false, motor fault=FAULT_DRIVER, failed_address=0, registers [0,0,0x080,0x300,0x300,0x300,0x280], cpuv_history_accepted=false. User reports the board's latched_fault as DRIVER_FAULT and (unsigned int)(g_app_status.motor.stage_ms-wake_ms)=22 ms. This indicates a board-layer trip, not merely the motor model's wake timeout. The timing is consistent with the first intended PWM authorization following the 20 ms wake allowance, but does not prove that an actual output edge caused the fault.
+
+The saved SPI snapshot passed before shutdown; no specific hardware fault is decoded from its zero status registers. Shutdown clears driver_ready, so post-fault driver_good=false does not independently establish the earlier nFAULT level. Possible paths include the PE6 falling-edge ISR or the live-driver gate in board_apply; a physical fault, noise or an interrupt/software issue has not been distinguished. Do not label the new failure CPUV without a new captured bit.
+
+User then probed all MCU PWM outputs and reports they look okay. The active header was read as PCB_TEST_AXIS=1 / PCB_PWM_CHECK / CPUV-history option=0. No quantitative carrier/dead-time capture was supplied. This supports TIM8 output operation in the driver-disabled check; it does not validate MOSFET gate drive or rule out changes under power-stage switching.
+
+Next: restore MOTOR_RUN with the motor disconnected, capture J4 ENABLE at TP34 and shared PE6 nFAULT around shutdown, preferably a PWM/gate channel as well. Determine whether nFAULT falls before ENABLE, or only during normal sleep after ENABLE falls. The selected driver configuration, gate-current setting and protection response remain unchanged. No firmware source change or agent flash was made for this observation.
+
+## J4 first-trip diagnostics - 2026-10-23
+
+The [firmware/GPIO audit](J4_FIRMWARE_AUDIT.md) found no pin-map defect. Its rebuilt active MOTOR_RUN image adds frozen g_driver_trip provenance so the next motor-disconnected attempt can distinguish an EXTI edge from a failed live/ready gate. All five field meanings, test scope and current configuration are documented there. Protection policy and driver settings are unchanged; the physical cause remains unresolved.

@@ -1,0 +1,43 @@
+{
+  "date": "2026-10-23",
+  "base_commit": "f6cd9eae73f0719a18125606aedef7c27fd36097",
+  "change": "Passive first-board-driver-trip record; GPIO/EXTI audit and actual-BSP register simulation",
+  "audit_result": "No pin-map or deterministic stale-wake-event bug found. Physical startup fault unresolved.",
+  "host": "18 existing executables + 4 invalid-config checks, plus 1 actual-BSP/vendor-GPIO simulation executable passed",
+  "simulation_limit": "Private Windows x64 MMIO memory; CPU/NVIC/W1C simulated. Excluded HAL services abort. No real timer/IRQ/electrical timing or HAL timer initialization.",
+  "active_config": {
+    "stage": "PCB_MOTOR_RUN",
+    "axis": 1,
+    "cpuv_history_option": 0,
+    "sha256": "547ed3276a9a13627c2425d1a226e5e6a5c24e32190b03676e32903a42a3e605"
+  },
+  "repository_config": {
+    "stage": "PCB_IO_CHECK",
+    "axis": 0,
+    "cpuv_history_option": 0,
+    "sha256": "9ae3127022c5f3ccae0eb6eb16c5fdb9dfaffda62d3a54be7e64c00b026ee0d1"
+  },
+  "native_cubeide": {
+    "Debug": {
+      "result": "0 errors / 0 warnings",
+      "elf_sha256": "74888cebfb04a47d7f9800c84a0d45319eaf4e780077fa0797e61572cdc6a6ca"
+    },
+    "Release": {
+      "result": "0 errors / 0 warnings",
+      "elf_sha256": "47937a24f70591b8f1a0b5892fed3ce39308d77c343788d1997f4fd7f94dbfa8"
+    }
+  },
+  "J3_cli_Debug_elf_sha256": "2daf58b6c96d46e3e740b60cfe2223ac6ab610eae0a14fb512b1589dd1fd0670",
+  "source_sha256": {
+    "Core/Inc/board.h": "03c045b4a416705cdae67e4a533a0c34a4be6099988a1eac744a397e95baec76",
+    "Core/Inc/demo_app.h": "2518dd824be611a2a4b225f747d205cfddc1ac7c843e330b551de4548a8c4e37",
+    "Core/Inc/driver_trip.h": "2cc23d4e3f4a6b3b98449e41da83100742230e936c7eab6325bfa87035dbd5cb",
+    "Core/Src/board.c": "d483635eb2994c23e0b03822f4b7888bb0384588022b4c9462a81b126e595805",
+    "Tests/test_bsp.c": "cabd994ba659e774cbfcd882ff7e358aae0e9da782542e114ab39bd247947696",
+    "Tests/bsp_unused_hal.c": "d38d64367b99f446ef2fa7fd5079895d79e72d8f9af62ba87e8d37af1e1acbfd",
+    "Tools/test_bsp.py": "afd0c239ff77a0eb17a777744c5b7e8cec22807a97bf14c7373c9ad0c61f8349"
+  },
+  "unchanged": "GPIO/timer init, driver profile/gain/current, live-ready/level checks, EXTI policy, wake allowance, motor/app control, STOP and fault inhibition. Instrumentation adds brief reads before inhibit, publication after it; no wait/SPI/retry.",
+  "agent_flashed": false,
+  "next_hardware_test": "User reproduce with motors disconnected and read g_driver_trip + scope ENABLE/nFAULT"
+}

@@ -13,6 +13,8 @@ Self-contained CubeIDE project for the assembled PCB: **selectable J3 / TIM1 or 
 | `PCB_DRIVER_CHECK` | Wake selected J3/J4 DRV8304S, verify SPI | All 12 inputs GPIO low | Selected driver only, S1/neutral-qualified; VR1 outside neutral requests wake |
 | `PCB_MOTOR_RUN` | Selected unloaded motor after checks | Selected-axis open-loop sine PWM | Selected driver, S1/neutral-qualified |
 
+**J4 startup-fault follow-up:** the user reports MCU PWM looks okay, but MOTOR_RUN trips around 22 ms with a previously clean SPI snapshot. The [GPIO/firmware audit and first-trip record](docs/J4_FIRMWARE_AUDIT.md) found no pin-map defect; electrical cause remains unknown. The active diagnostic build adds frozen `g_driver_trip` provenance without changing the driver profile, permission gates or shutdown policy.
+
 Read [the bring-up procedure](docs/BRINGUP.md) before first flash. It includes the schematic pin map, STLINK-V3MINI wiring, expected LED/ADC behavior, driver settings and remaining hardware checks.
 
 For the motor stage: release both buttons, center VR1, press S1. Green is steady when armed, blinking while waiting for neutral. Move VR1 out of center to align and ramp. Below center commands one direction, above center the other; either endpoint commands 100 RPM field-equivalent mechanical speed. S2 immediately inhibits PWM and both ENABLEs; use a fresh S1 press at neutral to arm again. A fault lights red and requires MCU reset. No closed-loop speed/position/current regulation is present.

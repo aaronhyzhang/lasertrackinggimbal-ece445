@@ -6,7 +6,7 @@ typedef struct {
     uint16_t adc_raw[2]; /* VR1/PA4 then VR2/PA0. Only VR1 commands motion. */
     float command_volts; /* Normalized 0..3 command, not a voltmeter reading. */
     uint32_t ticks,max_control_us,adc_age_ms;
-    uint8_t stage,test_axis; /* 0=J3, 1=J4; axis 1 is driver/IO checks only. */
+    uint8_t stage,test_axis; /* 0=J3/TIM1, 1=J4/TIM8; one axis at a time. */
     bool arm_pressed,stop_pressed,driver_good,waiting_neutral,adc_valid;
 } app_status_t;
 /* Watch in CubeIDE Live Expressions. Read only; never use debug writes to arm. */

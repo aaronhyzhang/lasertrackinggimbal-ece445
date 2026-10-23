@@ -9,6 +9,7 @@
 ADC_HandleTypeDef hadc1;
 static SPI_HandleTypeDef hspi2;
 volatile drv8304_snapshot_t g_driver_status;
+volatile driver_trip_snapshot_t g_driver_trip;
 static volatile bool wake_requested, driver_ready;
 static volatile uint32_t wake_ms, wake_epoch;
 static uint32_t last_verify;
@@ -45,6 +46,21 @@ void board_trip(motor_fault_t fault) {
     uint32_t mask = board_lock();
     if (latched_fault == FAULT_NONE) latched_fault = fault;
     board_inhibit(); board_unlock(mask);
+}
+
+/* Only a few state/register reads precede the existing immediate inhibit.
+ * No SPI, waits, retries, fault masking or extra ENABLE-high interval. */
+static void driver_trip(driver_trip_source_t source) {
+    uint32_t mask=board_lock();
+    if (latched_fault==FAULT_NONE) {
+        driver_trip_snapshot_t snapshot={
+            .source=source,.wake_age_ms=HAL_GetTick()-wake_ms,
+            .nfault_high=(GPIOE->IDR&PCB_NFAULT)!=0,
+            .driver_ready=driver_ready,.pwm_authorized=bridge_authorized};
+        board_trip(FAULT_DRIVER);
+        g_driver_trip=snapshot; /* Publish after MOE/ENABLE have been inhibited. */
+    } else board_trip(FAULT_DRIVER);
+    board_unlock(mask);
 }
 
 void board_kill(void) { uint32_t m=board_lock(); stop_latched=true; board_inhibit(); board_unlock(m); }
@@ -294,13 +310,13 @@ void board_apply(const motor_output_t *out) {
              * Recheck the live level after clearing; a later edge remains pending. */
             __HAL_GPIO_EXTI_CLEAR_IT(PCB_NFAULT);
             if (PCB_STAGE==PCB_MOTOR_RUN && (GPIOE->IDR&PCB_NFAULT)==0) {
-                board_trip(FAULT_DRIVER); board_unlock(mask); return;
+                driver_trip(DRIVER_TRIP_START_NFAULT_LOW); board_unlock(mask); return;
             }
 #endif
             bridge_authorized=true;
             __DSB(); SET_BIT(PCB_PWM_TIMER->BDTR,TIM_BDTR_MOE);
         }
-    } else board_trip(FAULT_DRIVER);
+    } else driver_trip(DRIVER_TRIP_PWM_PERMISSION);
     board_unlock(mask);
 }
 
@@ -363,7 +379,7 @@ void EXTI9_5_IRQHandler(void) {
         __HAL_GPIO_EXTI_CLEAR_IT(PCB_NFAULT);
         /* Wake has a normal fault pulse. Before PWM, SPI/live checks gate it.
          * During drive, latch even a brief pulse; no automatic restart. */
-        if (PCB_STAGE==PCB_MOTOR_RUN && bridge_authorized) board_trip(FAULT_DRIVER);
+        if (PCB_STAGE==PCB_MOTOR_RUN && bridge_authorized) driver_trip(DRIVER_TRIP_NFAULT_EDGE);
     }
 #endif
 }
@@ -371,7 +387,7 @@ void EXTI9_5_IRQHandler(void) {
 #if PCB_TEST_AXIS == 0
 void TIM1_BRK_IRQHandler(void) {
     if ((PCB_PWM_TIMER->SR&(TIM_SR_BIF|TIM_SR_B2IF))!=0) {
-        board_trip(FAULT_DRIVER); __HAL_TIM_CLEAR_FLAG(&htim_pwm,TIM_FLAG_BREAK|TIM_FLAG_BREAK2);
+        driver_trip(DRIVER_TRIP_TIM1_BREAK); __HAL_TIM_CLEAR_FLAG(&htim_pwm,TIM_FLAG_BREAK|TIM_FLAG_BREAK2);
     }
 }
 #endif

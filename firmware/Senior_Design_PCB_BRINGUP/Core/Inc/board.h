@@ -2,6 +2,7 @@
 #define PCB_BOARD_H
 #include "stm32h7xx_hal.h"
 #include "open_loop.h"
+#include "driver_trip.h"
 extern ADC_HandleTypeDef hadc1;
 extern TIM_HandleTypeDef htim7;
 void board_init(void);
