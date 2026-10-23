@@ -19,3 +19,7 @@ The two-ADC pair is kept owned until both conversion callbacks commit, preventin
 ## Fault-capture correction - 2026-10-23
 
 Hardware bring-up exposed an early return at the summary fault before detailed status register 1 was read. The verifier now captures all registers before comparison and provides a read-valid mask. New regressions cover summary FAULT plus CPUV in register 1, summary-only fault inhibition, and failure of the second status read. The electrical fault remains unclassified pending a new complete hardware capture. Follow-up build/test evidence is in fault_capture_evidence.json.
+
+## CPUV identified; charge-pump wiring review - 2026-10-23
+
+The next user capture identifies register 1=0x040 (CPUV); configuration readbacks match. Close visual review finds VCP directly tied to VM in both inverter drawings, with the required VCP-to-VM storage capacitor absent. This is a strong schematic explanation; actual PCB continuity, routed layout and repair validation remain pending. BRINGUP.md records the corrected C45/DVDD and C46/VREF identification and next unpowered checks. No source or protection change and no new software tests/builds were necessary for this documentation-only follow-up.

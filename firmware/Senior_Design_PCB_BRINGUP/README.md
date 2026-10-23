@@ -1,5 +1,7 @@
 # STM32H743 custom PCB bring-up
 
+**Hardware finding, 2026-10-23:** the driver reports CPUV. Both inverter schematics draw VCP directly tied to VM and omit the separate VCP-to-VM storage capacitor. Keep motors disconnected and check actual-board connectivity before further driver wake; see [the charge-pump review](docs/BRINGUP.md#cpuv-identified-charge-pump-wiring-review---2026-10-23). Earlier C45/C46 identifications have been corrected there.
+
 Self-contained CubeIDE project for the assembled PCB, **J3 / axis 0**, DFRobot FIT1036, **VR1 / PA4 (POT1)**, **S1 / PD8 ARM**, **S2 / PD9 STOP**. No serial commands, encoder, Ethernet or CAN are needed. J4 stays disabled. The original H753 development/demo projects and H743 generated scaffold are separate projects.
 
 **The shipped default is an I/O check and cannot command PWM or wake a driver.** After each bench check, change the one `PCB_STAGE` line in [pcb_config.h](Core/Inc/pcb_config.h), clean/build and flash:

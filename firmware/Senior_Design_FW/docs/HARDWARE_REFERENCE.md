@@ -14,11 +14,12 @@ User clarification on 2026-10-07: backup regulator U6 unpopulated; regulator EN-
 
 | Priority | Evidence | Consequence / required check |
 | --- | --- | --- |
+| Before any further driver wake | p6-7: VCP pin 3 is drawn directly on 24V0_M / VM; no VCP-to-VM storage capacitor | Consistent with the newly captured CPUV fault. Confirm on the unpowered PCB before rework; see the charge-pump review below. |
 | Resolved assembly intent; verify rails | p8: U4 EN resistor R7 and backup regulator U6 both confirmed unpopulated | U4 is the sole intended onboard 5 V source. Verify population and 5V0/3V3_D on first power. J2 pin 2 still connects directly to 5V0; review backfeeding before using an external 5 V source. |
 | Before encoder bring-up | p9: J5 has CAN and four I2C signals, but no encoder supply or GND pins | Plan a separate encoder power/ground harness or connector revision. I2C signal wires alone are insufficient. Use the encoder module's documented supply interface. |
 | Before motor power | p6–7: R24_I_0/1 = 5.6k pulls each driver ENABLE high | Reset/high-impedance MCU pins do not hold the driver in sleep. This does not itself prove the bridge switches, but software boot inhibition is not a hardware default-off guarantee. Verify inactive PWM/reset/debug/watchdog behavior and consider an enable pull-down/default-off revision. |
 | Before motor power | p3/p5: shared nFAULT reaches PE6, confirmed by datasheet as TIM1_BKIN2-capable | Configure and measure TIM1 hardware break. Its handler also inhibits TIM8/both enables; TIM8 needs a separately verified hardware shutdown design. No automatic restart. Read both drivers later to attribute shared faults. |
-| Before 24 V operation | p6–7: C44_I_0/1 is 1 uF, 25 V from motor VM to GND | Only 1 V nominal rating margin at 24 V, before tolerances/transients/regeneration. Confirm the actual fitted rating and select suitable voltage margin. C45 is across VCP–VM and is a separate case. |
+| Before 24 V operation | p6–7: C44_I_0/1 is 1 uF, 25 V from motor VM to GND | Only 1 V nominal rating margin at 24 V, before tolerances/transients/regeneration. Confirm the actual fitted rating and select suitable voltage margin. C45 is DVDD-to-GND; see the corrected charge-pump review below. |
 | Resolved assembly intent; calibrate | p5: sensor-buffer bypass jumpers confirmed unpopulated | Buffered acquisition is the intended configuration. Verify population, offsets and settling on hardware. |
 | Before current-controlled FOC | p6–7: low-side shunts; p5: filtered/buffered current outputs | Sampling must occur in valid low-side conduction windows. Gain 20 and expected 4 A do not establish a 4 A hardware trip. Verify amplifier configuration, ADC timing, offsets and protection independently. |
 
@@ -188,3 +189,19 @@ Vendor checks: [TI DRV8304 datasheet](https://www.ti.com/lit/ds/symlink/drv8304.
 ## Architecture research update — 2026-10-07
 
 [H743 datasheet](https://www.st.com/resource/en/datasheet/stm32h743zi.pdf) confirms PE6 TIM1_BKIN2 and shared ADC1/2 access for PB1/PA3. [ARCHITECTURE_RESEARCH.md](ARCHITECTURE_RESEARCH.md) records a candidate ADC1/2 pair per axis, shared acquisition scheduling, hardware-break implications and source applicability. These peripheral capabilities are verified; assembled-board timing/protection performance is not.
+
+## CPUV identified; charge-pump wiring review - 2026-10-23
+
+The updated user screenshot records registers [0x400,0x040,0x080,0x300,0x300,0x300,0x280], failed_address=0, verified=false, driver_good=false and FAULT_DRIVER_CONFIG. Register 1 bit 6 (0x040) is charge-pump undervoltage (CPUV). Configuration registers 2..6 match the intended profile. The fault enum also covers a driver-reported hardware fault; it does not by itself mean SPI is broken. read_mask was not included in this screenshot. VR1 raw=42256, VR2 raw=26457; VR2 remains unpopulated/diagnostic-only. The previously reported VM is 23.7 V.
+
+Close visual tracing of both inverter drawings (physical PDF pages 6 and 7) reveals **VCP pin 3 connected directly to 24V0_M, the same net as VM pin 4 and VDRAIN pin 5**. The VCP wire joins the motor-rail wire above C44. No VCP-to-VM storage capacitor separates these nodes in this drawing. If the assembled layout follows this connection, VCP cannot rise above VM; this is a strong explanation for CPUV, pending a power-off continuity/resistance check of the actual PCB. No layout file or assembled-board continuity measurement is available to confirm the routed connection or identify a trace-cut location.
+
+**Correction to the earlier review:** C45_I_0/1 is 1 uF / 25 V from DVDD pin 33 to GND, not the charge-pump storage capacitor. C46_I_0/1 is 0.1 uF / 16 V from VREF pin 24 / 3V3_A to GND, not DVDD bypass. Those two functions match TI's recommended values. C50_I_0/1 is the 22 nF / 100 V flying capacitor between CPH pin 2 and CPL pin 1. C44 remains a VM-to-GND bus capacitor.
+
+[TI DRV8304 SLVSE39B](https://www.ti.com/lit/ds/symlink/drv8304.pdf), Table 1 and section 7.3.1.3, require a separate X5R/X7R **1 uF capacitor rated at least 16 V between VCP and VM** and the 22 nF VM-rated flying capacitor. VCP is nominally VM + 10 V while awake (about 33.7 V to GND with the reported VM). The VCP-to-VM capacitor therefore sees the boosted difference, while VM-to-GND capacitors see the full bus. Section 7.3.5.2 describes CPUV shutdown and its latched status bit.
+
+Next check: keep motors disconnected; remove the 24 V supply and USB/programmer power, verify rails discharged, then measure resistance between U3_I_0 pin 3 (VCP) and pin 4 / C44_I_0 pad 2 (VM). Record a stable reading and compare with shorted meter leads; a momentary continuity beep from capacitor charging is not proof of a copper short. Check the second axis independently. Do not repeatedly wake the drivers or disable CPUV protection while a direct connection is suspected.
+
+If the connection is confirmed, the circuit correction is to separate VCP from the motor rail and add the specified local storage capacitor between VCP and VM, retaining the VM supply, DVDD bypass and flying capacitor connections. A physical rework plan requires the PCB layout or clear trace information first; no trace-cut location has been prescribed. Retest DRIVER_CHECK with PWM off and verify charge-pump startup/readback before considering MOTOR_RUN. If resistance does not confirm the drawing, obtain the actual routed connectivity and capture ENABLE/VCP startup; a low DC VCP reading after firmware has lowered ENABLE cannot establish a failed pump.
+
+This is a documented schematic finding and user-reported fault capture, not a completed hardware repair. No MCU source, stage selection, protection or startup timing changed for this diagnosis.
