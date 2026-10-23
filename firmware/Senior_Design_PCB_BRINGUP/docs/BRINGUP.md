@@ -229,3 +229,11 @@ Next: restore MOTOR_RUN with the motor disconnected, capture J4 ENABLE at TP34 a
 ## J4 first-trip diagnostics - 2026-10-23
 
 The [firmware/GPIO audit](J4_FIRMWARE_AUDIT.md) found no pin-map defect. Its rebuilt active MOTOR_RUN image adds frozen g_driver_trip provenance so the next motor-disconnected attempt can distinguish an EXTI edge from a failed live/ready gate. All five field meanings, test scope and current configuration are documented there. Protection policy and driver settings are unchanged; the physical cause remains unresolved.
+
+## J4 first-trip result: asserted PE6 at 21 ms - 2026-10-23
+
+User supplied the diagnostic image result: source=DRIVER_TRIP_NFAULT_EDGE, nfault_high=false, driver_ready=true, pwm_authorized=true, wake_age_ms=21. App motor fault and board latch are FAULT_DRIVER, with app-stage timestamp about 22 ms after wake. The saved SPI snapshot remains verified=true, status registers 0/1 both zero, config [0x080,0x300,0x300,0x300,0x280], history exception=false.
+
+This establishes that the PE6 EXTI falling-edge path tripped during authorized PWM and the input was low when sampled. It is not solely an empty/stale NVIC entry with a high input or a failed initial readiness check. It does not identify a particular driver IC or internal hardware fault: the line is shared, electrical noise/supply/ENABLE effects remain possible, and the clean SPI capture predates the trip. The timing is consistent with the first intended alignment PWM following the 20 ms wake allowance, not proof of a particular faulty waveform or MOSFET.
+
+Next bench evidence remains ENABLE/nFAULT ordering around the event, with VCP/VM or gate waveforms if extra channels are available. Nominal awake VCP is VM+10 V per TI section 7.3.1.3; a healthy idle boost does not establish behavior during switching. No gain, gate current, fault setting, pin/timer configuration or code was changed for this observation. No agent flash or physical diagnosis is claimed.
