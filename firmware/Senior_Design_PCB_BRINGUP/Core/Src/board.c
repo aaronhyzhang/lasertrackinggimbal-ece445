@@ -1,4 +1,4 @@
-/* STM32H743 PCB support: schematic-bound J3/VR1/S1/S2; no Nucleo wiring. */
+/* STM32H743 PCB support: selected driver / VR1 / S1 / S2; PWM on J3 only. */
 #include "board.h"
 #include "demo_config.h"
 #include "pcb_config.h"
@@ -35,7 +35,7 @@ void board_inhibit(void) {
     if (__HAL_RCC_TIM1_IS_CLK_ENABLED()) {
         CLEAR_BIT(TIM1->DIER, TIM_DIER_BIE); CLEAR_BIT(TIM1->BDTR,TIM_BDTR_MOE);
     }
-    if (__HAL_RCC_GPIOG_IS_CLK_ENABLED()) GPIOG->BSRR = (uint32_t)PCB_ENABLES << 16;
+    if (__HAL_RCC_GPIOG_IS_CLK_ENABLED()) pcb_driver_enable(false);
     if (wake_requested) ++wake_epoch;
     wake_requested=driver_ready=false;
     __DSB(); board_unlock(mask);
@@ -112,11 +112,11 @@ static void pins_init(void) {
     HAL_NVIC_SetPriority(EXTI9_5_IRQn,0,0); HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
     gpio(GPIOA,PCB_VR1_PIN|PCB_VR2_PIN,GPIO_MODE_ANALOG,GPIO_NOPULL,0);
     gpio(GPIOE,PCB_NFAULT,GPIO_MODE_INPUT,GPIO_PULLUP,0);
-    if (PCB_STAGE!=PCB_IO_CHECK) {
+    if (PCB_STAGE==PCB_PWM_CHECK || PCB_STAGE==PCB_MOTOR_RUN) {
         gpio(GPIOE,PCB_PWM0_E,GPIO_MODE_AF_PP,GPIO_PULLDOWN,GPIO_AF1_TIM1);
         gpio(GPIOB,PCB_PWM0_B,GPIO_MODE_AF_PP,GPIO_PULLDOWN,GPIO_AF1_TIM1);
     }
-    if (PCB_STAGE==PCB_MOTOR_RUN || PCB_STAGE==PCB_DRIVER_CHECK)
+    if (PCB_TEST_AXIS==0 && (PCB_STAGE==PCB_MOTOR_RUN || PCB_STAGE==PCB_DRIVER_CHECK))
         gpio(GPIOE,PCB_NFAULT,GPIO_MODE_AF_PP,GPIO_PULLUP,GPIO_AF1_TIM1);
 }
 
@@ -157,7 +157,7 @@ static void pwm_init(void) {
     b.OffStateRunMode=TIM_OSSR_ENABLE; b.OffStateIDLEMode=TIM_OSSI_ENABLE;
     b.LockLevel=TIM_LOCKLEVEL_1; b.DeadTime=50; /* 500 ns at 100 MHz tDTS */
     b.BreakState=TIM_BREAK_DISABLE; b.BreakPolarity=TIM_BREAKPOLARITY_HIGH;
-    b.Break2State=(PCB_STAGE==PCB_MOTOR_RUN || PCB_STAGE==PCB_DRIVER_CHECK)?TIM_BREAK2_ENABLE:TIM_BREAK2_DISABLE; b.Break2Polarity=TIM_BREAK2POLARITY_LOW;
+    b.Break2State=(PCB_TEST_AXIS==0 && (PCB_STAGE==PCB_MOTOR_RUN || PCB_STAGE==PCB_DRIVER_CHECK))?TIM_BREAK2_ENABLE:TIM_BREAK2_DISABLE; b.Break2Polarity=TIM_BREAK2POLARITY_LOW;
     b.Break2Filter=0;
     b.AutomaticOutput=TIM_AUTOMATICOUTPUT_DISABLE;
     TIMEx_BreakInputConfigTypeDef input={0};
@@ -265,8 +265,8 @@ void board_apply(const motor_output_t *out) {
             wake_requested=true; driver_ready=false;
             wake_ms=HAL_GetTick(); ++wake_epoch;
         }
-        GPIOG->BSRR=GPIO_PIN_4; /* J3 only. PG7 never asserted. */
-    } else GPIOG->BSRR=(uint32_t)PCB_ENABLES<<16;
+        pcb_driver_enable(true); /* Selected driver only; the other stays LOW. */
+    } else pcb_driver_enable(false);
     bool drive=out->pwm && (PCB_STAGE==PCB_MOTOR_RUN || PCB_STAGE==PCB_PWM_CHECK);
     if (!drive) pwm_off();
     else if (PCB_STAGE==PCB_PWM_CHECK || (driver_ready && (GPIOE->IDR&PCB_NFAULT)!=0)) {
@@ -289,13 +289,13 @@ void board_apply(const motor_output_t *out) {
 static bool spi_transfer(void *context,uint16_t tx,uint16_t *rx) {
     (void)context;
     if (!wake_requested || stop_latched || board_stop_pressed()) return false;
-    GPIOA->BSRR=PCB_CS1; /* Never select the unused driver. */
+    pcb_driver_select(false); /* Both selects HIGH throughout inactive spacing. */
     uint32_t begin=board_us(); while (board_us()-begin<2u) {}
-    GPIOE->BSRR=(uint32_t)PCB_CS0<<16;
+    pcb_driver_select(true);
     begin=board_us(); while (board_us()-begin<1u) {}
     HAL_StatusTypeDef result=HAL_SPI_TransmitReceive(&hspi2,(uint8_t *)&tx,(uint8_t *)rx,1,2);
     begin=board_us(); while (board_us()-begin<1u) {}
-    GPIOE->BSRR=PCB_CS0;
+    pcb_driver_select(false);
     return result==HAL_OK;
 }
 
@@ -331,7 +331,9 @@ void board_leds(bool armed,bool waiting,bool fault,uint32_t now) {
     HAL_GPIO_WritePin(GPIOD,PCB_GREEN,green?GPIO_PIN_SET:GPIO_PIN_RESET);
     HAL_GPIO_WritePin(GPIOD,PCB_RED,red?GPIO_PIN_SET:GPIO_PIN_RESET);
     HAL_GPIO_WritePin(GPIOE,GPIO_PIN_3,(GPIOG->ODR&GPIO_PIN_4)?GPIO_PIN_SET:GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(GPIOE,GPIO_PIN_2,fault?GPIO_PIN_SET:GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(GPIOC,GPIO_PIN_10,(GPIOG->ODR&GPIO_PIN_7)?GPIO_PIN_SET:GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(GPIOE,GPIO_PIN_2,(PCB_TEST_AXIS==0 && fault)?GPIO_PIN_SET:GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(GPIOC,GPIO_PIN_11,(PCB_TEST_AXIS==1 && fault)?GPIO_PIN_SET:GPIO_PIN_RESET);
 }
 
 void EXTI9_5_IRQHandler(void) {

@@ -14,6 +14,9 @@ The schematic's physical pages 3/5/6/7 were rechecked, including the inter-sheet
 | J3 ENABLE / CAL | PG4 / PG5 | Active high / held low; TP30 / TP29 |
 | J3 chip select | PE5 | Active low, idle high |
 | J3 enable / fault LEDs | PE3 / PE2 | Active high, MCU indicators; TP32 / TP31 |
+| J4 ENABLE / CAL | PG7 / PG6 | Active high / held low; TP34 / TP33 |
+| J4 chip select | PA9 | Active low, idle high |
+| J4 enable / fault LEDs | PC10 / PC11 | Active high, selected-driver indicators |
 | Shared nFAULT | PE6 | Active low, TIM1_BKIN2 AF1 |
 | SPI2 clock / MISO / MOSI | PB10 / PC2_C / PC3_C | AF5; `_C` switches explicitly closed |
 | **VR1 / POT1** | **PA4, ADC1_INP18** | **TP12, motor command**, first ADC rank |
@@ -23,7 +26,7 @@ The schematic's physical pages 3/5/6/7 were rechecked, including the inter-sheet
 
 The phase test-point identities follow page 5, including its embedded net metadata. VR1 was traced through R84/TP12/POT1 to U1 pin 40 (PA4); VR2 through R85/TP13/POT0 to pin 34 (PA0). Reference-designator numbering and POT net numbering are reversed. Verify silkscreen/continuity before placing probes.
 
-Unused J4: PC6/PA5 (A high/low), PC7/PB14 (B), PC8/PB15 (C) remain GPIO outputs low. PG7 ENABLE and PG6 CAL remain low; PA9 nCS remains high; PC10/PC11 indicators remain low. TIM8 is not initialized. The shared PE6 nFAULT has a direct TIM1 break connection; the schematic does not provide the equivalent TIM8 break path. This build deliberately does not enable axis 1.
+J4 PWM pins PC6/PA5 (A high/low), PC7/PB14 (B), PC8/PB15 (C) always remain GPIO outputs low; TIM8 is not initialized. PCB_TEST_AXIS=1 can wake J4 only in DRIVER_CHECK. The unselected ENABLE stays low and its nCS stays high; both CALs stay low. In DRIVER_CHECK, all 12 PWM pins are GPIO outputs low. PE6 is a GPIO input for the J4 driver check. Its TIM1 hardware-break route remains used for J3 motor operation; no equivalent TIM8 shutdown route has been established. Axis 1 PWM/motor stages are rejected at compile time.
 
 ## First flash with STLINK-V3MINI
 
@@ -56,15 +59,15 @@ The ADC uses two regular conversions with a long 387.5-cycle acquisition at nomi
 
 ## Stage 2: MCU PWM check
 
-Set `PCB_STAGE PCB_PWM_CHECK`, rebuild/flash. Motors remain disconnected. Verify PG4 and PG7 stay low in every state. Let go of both buttons, press S1, center VR1 if green is blinking. After 200 ms of valid neutral input, green is steady and gates are still off. Move VR1 slightly out of center. After the wake allowance, the six J3 MCU inputs show complementary 20 kHz PWM, nominal 500 ns MCU dead time; the duty envelope changes slowly with field rotation. Scope each high/low pair and all three phase identities. Returning to neutral ramps to zero and turns PWM off after coast; S2 disables immediately.
+Set `PCB_TEST_AXIS 0` and `PCB_STAGE PCB_PWM_CHECK`, rebuild/flash. Motors remain disconnected. Verify PG4 and PG7 stay low in every state. Let go of both buttons, press S1, center VR1 if green is blinking. After 200 ms of valid neutral input, green is steady and gates are still off. Move VR1 slightly out of center. After the wake allowance, the six J3 MCU inputs show complementary 20 kHz PWM, nominal 500 ns MCU dead time; the duty envelope changes slowly with field rotation. Scope each high/low pair and all three phase identities. Returning to neutral ramps to zero and turns PWM off after coast; S2 disables immediately.
 
 No driver is enabled in this stage. nFAULT is not used as a power-stage break in this MCU-only check. The physical STOP interrupt, ADC freshness, control timing, foreground freshness and watchdog remain active.
 
 ## Stage 3: driver configuration with all PWM off
 
-Set `PCB_STAGE PCB_DRIVER_CHECK`, rebuild/flash, motors disconnected. Release S1/S2, center VR1, press S1, then move VR1 slightly out of neutral. PG4 wakes J3's driver; all six PWM inputs stay low. PG7 remains low. No serial command or encoder is involved.
+Set `PCB_STAGE PCB_DRIVER_CHECK` and `PCB_TEST_AXIS 0` for J3 or `1` for J4, rebuild/flash, both motors disconnected. Release S1/S2, center VR1, press S1, then move VR1 slightly out of neutral. The selected ENABLE (PG4/J3 or PG7/J4) goes high; the other stays low. All 12 PWM inputs remain GPIO low. No serial command or encoder is involved.
 
-After at least 2 ms awake, foreground SPI configures and verifies the driver. Mode 1, 16-bit MSB-first frames, nominal 781.25 kHz; nCS setup/hold at least 1 us and inactive spacing at least 2 us. Both selects are initialized high. Only PE5 is selected. Full wake/configuration allowance is 20 ms before alignment is permitted in the motor model. Read `g_driver_status` while running, using Live Expressions with outputs inhibited.
+After at least 2 ms awake, foreground SPI configures and verifies the driver. Mode 1, 16-bit MSB-first frames, nominal 781.25 kHz; nCS setup/hold at least 1 us and inactive spacing at least 2 us. Both selects are initialized high. Only the selected nCS is asserted: PE5 for J3 or PA9 for J4. The other select is held high before every transaction. Full wake/configuration allowance is 20 ms before alignment is permitted in the motor model. Read `g_driver_status` while running, using Live Expressions with outputs inhibited.
 
 | Address | Expected data | Meaning |
 | --- | --- | --- |
@@ -83,7 +86,7 @@ Verify nFAULT high after wake and the driver supply rails. With PWM held off, ga
 
 ## Stage 4: motor run
 
-Set `PCB_STAGE PCB_MOTOR_RUN` only after IO, MCU PWM, driver readback, reset behavior and component checks pass. Power off, connect one unloaded FIT1036 to J3 A/B/C. Wire order determines the physical direction; establish labels at low speed. Start with the user's proposed 24 V / 2 A bus limit and monitor current. Current limiting must still allow the logic rail to remain stable; a supply foldback/reset can invalidate startup observations.
+Set `PCB_TEST_AXIS 0` and `PCB_STAGE PCB_MOTOR_RUN` only after IO, MCU PWM, driver readback, reset behavior and component checks pass. Axis 1 MOTOR_RUN is not implemented and is rejected at compile time. Power off, connect one unloaded FIT1036 to J3 A/B/C. Wire order determines the physical direction; establish labels at low speed. Start with the user's proposed 24 V / 2 A bus limit and monitor current. Current limiting must still allow the logic rail to remain stable; a supply foldback/reset can invalidate startup observations.
 
 Release both buttons; center VR1; press/release S1. Green steady means armed. Moving VR1 out of neutral wakes/configures the driver, aligns the rotor for 2 s (1 V phase-amplitude target, ramped over 0.5 s), then ramps the rotating field at 10 RPM/s to the selected command. Run phase-voltage amplitude is 2 V with 2 V/s slew, using the configured nominal 24 V bus. PWM is center-aligned 20 kHz; duties are `0.5 + phase_voltage/24`, clamped to 5..95%. At 2 V amplitude that is about 41.7..58.3%. The sine references are separated by 120 electrical degrees; the carrier timers are synchronous.
 
@@ -193,3 +196,17 @@ User's post-exception snapshot: verified=true, cpuv_history_accepted=true, drive
 Read-only firmware audit: PE6 is first an input, then TIM1 break-input alternate function; application GPIO writes do not drive PE6. The MCU does not intentionally generate an inverse of ENABLE on nFAULT. The bench exception accepts stored CPUV only; driver_good still requires driver_ready AND PE6 high. No PWM is permitted during the wake interval. Thus an asserted nFAULT at the deadline explains FAULT_DRIVER. No additional control/protection change was made.
 
 Next measurement: retain the ENABLE trigger at TP30, move the other probe from nFAULT to C44_I_0 pad 1 (VCP), both grounds at board GND, and capture the same 20 ms wake interval after reset/Resume and the normal S1/VR1 command. Compare VCP to local VM: nominal boost about 10 V (approximately 33.7 V to GND for VM=23.7 V). Verify scope channel Invert is off and the measured nFAULT point is the shared fault net / driver pin 25 rather than an LED control signal. No particular assembly defect has been established; no phase-output or charge-pump-voltage capture has yet been supplied.
+
+## J4 driver-only comparison - 2026-10-23
+
+User authorized switching to the other driver for comparison. The active CubeIDE project is now **PCB_TEST_AXIS=1 (J4), PCB_STAGE=PCB_DRIVER_CHECK, PCB_BENCH_ALLOW_CPUV_HISTORY=1**. The CPUV-history option is unchanged from the latest J3 bench test: it accepts only stored CPUV status and does not disable the driver protection or bypass live nFAULT. Repository/source archive defaults remain **axis 0 / IO_CHECK / history exception=0**.
+
+Only J4 ENABLE PG7 and nCS PA9 are selected. J3 ENABLE PG4 is forced low on every enable update, and nCS PE5 is held high before each frame. Disabling resets both ENABLEs. Both CAL pins and all 12 PWM pins remain low. J4 indicators PC10 (enable) and PC11 (fault) now follow the selected driver; the unselected driver's fault indicator stays off. Main LEDs and S1/S2/VR1 controls are unchanged. The actual GPIO routing helpers have simulated-BSRR tests for both axes.
+
+Flash the active Debug ELF, Resume and confirm g_app_status.test_axis=1, stage=2. With both motors disconnected, center VR1 (nominal 1.43..1.87 V), release the buttons, press/release S1, wait for neutral qualification, then move VR1 outside center. **Probe ENABLE at TP34 / PG7, not the previous TP30.** TP30 / PG4 should stay low. Record g_driver_status.reg[0..6], verified, read_mask, cpuv_history_accepted, and g_app_status.driver_good/fault. S2 disables both drivers immediately; a latched fault still requires MCU reset.
+
+For J4 measurements use C44_I_1 pad 1 / VCP, C44_I_1 pad 2 / VM, and C45_I_1 pad 2 / DVDD, each to board GND. Use DC coupling and appropriately rated probes; scope ground clips stay at board GND, never either C44 pad. While awake, nominal VCP is about VM+10 V and DVDD about 3.3 V. Do not infer sleep-state VCP from the awake specification. nFAULT is shared with J3, so the pin alone does not identify which IC pulled it low; the selected driver's SPI status is important.
+
+If J4 remains healthy after the 20 ms wake check, ENABLE can stay high for measurement while VR1 is outside neutral. If its fault remains active, the same existing wake deadline still inhibits it. No longer observation interval or automatic fault clear was added. The motor model may advance to ALIGN/RUN in DRIVER_CHECK, but physical PWM remains off: **no phase switching or motor spin is expected on J4 in this build**.
+
+Restore PCB_TEST_AXIS=0 to compare J3 using the same DRIVER_CHECK stage and history setting. J4 success would point toward an issue local to J3; matching failures would leave shared supply, configuration and measurement factors under investigation. No J4 hardware result or assembly diagnosis is established yet.

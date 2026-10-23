@@ -18,6 +18,7 @@ void app_init(void) {
     motor_init(&motor); memset(&arm_button,0,sizeof(arm_button));
     app_status_t empty={0}; g_app_status=empty;
     g_app_status.motor=motor; g_app_status.stage=PCB_STAGE;
+    g_app_status.test_axis=PCB_TEST_AXIS;
     neutral_wait=neutral_tracking=stop_pending=false;
     neutral_since=0; foreground_ms=last_feed=HAL_GetTick(); last_tick_us=board_us();
 }

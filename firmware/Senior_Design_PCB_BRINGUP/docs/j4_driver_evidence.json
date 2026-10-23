@@ -1,0 +1,43 @@
+{
+  "date": "2026-10-23",
+  "change": "Selectable driver-only J3/J4 comparison; J4 PWM/motor builds prohibited",
+  "base_commit": "58f6778c936b76ca93e96a6b69ffb912d9a429cf",
+  "host_tests": "13 executables passed plus 3 expected compile failures; both route helpers, driver policies and app tests",
+  "test_scope": "Actual GPIO routing helpers with simulated BSRR registers; actual app/core/backend with fake board/SPI; no physical GPIO or SPI timing validation",
+  "active_native_builds": {
+    "Debug": {
+      "result": "0 errors, 0 warnings",
+      "elf_sha256": "f3eab09c7e952cb272146dbe9015ccb7130bed8561880f7ba087daf656452ac2"
+    },
+    "Release": {
+      "result": "0 errors, 0 warnings",
+      "elf_sha256": "de81b65cae143e5dc9a3805e985db01b84f9f499ed815262cf5280b16e717cf8"
+    }
+  },
+  "axis0_arm_regression": "CLI Debug DRIVER_CHECK and MOTOR_RUN passed without warnings",
+  "changed_source_sha256": {
+    "Core/Inc/pcb_pins.h": "778216162f8df0beded387697100a927ab5af5b9d3af58c0666b99d203f4e493",
+    "Core/Src/board.c": "a20454a56d8949ff1a3fbda6835d518aac4eb1e43d38e6a16b96166fcc7b0fa9",
+    "Core/Inc/demo_app.h": "0bb47518c18b67a5acc3f60add50fe90dc02c47c7c40810b74f1d8ac70286a26",
+    "Core/Src/demo_app.c": "3c436095d5e03adc700e761fd8e536896f9b595066c56a3c5bf13178cf0fc76c",
+    "Tests/test_app.c": "855b4c97b1cf085efb539be3c07b850eb2da5b7f4a4e7f72ba0d170c7f9ebdea",
+    "Tests/test_axis.c": "be2602dd008ed61c846425d90cff1c75b4252279672eba23531365cfc7f47901",
+    "Tools/test.py": "873203b8701ff64a10b937d9c90cda2928036570b50c17b0ff1821bef5d9e289"
+  },
+  "active_config": {
+    "axis": 1,
+    "stage": "PCB_DRIVER_CHECK",
+    "cpuv_history_option": 1,
+    "sha256": "d43e249f457a9b80316e9daf329c0e9c403cf8a43c045d02fe9750594f671d57"
+  },
+  "repository_config": {
+    "axis": 0,
+    "stage": "PCB_IO_CHECK",
+    "cpuv_history_option": 0,
+    "sha256": "15e4b8965f462da815a15e59d0de9f144133f7c22d7fdbb8e38623541f9ebcf5"
+  },
+  "unchanged": "Driver profile and verifier, CPUV-history policy, motor core, 20 ms wake deadline, controls/neutral qualification, STOP and watchdog",
+  "PWM_boundary": "DRIVER_CHECK leaves all 12 PWM pins GPIO low; TIM8 PWM not implemented and axis 1 PWM/MOTOR_RUN rejected by compiler",
+  "agent_flashed": false,
+  "J4_hardware_result": "Pending user bench test"
+}

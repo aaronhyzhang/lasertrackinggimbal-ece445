@@ -42,6 +42,7 @@ static void request(void) { arm_pressed=false; ticks(25); arm_pressed=true; tick
 static void arm(void) { pot(1.5f); request(); ticks(DEMO_OPEN_NEUTRAL_DWELL_MS+2u); }
 int main(void) {
     boot(true,3); ticks(300); pot(1.5f); ticks(300);
+    assert(status().test_axis==PCB_TEST_AXIS && status().stage==PCB_STAGE);
     assert(status().motor.state==MOTOR_DISABLED && !output.enable);
     request(); ticks(DEMO_OPEN_NEUTRAL_DWELL_MS+2u);
     if (PCB_STAGE==PCB_IO_CHECK) {
