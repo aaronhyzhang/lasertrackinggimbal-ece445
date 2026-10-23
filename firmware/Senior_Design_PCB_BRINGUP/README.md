@@ -1,6 +1,6 @@
 # STM32H743 custom PCB bring-up
 
-**Hardware finding, 2026-10-23:** the driver reports CPUV. Both inverter schematics draw VCP directly tied to VM and omit the separate VCP-to-VM storage capacitor. Keep motors disconnected and check actual-board connectivity before further driver wake; see [the charge-pump review](docs/BRINGUP.md#cpuv-identified-charge-pump-wiring-review---2026-10-23). Earlier C45/C46 identifications have been corrected there.
+**Bring-up status, 2026-10-23:** the driver reports CPUV. User measured >100 MOhm between VCP and VM and confirmed the 1 uF storage / 22 nF flying capacitors are fitted. C44 is correctly drawn between VCP and VM; the earlier short/missing-capacitor diagnosis and full-bus rating warning were tracing errors and are withdrawn. Keep motors disconnected for the [ENABLE/VCP startup capture](docs/BRINGUP.md#next-measurement-charge-pump-startup); no trace cut or added capacitor is indicated.
 
 Self-contained CubeIDE project for the assembled PCB, **J3 / axis 0**, DFRobot FIT1036, **VR1 / PA4 (POT1)**, **S1 / PD8 ARM**, **S2 / PD9 STOP**. No serial commands, encoder, Ethernet or CAN are needed. J4 stays disabled. The original H753 development/demo projects and H743 generated scaffold are separate projects.
 

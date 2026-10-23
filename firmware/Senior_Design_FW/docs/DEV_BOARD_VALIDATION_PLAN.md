@@ -243,7 +243,7 @@ Current implementation settings are documented in DEV_FW/docs/FIRMWARE_GUIDE.md;
 
 ## Schematic and new dev-project review — 2026-10-07
 
-See [HARDWARE_REFERENCE.md](HARDWARE_REFERENCE.md) and [DEV_PROJECT_REVIEW.md](DEV_PROJECT_REVIEW.md). At the Oct 7 review the sibling H753 project had consistent target/startup/linker metadata but no motor application. Its clock source and Ethernet TX mapping need Nucleo-specific correction; configure deliberate PWM timing and fault inhibition before motion. Proposed command ADC is PA3 / A0 / CN9 pin 1. Custom encoder connector J5 lacks power/GND, ENABLE pins have pull-ups, and VM capacitors C44 are shown as 25 V on nominal 24 V. User confirms U6, R7 and buffer bypass jumpers are initially unpopulated. No firmware, build or hardware tests were performed in this review.
+See [HARDWARE_REFERENCE.md](HARDWARE_REFERENCE.md) and [DEV_PROJECT_REVIEW.md](DEV_PROJECT_REVIEW.md). At the Oct 7 review the sibling H753 project had consistent target/startup/linker metadata but no motor application. Its clock source and Ethernet TX mapping need Nucleo-specific correction; configure deliberate PWM timing and fault inhibition before motion. Proposed command ADC is PA3 / A0 / CN9 pin 1. Custom encoder connector J5 lacks power/GND, ENABLE pins have pull-ups, and C44 is a 1 uF / 25 V VCP-to-VM charge-pump capacitor (corrected Oct 23; it does not see the full motor bus). User confirms U6, R7 and buffer bypass jumpers are initially unpopulated. No firmware, build or hardware tests were performed in this review.
 
 ## Vendor-research implementation baseline — 2026-10-07
 
