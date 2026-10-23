@@ -169,3 +169,19 @@ board_service starts SPI configuration once HAL tick elapsed reaches 2 ms and in
 ### Inspected source detail
 
 Unmodified rendered source crops: [axis 0, PDF page 6](images/charge-pump-page-6.png), [axis 1, PDF page 7](images/charge-pump-page-7.png). The C44 capacitor plates separate its VM and VCP wires.
+
+## Temporary CPUV-history bench option - 2026-10-23
+
+The user chose a small software exception for motor-disconnected phase-output checks instead of the proposed separate five-second diagnostic. No new mode, observation timer or automatic CLR_FLT operation was added.
+
+In Core/Inc/pcb_config.h, PCB_BENCH_ALLOW_CPUV_HISTORY=1 permits verification to accept **only register 1 exactly 0x040 (CPUV), with register 0 either zero or exactly 0x400 (summary FAULT)**. Registers 2..6 must still match the original profile. Every other status bit, summary-only fault, configuration mismatch and SPI error remains a failure. The profile remains [0,0,0x080,0x300,0x300,0x300,0x280]: DIS_CPUV is not set, and no hardware protection or threshold is relaxed.
+
+g_driver_status.cpuv_history_accepted exposes this specific exception. verified=true means readback passed the selected policy, including this optional history exception; it is not a voltage measurement. Raw fault registers remain visible. Live nFAULT HIGH remains necessary for driver_good and for enabling PWM. If CPUV is still electrically present, the driver protects the bridge and the application still faults when it cannot obtain driver_good after wake. Red can therefore change from FAULT_DRIVER_CONFIG to FAULT_DRIVER; this is not evidence that the charge pump recovered. The exception cannot force an unhealthy driver to switch.
+
+The active Senior_Design_PCB_BRINGUP CubeIDE copy is set to **PCB_STAGE PCB_MOTOR_RUN** and **PCB_BENCH_ALLOW_CPUV_HISTORY 1** for this test. The repository/source archive defaults remain IO_CHECK and exception=0. This bench image can command PWM after arming; keep the motor disconnected for phase measurements. J4 remains disabled.
+
+Procedure: power off before attaching appropriately rated 10x probes; all scope grounds go to board GND. Probe J3 phase A/B/C to GND, not GH-to-GND as a substitute for phase voltage. Build/flash the active Debug ELF and Resume. Release both buttons, center VR1 (nominal 1.43..1.87 V), press/release S1, then move VR1 outside neutral. The normal wake/alignment/ramp sequence remains. Phase-to-GND should show roughly 0-to-VM carrier pulses (about 24 V), whereas VCP is nominally VM+10 V. Pulse amplitude with an unloaded bridge alone does not validate loaded MOSFET operation or phase current. S2 immediately inhibits outputs. Capture driver_good, nFAULT, the two raw status registers and cpuv_history_accepted with any switching result.
+
+There is no new five-second timeout: the existing neutral/S2/fault controls end excitation. Restore PCB_BENCH_ALLOW_CPUV_HISTORY=0 before motor-connected testing; that restores strict software status verification. No physical switching, voltage or motor result has been established by the agent.
+
+Software checks cover the exception both off/on, every other status bit combined with CPUV, summary-only rejection, profile/transport failures, and the unchanged live-driver-good requirement at wake. See cpuv_bench_evidence.json for the build/test record. [TI SLVSE39B](https://www.ti.com/lit/ds/symlink/drv8304.pdf), section 7.3.5.2, documents automatic electrical recovery and retained CPUV status; this option does not prove a captured CPUV flag was transient.

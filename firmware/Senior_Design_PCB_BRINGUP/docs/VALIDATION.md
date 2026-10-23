@@ -23,3 +23,7 @@ Hardware bring-up exposed an early return at the summary fault before detailed s
 ## CPUV identified; charge-pump wiring review - 2026-10-23
 
 User reports >100 MOhm between VCP and VM and axis-0 C44=1 uF / C50=22 nF populated. Reinspection corrects the earlier tracing error: C44 is VCP-to-VM, not a bus bypass, so there is no drawn direct short or missing storage capacitor. The previous full-bus rating warning and proposed rework are withdrawn. CPUV=0x040 remains the captured fault; electrical cause and startup waveforms are pending. See BRINGUP.md for the corrected component map and ENABLE/VCP single-acquisition procedure. No firmware source or protection changed; documentation checks replace software rebuilds for this correction.
+
+## Temporary CPUV-history bench option - 2026-10-23
+
+The driver verifier has a small compile-time exception for CPUV-only history. Tests exercise strict and exception policies, each other status bit combined with CPUV, configuration/transport failures, and live-driver-good loss during wake. The electrical driver profile and board.c GPIO/PWM/nFAULT paths are unchanged. The active bench copy uses MOTOR_RUN / exception=1 with motors disconnected; default repository settings remain IO_CHECK / exception=0. No new diagnostic state machine or automatic fault clearing was introduced. Follow-up evidence is in cpuv_bench_evidence.json; physical charge-pump and switching performance remains unverified.

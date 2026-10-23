@@ -8,6 +8,7 @@ typedef struct {
     uint8_t failed_address;
     uint8_t read_mask; /* Bit n: reg[n] was read; full verification is 0x7f. */
     bool verified;
+    bool cpuv_history_accepted; /* Bench option only; does not override nFAULT. */
 } drv8304_snapshot_t;
 /* Caller owns ENABLE, PWM inhibition, SPI mode/timing and chip select. */
 bool drv8304_configure(drv8304_transfer_t transfer, void *context,

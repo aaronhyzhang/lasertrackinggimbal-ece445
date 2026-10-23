@@ -44,3 +44,7 @@ Watch `g_app_status` in CubeIDE Live Expressions for raw VR1/VR2, command, butto
 - `pcb_config.h`, `demo_config.h`: selected bring-up stage and inherited motor/ramp limits.
 
 Selected ST HAL/CMSIS support, H743 startup vectors and a 2 MB H743 flash linker script are included. No other workspace project is a build dependency. See [software validation evidence](docs/VALIDATION.md).
+
+## Temporary CPUV-history bench option - 2026-10-23
+
+A motor-disconnected phase-output test may opt into PCB_BENCH_ALLOW_CPUV_HISTORY=1 alongside PCB_MOTOR_RUN. This accepts only recorded CPUV status, leaves the driver protection and live nFAULT interlock active, and preserves the raw fault registers. It does not add a timed diagnostic mode. Restore the option to 0 before motor-connected tests. See [the bench procedure](docs/BRINGUP.md#temporary-cpuv-history-bench-option---2026-10-23) and cpuv_history_accepted in the driver snapshot. Repository defaults remain IO_CHECK / exception=0.

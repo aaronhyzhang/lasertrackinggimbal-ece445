@@ -12,9 +12,12 @@ def main():
     root=pathlib.Path(__file__).resolve().parents[1]
     out=root/'build/host-tests'; out.mkdir(parents=True,exist_ok=True)
     cc=[str(args.zig),'cc'] if args.zig else [args.cc]
-    for name,stage in [('test_motor',3),('test_driver',3)]+[('test_app',s) for s in range(4)]:
-        binary=out/(f'{name}_{stage}'+('.exe' if sys.platform=='win32' else ''))
-        flags=['-std=c11','-Wall','-Wextra','-Werror',f'-DPCB_STAGE={stage}']
+    cases=[('test_motor',3,0),('test_driver',3,0),('test_driver',3,1)]
+    cases += [('test_app',s,0) for s in range(4)] + [('test_app',3,1)]
+    for name,stage,bench in cases:
+        binary=out/(f'{name}_{stage}_{bench}'+('.exe' if sys.platform=='win32' else ''))
+        flags=['-std=c11','-Wall','-Wextra','-Werror',f'-DPCB_STAGE={stage}',
+               f'-DPCB_BENCH_ALLOW_CPUV_HISTORY={bench}']
         sources=[root/f'Tests/{name}.c']
         if name=='test_app':
             flags+=['-I',str(root/'Tests/fakes')]

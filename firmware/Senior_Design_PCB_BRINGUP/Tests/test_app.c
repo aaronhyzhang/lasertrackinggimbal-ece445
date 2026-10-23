@@ -93,6 +93,10 @@ int main(void) {
     ticks(2); assert(status().motor.state==MOTOR_OPEN_IDLE);
     boot(false,3); request(); board_trip(FAULT_DRIVER_CONFIG); ticks(1);
     assert(status().motor.state==MOTOR_FAULT && !status().waiting_neutral && !output.pwm);
+    /* Accepting stored CPUV in SPI verification must not bypass the live
+     * driver_good/nFAULT requirement at wake, even in the bench build. */
+    boot(false,1.5f); arm(); driver_good=false; pot(2); ticks(DEMO_DRIVER_WAKE_MS+3u);
+    assert(status().motor.fault==FAULT_DRIVER && !output.enable && !output.pwm);
     boot(false,1.5f); now=UINT32_MAX-40; app_init(); arm();
     assert(status().motor.state==MOTOR_OPEN_IDLE);
     puts("PASS: actual app boot-held inhibit, momentary ARM/STOP priority, neutral dwell, VR1 isolation, +/- ramp/reversal, wake cancellation, stale ADC/foreground, fault latch, time wrap.");

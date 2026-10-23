@@ -1,0 +1,37 @@
+{
+  "date": "2026-10-23",
+  "change": "Temporary acceptance of CPUV-only stored status for motor-disconnected phase probing",
+  "base_commit": "fde86fc62836a9193b9202b456b734f67c660d3d",
+  "host_tests": "8 executables passed: motor, driver strict/bench, app all stages and motor bench; all other fault bits rejected, live driver-good wake requirement retained",
+  "native_active_builds": {
+    "Debug": {
+      "result": "0 errors, 0 warnings",
+      "elf_sha256": "3c61e28679032b279d70cd10c01ab722a1a74870b813d258158baf3109a22054"
+    },
+    "Release": {
+      "result": "0 errors, 0 warnings",
+      "elf_sha256": "30892d03343017eb7e9eeeecbbbbf1c0e082a752b3c9673433cd78c3527b5169"
+    }
+  },
+  "strict_arm_build": "CLI MOTOR Debug, option=0, no warnings/errors",
+  "changed_source_sha256": {
+    "Core/Inc/drv8304.h": "7bfbd14d435a4f22f7a05c61a119472f574ff965f80e961c536833c248ec0eff",
+    "Core/Src/drv8304.c": "873f4cb02314cb9ed15244da5e150899e4cb2313aa3512887c45bae7d917b63c",
+    "Tests/test_driver.c": "ba53b9a4f8b38775826d2f2fefe75325a83e8aa859081c6de806119c111bc401",
+    "Tests/test_app.c": "b818ff5d116e8c73dc6e29490fda3c155d21a628ad19ea19360b83fd6c868960",
+    "Tools/test.py": "14699af0e69689e6b46b2d659f31180a0978e800ed3d5c3b1c8ed2561735bfbf"
+  },
+  "active_config": {
+    "stage": "PCB_MOTOR_RUN",
+    "PCB_BENCH_ALLOW_CPUV_HISTORY": 1,
+    "sha256": "b3af6b03d3ef5c41514ead35489f4debda368d65bef4ba69e7e888c263e7227f"
+  },
+  "repository_config": {
+    "stage": "PCB_IO_CHECK",
+    "PCB_BENCH_ALLOW_CPUV_HISTORY": 0,
+    "sha256": "c9024fc84491c564200facfd5b59193a4964e4da3ffd611ccb55f9bbf956a2ea"
+  },
+  "unchanged": "board.c, demo_app.c, open_loop.c, hardware profile, live nFAULT/PWM interlocks, STOP, watchdog; no automatic clear or new diagnostic mode",
+  "agent_flashed": false,
+  "electrical_result": "Unverified; no agent hardware test"
+}
