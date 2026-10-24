@@ -1,6 +1,6 @@
 # STM32H743 custom PCB bring-up
 
-**Bring-up status, 2026-10-23:** user reports both driver checks now pass and the motor spins on J3. J4 first-read failure cleared after user resoldering; the precise joint/cause is unconfirmed. New selectable TIM8 support enables the [J4 motor test](docs/J4_MOTOR_TEST.md). The active workspace copy is J4 / MOTOR_RUN / strict fault verification; J4 switching/shutdown remains to be bench-validated. Earlier CPUV and capacitor-tracing history is retained in the procedure.
+**Bring-up status, 2026-10-24:** user reports repairing the J4 B-high gate-to-GND copper short. J4 is prepared for motor-disconnected output verification with the original J3 drive/protection/startup settings. Post-repair switching is not yet validated. Follow [the current output-check procedure](docs/POST_REPAIR_OUTPUT_CHECK.md).
 
 Self-contained CubeIDE project for the assembled PCB: **selectable J3 / TIM1 or J4 / TIM8 open-loop PWM**, one motor at a time. DFRobot FIT1036, **VR1 / PA4 (POT1)**, **S1 / PD8 ARM**, **S2 / PD9 STOP**. No serial commands, encoder, Ethernet or CAN are needed. The unselected driver stays disabled. The original H753 development/demo projects and H743 generated scaffold are separate projects.
 
@@ -13,7 +13,7 @@ Self-contained CubeIDE project for the assembled PCB: **selectable J3 / TIM1 or 
 | `PCB_DRIVER_CHECK` | Wake selected J3/J4 DRV8304S, verify SPI | All 12 inputs GPIO low | Selected driver only, S1/neutral-qualified; VR1 outside neutral requests wake |
 | `PCB_MOTOR_RUN` | Selected unloaded motor after checks | Selected-axis open-loop sine PWM | Selected driver, S1/neutral-qualified |
 
-**J4 startup-fault follow-up:** the user reports MCU PWM looks okay, but MOTOR_RUN trips around 22 ms with a previously clean SPI snapshot. The [GPIO/firmware audit and first-trip record](docs/J4_FIRMWARE_AUDIT.md) found no pin-map defect; electrical cause remains unknown. The active bench image now also enables [bounded post-trip status readback](docs/FAULT_READBACK.md): PWM stops immediately, while the selected ENABLE is briefly preserved for foreground reads. Keep both motors disconnected; restore PCB_BENCH_CAPTURE_DRIVER_FAULT=0 before motor connection. Driver protections remain enabled.
+**Post-repair baseline:** active workspace J4 / MOTOR_RUN, high-side source=15 mA, VDS=150 mV, original startup, strict CPUV verification and immediate shutdown (fault capture off). Both motors stay disconnected for this output check. Only required timer/GPIO/fault-route differences remain between J3 and J4.
 
 Read [the bring-up procedure](docs/BRINGUP.md) before first flash. It includes the schematic pin map, STLINK-V3MINI wiring, expected LED/ADC behavior, driver settings and remaining hardware checks.
 
@@ -35,7 +35,7 @@ python Tools/test.py --cc gcc
 
 Host tests also support `--zig path/to/zig.exe`. The optional Windows BSP audit uses `python Tools/test_bsp.py --zig path/to/zig.exe --capture 0` and `--capture 1` to check both shutdown policies. CLI-only overrides use `--stage io|pwm|driver|motor` and optional `--axis 0|1`; they do not change the CubeIDE header selection. With both overrides, outputs are under `build/STAGE/AXISn/Debug` or `Release`; with only stage, the existing `build/STAGE/Debug` or `Release` paths apply. Default CLI outputs are under `build/Debug` and `build/Release`. The capture option is default-off and restricted to MOTOR_RUN; select capture=0 for normal motor operation and all other stages. CubeIDE outputs are under `Debug` / `Release`.
 
-Watch `g_app_status` in CubeIDE Live Expressions for raw VR1/VR2, command, buttons, ADC age, stage, **test_axis (0=J3, 1=J4)** and motor-model state. DRIVER_CHECK never produces PWM even if the model advances to ALIGN/RUN. `g_driver_status` is the last SPI verification snapshot, not a measurement of live ENABLE. Halt/step only with motors disconnected and drivers inhibited; a breakpoint can leave hardware PWM running. The agent has not flashed hardware; J3 rotation and successful driver checks are user-reported. J4 switching with the new TIM8 code remains pending.
+Watch `g_app_status` in CubeIDE Live Expressions for raw VR1/VR2, command, buttons, ADC age, stage, **test_axis (0=J3, 1=J4)** and motor-model state. DRIVER_CHECK never produces PWM even if the model advances to ALIGN/RUN. `g_driver_status` is the last SPI verification snapshot, not a measurement of live ENABLE. Halt/step only with motors disconnected and drivers inhibited; a breakpoint can leave hardware PWM running. The agent has not flashed hardware; J3 rotation and successful driver checks are user-reported. J4 post-repair switching remains pending.
 
 ## Source responsibilities
 
@@ -47,16 +47,6 @@ Watch `g_app_status` in CubeIDE Live Expressions for raw VR1/VR2, command, butto
 
 Selected ST HAL/CMSIS support, H743 startup vectors and a 2 MB H743 flash linker script are included. No other workspace project is a build dependency. See [software validation evidence](docs/VALIDATION.md).
 
-## Temporary CPUV-history bench option - 2026-10-23
+## Diagnostic history
 
-A motor-disconnected phase-output test may opt into PCB_BENCH_ALLOW_CPUV_HISTORY=1 alongside PCB_MOTOR_RUN. This accepts only recorded CPUV status, leaves the driver protection and live nFAULT interlock active, and preserves the raw fault registers. It does not add a timed diagnostic mode. Restore the option to 0 before motor-connected tests. See [the bench procedure](docs/BRINGUP.md#temporary-cpuv-history-bench-option---2026-10-23) and cpuv_history_accepted in the driver snapshot. Repository defaults remain IO_CHECK / exception=0.
-
-## J4 motor support - 2026-10-23
-
-The active workspace copy now selects J4 / MOTOR_RUN / CPUV-history option=0. Probe ENABLE at TP34/PG7 and MCU PWM at TP23..28. J3 stays disabled. Follow the [J4 motor-test procedure](docs/J4_MOTOR_TEST.md), including the different PE6 interrupt shutdown path and motor-disconnected waveform/STOP/fault checks. Repository/source archive defaults remain J3 / IO_CHECK / history option=0. Earlier driver-only comparison settings are historical.
-
-
-Startup comparison: [synchronized PWM start bench test](docs/PWM_SYNC_START_TEST.md). Active workspace is J3/MOTOR_RUN/capture=1, motors disconnected; repository defaults remain IO_CHECK/capture=0.
-
-
-Current J4 diagnostic comparison: [0.24 V VDS threshold test](docs/VDS_THRESHOLD_TEST.md). Active project is J4/MOTOR_RUN/source=45/VDS=240/capture=1; keep both motors disconnected. This supersedes earlier active-image notes. Repository defaults retain source=15/VDS=150/capture=0. The prior [gate-drive and SPI audit](docs/HS_GATE_DRIVE_TEST.md) remains reference context.
+The [firmware comparison](docs/J3_J4_FIRMWARE_COMPARISON.md), [fault readback](docs/FAULT_READBACK.md), [synchronized startup](docs/PWM_SYNC_START_TEST.md), [gate-current/SPI audit](docs/HS_GATE_DRIVE_TEST.md) and [VDS threshold test](docs/VDS_THRESHOLD_TEST.md) record earlier experiments. Their active-image settings are superseded by [the post-repair baseline](docs/POST_REPAIR_OUTPUT_CHECK.md). Diagnostic options remain available but are off in the restored baseline. Repository/source-archive defaults remain IO_CHECK / J3; the active CubeIDE header differs only by MOTOR_RUN / J4.

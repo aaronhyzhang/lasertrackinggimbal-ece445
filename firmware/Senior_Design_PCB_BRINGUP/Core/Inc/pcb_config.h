@@ -13,10 +13,10 @@
 #ifndef PCB_TEST_AXIS
 #define PCB_TEST_AXIS 0
 #endif
-/* Controlled startup comparison: 1 commits duties and starts at count 0/up;
- * 0 restores the previous free-running-counter output-release behavior. */
+/* Shared J3/J4 baseline: 0 uses the original counter/start sequence.
+ * Diagnostic option 1 commits duties and restarts at count 0/up. */
 #ifndef PCB_PWM_SYNC_START
-#define PCB_PWM_SYNC_START 1
+#define PCB_PWM_SYNC_START 0
 #endif
 #if PCB_PWM_SYNC_START != 0 && PCB_PWM_SYNC_START != 1
 #error Invalid PCB_PWM_SYNC_START

@@ -1,6 +1,6 @@
 # J4 open-loop motor test
 
-**Current bench-image note:** the active project now enables [post-fault register capture](FAULT_READBACK.md) with motors disconnected. Restore PCB_BENCH_CAPTURE_DRIVER_FAULT=0 before following this motor-connected procedure.
+**Current bench-image note, 2026-10-24:** all temporary settings are reset to baseline after the user-reported copper-short repair. Fault capture is off. Complete [the motor-disconnected post-repair output check](POST_REPAIR_OUTPUT_CHECK.md) first; post-repair switching is still pending.
 
 2026-10-23. User reports both driver checks now pass and an unloaded motor spins on J3. Before that, J4 returned `0x7ff` on its first register-2 readback; the other snapshot entries were unread, not fault-free status. The user reports that J4 passed after desoldering/resoldering. This suggests a connection issue but does not identify a particular failed joint. J4 motor operation with the new TIM8 implementation remains untested on hardware.
 
@@ -11,6 +11,9 @@ The existing `Senior_Design_PCB_BRINGUP` project now supports either connector i
 ```c
 #define PCB_STAGE PCB_MOTOR_RUN
 #define PCB_TEST_AXIS 1
+#define PCB_PWM_SYNC_START 0
+#define PCB_HS_SOURCE_MA 15
+#define PCB_VDS_THRESHOLD_MV 150
 #define PCB_BENCH_ALLOW_CPUV_HISTORY 0
 #define PCB_BENCH_CAPTURE_DRIVER_FAULT 0
 ```

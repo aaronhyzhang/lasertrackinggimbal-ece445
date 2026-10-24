@@ -2,7 +2,7 @@
 
 2026-10-23. User confirms the PCB matches the nine-page schematic reviewed in `Senior_Design_FW/docs/HARDWARE_REFERENCE.md`; no changes were reported. User selected J3, center-stop bidirectional VR1, S1 ARM, S2 STOP, DRV8304S CSA gain 20 V/V and lowest gate-drive current. MOSFETs confirmed SiS890ADN-T1-GE3. Supply is 24 V, proposed **2 A bus current limit**; programmer is STLINK-V3MINI. Initial power checks reportedly look good; measured values are still to be recorded.
 
-**Current follow-up:** user reports both driver checks pass and J3 spins. Selectable J4 PWM is now implemented; the active workspace is J4 / MOTOR_RUN / strict verification. Follow [J4_MOTOR_TEST.md](J4_MOTOR_TEST.md) for first J4 PWM/shutdown checks. The dated fault/debug sections below retain the earlier sequence, not current settings.
+**Current follow-up, 2026-10-24:** user reports the J4 gate-net copper short repaired. The active image is J4/MOTOR_RUN with all temporary experiment flags off and the original J3 driver/startup settings. Follow [POST_REPAIR_OUTPUT_CHECK.md](POST_REPAIR_OUTPUT_CHECK.md) before connecting a motor. Earlier dated debugging sections are history.
 
 ## Pin audit
 

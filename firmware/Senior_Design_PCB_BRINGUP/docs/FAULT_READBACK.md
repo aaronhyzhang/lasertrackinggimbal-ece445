@@ -1,5 +1,7 @@
 # Motor-disconnected fault-register capture
 
+**Historical diagnostic procedure:** active-image selections below are superseded by [the post-repair baseline](POST_REPAIR_OUTPUT_CHECK.md); temporary experiment flags are now off.
+
 2026-10-23. J4's first-trip record identifies an EXTI nFAULT edge at 21 ms, with PE6 low, driver_ready=true and pwm_authorized=true. The earlier successful SPI status read occurred before that event. Its zeros do not identify the later fault. The user proposed resoldering again; obtain fault data first because no particular bad joint or chip has been established.
 
 [TI SLVSE39B](https://www.ti.com/lit/ds/symlink/drv8304.pdf), sections 7.4/7.6, documents fault/status reporting and that ENABLE-low sleep disables SPI. The previous firmware immediately lowered ENABLE, losing the opportunity to read fresh fault status. The new optional bench path inhibits PWM immediately but briefly preserves the already-awake selected driver for two foreground read-only SPI frames before lowering ENABLE. Driver protections stay enabled. No CLR_FLT, reset pulse, profile write, retry or new PWM authorization occurs.

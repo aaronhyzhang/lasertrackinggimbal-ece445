@@ -1,0 +1,57 @@
+{
+  "date": "2026-10-24",
+  "hardware_repair": "user reports gate-net copper short repaired; post-repair switching pending",
+  "active": {
+    "stage": 3,
+    "axis": 1,
+    "sync_start": 0,
+    "hs_source_mA": 15,
+    "vds_mV": 150,
+    "cpuv_history": 0,
+    "fault_capture": 0
+  },
+  "expected_driver_registers": [
+    0,
+    0,
+    128,
+    768,
+    768,
+    768,
+    640
+  ],
+  "validation": {
+    "portable_executables": 30,
+    "compile_guards": 12,
+    "bsp_capture": 0,
+    "native_builds": [
+      "J4 Debug",
+      "J4 Release"
+    ],
+    "cli_builds": [
+      "J3 Debug"
+    ]
+  },
+  "active_core_sha256": {
+    "Core\\Inc\\arm_button.h": "d9198177b1e1e0eef86cc75f945d423f02dec99f729b25adf686157a0a21ff09",
+    "Core\\Inc\\board.h": "03c045b4a416705cdae67e4a533a0c34a4be6099988a1eac744a397e95baec76",
+    "Core\\Inc\\demo_app.h": "2518dd824be611a2a4b225f747d205cfddc1ac7c843e330b551de4548a8c4e37",
+    "Core\\Inc\\demo_config.h": "8afaa7b10a5afa33145ce3939db65170f50f1e09f6b6a20c958c96396c93bf6f",
+    "Core\\Inc\\driver_trip.h": "fd4c994740681c5d47d52eda1fb0e124c28715e0a98ee47e4694b12db58d3c73",
+    "Core\\Inc\\drv8304.h": "885445701b7a3ec1ccc841a11662d227d3d1708fdf20c52869f0306857d5ee5a",
+    "Core\\Inc\\open_loop.h": "1cbe7af9e72f8206f8f1f779bb90db750f887b2a21de8b6f7d045d212361552d",
+    "Core\\Inc\\pcb_config.h": "f3114952756752751691b36e12206b1edf6a9d013641cec5e4700f4b3872868c",
+    "Core\\Inc\\pcb_pins.h": "778216162f8df0beded387697100a927ab5af5b9d3af58c0666b99d203f4e493",
+    "Core\\Inc\\pcb_pwm.h": "1a8fd849780b8bb9e3f75b0d26b95e1c7779e40a8197782c256cc288a8056312",
+    "Core\\Inc\\stm32h7xx_hal_conf.h": "482d83c4d3edaaaedb1d3edb1272eb66161a335df8a6153342a118c4fb3d5bae",
+    "Core\\Src\\board.c": "e32c4354751be354fc498f012fa9b76509f28af21fee1c9085e88ac0b30a6c36",
+    "Core\\Src\\demo_app.c": "3c436095d5e03adc700e761fd8e536896f9b595066c56a3c5bf13178cf0fc76c",
+    "Core\\Src\\drv8304.c": "25de199871abfb688a9e5cd80c494a803356598a0a8dc08df35f947b65e9e2eb",
+    "Core\\Src\\main.c": "40d8f1fb41162620f7ceecd18b057b73356f8528a0b0858dc85a9ebfe015ccb1",
+    "Core\\Src\\modulation.c": "3762deb0150659e7ec53870a3d432b90295e465d51b3e384266920c349d8173a",
+    "Core\\Src\\open_loop.c": "9b9c5d02e6352fdbb11c4542d4b96b1455a71ae0e33da3a7d8ab02970cf8232f",
+    "Core\\Src\\runtime_support.c": "87d203592cf33d4f655a6505ceae8d73d6f3bc535f6c7869d940b19b12e49c19",
+    "Core\\Src\\stm32h7xx_hal_msp.c": "a08168822207db031f13be63f98fe4e95e228511a82e12ef58e9f41046f8bf4d",
+    "Core\\Src\\stm32h7xx_it.c": "bc9999458e308c2ce39017e87f0925d72b1735690c6cf991d171b68096e97478"
+  },
+  "agent_flashed": false
+}

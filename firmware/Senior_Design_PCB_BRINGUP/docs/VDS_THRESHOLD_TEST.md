@@ -1,5 +1,7 @@
 # J4 VDS threshold comparison
 
+**Historical diagnostic procedure:** active-image selections below are superseded by [the post-repair baseline](POST_REPAIR_OUTPUT_CHECK.md); temporary experiment flags are now off.
+
 2026-10-24. The user requested increasing OCP threshold after the 45 mA source-current image still read R0=0x608/R1=0. That image verified register 3=800, so its selected source-current profile reached the driver. This next experiment changes only the MOSFET VDS threshold; it is not a confirmed fix.
 
 ## Meaning and settings

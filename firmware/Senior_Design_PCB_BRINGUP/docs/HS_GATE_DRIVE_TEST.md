@@ -1,5 +1,7 @@
 # J4 high-side source-current comparison
 
+**Historical diagnostic procedure:** active-image selections below are superseded by [the post-repair baseline](POST_REPAIR_OUTPUT_CHECK.md); temporary experiment flags are now off.
+
 2026-10-24. The user authorized a 15 -> 45 mA high-side turn-on-current experiment after synchronized startup still produced J4 R0=0x608/R1=0. This is a diagnostic comparison, not a confirmed fix.
 
 ## Single configuration change

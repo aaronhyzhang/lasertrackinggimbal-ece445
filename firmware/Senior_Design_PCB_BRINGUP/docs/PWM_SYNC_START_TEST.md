@@ -1,5 +1,7 @@
 # Synchronized PWM startup comparison
 
+**Historical diagnostic procedure:** active-image selections below are superseded by [the post-repair baseline](POST_REPAIR_OUTPUT_CHECK.md); temporary experiment flags are now off.
+
 2026-10-24. This is a controlled firmware experiment, not a confirmed fix for J4's phase-B high-side VDS fault. The user confirmed J3 reached MOTOR_OPEN_RUNNING with axis=0/stage=3 and healthy driver status on the preceding image. J4 still captured R0=0x608/R1=0 after replacing its B-high MOSFET and driver IC.
 
 ## What changed
