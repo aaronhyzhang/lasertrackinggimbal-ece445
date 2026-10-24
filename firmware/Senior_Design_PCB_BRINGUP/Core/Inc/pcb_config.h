@@ -2,7 +2,7 @@
 #define PCB_CONFIG_H
 /* Select the bring-up stage and one axis below, then rebuild. */
 #ifndef PCB_STAGE
-#define PCB_STAGE PCB_IO_CHECK
+#define PCB_STAGE PCB_MOTOR_RUN
 #endif
 
 #define PCB_IO_CHECK       0 /* Buttons/LEDs/pots; both inverters held off. */
@@ -11,7 +11,7 @@
 #define PCB_MOTOR_RUN      3 /* Selected open-loop motor, VR1, S1 ARM, S2 STOP. */
 /* 0 = J3 / TIM1, 1 = J4 / TIM8. Only one axis runs at a time. */
 #ifndef PCB_TEST_AXIS
-#define PCB_TEST_AXIS 0
+#define PCB_TEST_AXIS 1
 #endif
 /* Shared J3/J4 baseline: 0 uses the original counter/start sequence.
  * Diagnostic option 1 commits duties and restarts at count 0/up. */

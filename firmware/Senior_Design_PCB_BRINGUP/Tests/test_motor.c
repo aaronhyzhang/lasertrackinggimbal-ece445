@@ -44,7 +44,8 @@ static void test_spin_and_neutral(int sign) {
     motor_t m; motor_output_t out; uint32_t now=0; start(&m,&now,&out,sign);
     float dv=DEMO_OPEN_ACCEL_RPM_S*TAU/60*0.001f;
     unsigned wraps=0;
-    for (unsigned i=0;i<12000;++i) {
+    unsigned run_ticks=(unsigned)ceilf(DEMO_OPEN_MAX_RPM/DEMO_OPEN_ACCEL_RPM_S*1000)+2000u;
+    for (unsigned i=0;i<run_ticks;++i) {
         float old_speed=m.open_speed,old_angle=m.open_angle;
         motor_input_t in=input(++now,sign>0?3:0); motor_step(&m,&in,ACTION_NONE,&out);
         assert(m.state==MOTOR_OPEN_RUNNING && out.enable && out.pwm && m.open_direction==sign);

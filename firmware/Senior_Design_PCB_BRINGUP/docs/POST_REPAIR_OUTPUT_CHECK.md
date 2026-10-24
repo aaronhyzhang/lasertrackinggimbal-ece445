@@ -1,5 +1,7 @@
 # J4 output check after gate-net repair
 
+> Later status: the user reports motor rotation after the copper repair. Current saved defaults and tuning are in [WORKING_CHECKPOINT_2026-10-24.md](WORKING_CHECKPOINT_2026-10-24.md). This document retains the earlier output-check procedure.
+
 2026-10-24. The user reports finding and repairing an outer-layer copper connection shorting the J4 phase-B high-side gate net to GND. The short persisted with both its resistor and MOSFET removed, supporting a PCB copper connection rather than the removed parts. The post-repair electrical and switching results are still pending; this document records the user's repair report, not an agent-verified hardware pass.
 
 This procedure supersedes the active-image instructions in the earlier PWM-sync, 45 mA source-current, VDS-threshold and fault-readback experiments. Those documents remain diagnostic history.
