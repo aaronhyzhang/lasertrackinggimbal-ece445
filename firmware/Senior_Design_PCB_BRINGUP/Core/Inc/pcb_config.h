@@ -29,6 +29,14 @@
 #if PCB_HS_SOURCE_MA != 15 && PCB_HS_SOURCE_MA != 45
 #error Invalid PCB_HS_SOURCE_MA
 #endif
+/* VDS protection comparison; latched shutdown remains enabled.
+ * 150 = previous baseline, 240 = next motor-disconnected bench step. */
+#ifndef PCB_VDS_THRESHOLD_MV
+#define PCB_VDS_THRESHOLD_MV 150
+#endif
+#if PCB_VDS_THRESHOLD_MV != 150 && PCB_VDS_THRESHOLD_MV != 240
+#error Invalid PCB_VDS_THRESHOLD_MV
+#endif
 /* Temporary motor-disconnected bench option. Accept only recorded CPUV;
  * driver CPUV protection and the physical nFAULT interlock remain enabled. */
 #ifndef PCB_BENCH_ALLOW_CPUV_HISTORY

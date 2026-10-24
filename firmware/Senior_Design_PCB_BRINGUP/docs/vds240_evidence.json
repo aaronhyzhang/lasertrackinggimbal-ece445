@@ -1,0 +1,20 @@
+{
+  "date": "2026-10-24",
+  "host_executables": 30,
+  "compile_guards": 12,
+  "active_builds": [
+    "J4 Debug",
+    "J4 Release"
+  ],
+  "vds_threshold_mV": 240,
+  "ocp_register": 769,
+  "baseline_ocp_register": 768,
+  "gate_source_current_mA": 45,
+  "latched_all_bridge_shutdown_retained": true,
+  "shunt_ocp_unchanged": true,
+  "dead_time_unchanged": true,
+  "hardware_flashed": false,
+  "fix_proven": false,
+  "active_config_sha256": "9eafd8f710065811311c9ab94cb400a88e75a9fa9ed14159e4b343b7d786d796",
+  "active_driver_sha256": "25de199871abfb688a9e5cd80c494a803356598a0a8dc08df35f947b65e9e2eb"
+}

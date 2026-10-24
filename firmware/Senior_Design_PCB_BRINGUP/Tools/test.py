@@ -19,11 +19,13 @@ def main():
         cases += [('test_app',3,1,axis),('test_axis',3,0,axis)]
     cases=[(*case,15) for case in cases]
     cases += [('test_driver',3,bench,axis,45) for axis in range(2) for bench in range(2)]
-    for name,stage,bench,axis,source_ma in cases:
-        binary=out/(f'{name}_{stage}_{bench}_{axis}_{source_ma}'+('.exe' if sys.platform=='win32' else ''))
+    cases=[(*case,150) for case in cases]
+    cases += [('test_driver',3,bench,axis,source_ma,240) for axis in range(2) for bench in range(2) for source_ma in (15,45)]
+    for name,stage,bench,axis,source_ma,vds_mv in cases:
+        binary=out/(f'{name}_{stage}_{bench}_{axis}_{source_ma}_{vds_mv}'+('.exe' if sys.platform=='win32' else ''))
         flags=['-std=c11','-Wall','-Wextra','-Werror',f'-DPCB_STAGE={stage}',
                f'-DPCB_BENCH_ALLOW_CPUV_HISTORY={bench}',f'-DPCB_TEST_AXIS={axis}',
-               '-DPCB_BENCH_CAPTURE_DRIVER_FAULT=0',f'-DPCB_HS_SOURCE_MA={source_ma}']
+               '-DPCB_BENCH_CAPTURE_DRIVER_FAULT=0',f'-DPCB_HS_SOURCE_MA={source_ma}',f'-DPCB_VDS_THRESHOLD_MV={vds_mv}']
         sources=[root/f'Tests/{name}.c']
         if name=='test_app':
             flags+=['-I',str(root/'Tests/fakes')]
@@ -51,6 +53,11 @@ def main():
             '-I',str(root/'Core/Inc'),f'-DPCB_HS_SOURCE_MA={source_ma}','-'],
             input='#include "pcb_config.h"\n',text=True,capture_output=True)
         assert result.returncode!=0 and 'Invalid PCB_HS_SOURCE_MA' in result.stderr,result.stderr
-    print('PASS: 10 compile guards reject invalid stage/axis/capture/source settings; both axes support all stages with capture off.')
+    for vds_mv in [0,200]:
+        result=subprocess.run([*cc,'-std=c11','-fsyntax-only','-x','c',
+            '-I',str(root/'Core/Inc'),f'-DPCB_VDS_THRESHOLD_MV={vds_mv}','-'],
+            input='#include "pcb_config.h"\n',text=True,capture_output=True)
+        assert result.returncode!=0 and 'Invalid PCB_VDS_THRESHOLD_MV' in result.stderr,result.stderr
+    print('PASS: 12 compile guards reject invalid stage/axis/capture/source/VDS settings; both axes support all stages with capture off.')
 
 if __name__=='__main__': main()

@@ -22,7 +22,8 @@ int main(void) {
     assert(drv8304_configure(transfer,&d,&s) && s.verified);
     assert(s.read_mask==0x7f);
     assert(d.reg[2]==0x080 && d.reg[3]==(PCB_HS_SOURCE_MA==45?0x320:0x300) && d.reg[4]==0x300);
-    assert(d.reg[5]==0x300 && d.reg[6]==0x280);
+    assert(d.reg[5]==(PCB_VDS_THRESHOLD_MV==240?0x301:0x300) && d.reg[6]==0x280);
+    assert((d.reg[5]&0x3f8u)==0x300); /* Dead time retained, OCP latched/all bridges. */
     unsigned count=d.calls;
     /* Exact source-current readback is required; never silently accept baseline. */
     d.reg[3]^=0x20;
@@ -81,5 +82,5 @@ int main(void) {
         assert(fault.read_mask==(failure==1?0:1));
         assert(fault.reg[1]==0); /* Unread entries are explicitly marked invalid. */
     }
-    printf("PASS: HS source=%d mA, SPI/config/fault capture, failures and CPUV-only bench acceptance=%d; all other fault bits rejected.\n",PCB_HS_SOURCE_MA,PCB_BENCH_ALLOW_CPUV_HISTORY);
+    printf("PASS: HS source=%d mA, VDS=%d mV, SPI/config/fault capture, failures and CPUV-only bench acceptance=%d; all other fault bits rejected.\n",PCB_HS_SOURCE_MA,PCB_VDS_THRESHOLD_MV,PCB_BENCH_ALLOW_CPUV_HISTORY);
 }

@@ -59,4 +59,4 @@ The active workspace copy now selects J4 / MOTOR_RUN / CPUV-history option=0. Pr
 Startup comparison: [synchronized PWM start bench test](docs/PWM_SYNC_START_TEST.md). Active workspace is J3/MOTOR_RUN/capture=1, motors disconnected; repository defaults remain IO_CHECK/capture=0.
 
 
-Current J4 diagnostic comparison: [45 mA high-side turn-on and SPI audit](docs/HS_GATE_DRIVE_TEST.md). Active project is J4/MOTOR_RUN/source=45/capture=1; keep motors disconnected. Repository defaults retain source=15.
+Current J4 diagnostic comparison: [0.24 V VDS threshold test](docs/VDS_THRESHOLD_TEST.md). Active project is J4/MOTOR_RUN/source=45/VDS=240/capture=1; keep both motors disconnected. This supersedes earlier active-image notes. Repository defaults retain source=15/VDS=150/capture=0. The prior [gate-drive and SPI audit](docs/HS_GATE_DRIVE_TEST.md) remains reference context.
