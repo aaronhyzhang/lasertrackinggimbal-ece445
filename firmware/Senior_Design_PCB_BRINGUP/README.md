@@ -54,3 +54,6 @@ A motor-disconnected phase-output test may opt into PCB_BENCH_ALLOW_CPUV_HISTORY
 ## J4 motor support - 2026-10-23
 
 The active workspace copy now selects J4 / MOTOR_RUN / CPUV-history option=0. Probe ENABLE at TP34/PG7 and MCU PWM at TP23..28. J3 stays disabled. Follow the [J4 motor-test procedure](docs/J4_MOTOR_TEST.md), including the different PE6 interrupt shutdown path and motor-disconnected waveform/STOP/fault checks. Repository/source archive defaults remain J3 / IO_CHECK / history option=0. Earlier driver-only comparison settings are historical.
+
+
+Startup comparison: [synchronized PWM start bench test](docs/PWM_SYNC_START_TEST.md). Active workspace is J3/MOTOR_RUN/capture=1, motors disconnected; repository defaults remain IO_CHECK/capture=0.

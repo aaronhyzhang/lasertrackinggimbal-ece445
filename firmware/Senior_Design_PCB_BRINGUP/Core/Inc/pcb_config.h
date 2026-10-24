@@ -13,6 +13,14 @@
 #ifndef PCB_TEST_AXIS
 #define PCB_TEST_AXIS 0
 #endif
+/* Controlled startup comparison: 1 commits duties and starts at count 0/up;
+ * 0 restores the previous free-running-counter output-release behavior. */
+#ifndef PCB_PWM_SYNC_START
+#define PCB_PWM_SYNC_START 1
+#endif
+#if PCB_PWM_SYNC_START != 0 && PCB_PWM_SYNC_START != 1
+#error Invalid PCB_PWM_SYNC_START
+#endif
 /* Temporary motor-disconnected bench option. Accept only recorded CPUV;
  * driver CPUV protection and the physical nFAULT interlock remain enabled. */
 #ifndef PCB_BENCH_ALLOW_CPUV_HISTORY

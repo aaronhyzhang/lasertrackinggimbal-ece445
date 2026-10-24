@@ -315,6 +315,23 @@ static void pwm_off(void) {
     bridge_authorized=false; pcb_pwm_stop_all();
 }
 
+/* IRQs masked, outputs inhibited. DIR is read-only in center-aligned mode:
+ * stop first, temporarily select edge-aligned up-counting, commit preloads,
+ * then restore CMS while still stopped. No break flags are cleared here. */
+static void pwm_prepare_start(const float duty[3]) {
+    CLEAR_BIT(PCB_PWM_TIMER->BDTR,TIM_BDTR_MOE);
+    CLEAR_BIT(PCB_PWM_TIMER->CR1,TIM_CR1_CEN);
+    uint32_t cr1=PCB_PWM_TIMER->CR1 & ~(TIM_CR1_CEN|TIM_CR1_DIR|TIM_CR1_UDIS);
+    CLEAR_BIT(PCB_PWM_TIMER->CR1,TIM_CR1_CMS);
+    PCB_PWM_TIMER->CR1=cr1 & ~TIM_CR1_CMS;
+    pcb_pwm_write(duty);
+    PCB_PWM_TIMER->CNT=0;
+    PCB_PWM_TIMER->EGR=TIM_EGR_UG; /* UDIS clear: transfer CCR/ARR/PSC preloads. */
+    PCB_PWM_TIMER->SR=~TIM_SR_UIF; /* W0C: clear UPDATE only, preserve break flags. */
+    PCB_PWM_TIMER->CR1=cr1; /* Restore center-aligned mode, direction initially up. */
+    __DSB();
+}
+
 void board_apply(const motor_output_t *out) {
     uint32_t mask=board_lock();
     if (board_stop_pressed()) { board_kill(); board_unlock(mask); return; }
@@ -332,7 +349,8 @@ void board_apply(const motor_output_t *out) {
     bool drive=out->pwm && (PCB_STAGE==PCB_MOTOR_RUN || PCB_STAGE==PCB_PWM_CHECK);
     if (!drive) pwm_off();
     else if (PCB_STAGE==PCB_PWM_CHECK || (driver_ready && (GPIOE->IDR&PCB_NFAULT)!=0)) {
-        pcb_pwm_write(out->duty);
+        if (PCB_PWM_SYNC_START && !bridge_authorized) pwm_prepare_start(out->duty);
+        else pcb_pwm_write(out->duty);
         if (!bridge_authorized) {
 #if PCB_TEST_AXIS == 0
             __HAL_TIM_CLEAR_FLAG(&htim_pwm,TIM_FLAG_BREAK|TIM_FLAG_BREAK2);
@@ -348,6 +366,7 @@ void board_apply(const motor_output_t *out) {
 #endif
             bridge_authorized=true;
             __DSB(); SET_BIT(PCB_PWM_TIMER->BDTR,TIM_BDTR_MOE);
+            if (PCB_PWM_SYNC_START) SET_BIT(PCB_PWM_TIMER->CR1,TIM_CR1_CEN);
         }
     } else driver_trip(DRIVER_TRIP_PWM_PERMISSION);
     board_unlock(mask);

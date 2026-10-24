@@ -18,6 +18,8 @@ static uint32_t irq_mask;
 #define SCB_EnableICache() ((void)0)
 #undef __HAL_GPIO_EXTI_CLEAR_IT
 #define __HAL_GPIO_EXTI_CLEAR_IT(bits) (EXTI->PR1 &= ~(uint32_t)(bits))
+#undef __HAL_TIM_CLEAR_FLAG
+#define __HAL_TIM_CLEAR_FLAG(handle,bits) ((handle)->Instance->SR &= ~(uint32_t)(bits))
 #include "board.c"
 __declspec(dllimport) void *VirtualAlloc(void *,size_t,unsigned long,unsigned long);
 uint32_t HAL_GetTick(void) { return 21; }
@@ -42,6 +44,8 @@ int main(void) {
     assert((t->BDTR&(TIM_BDTR_BKE|TIM_BDTR_AOE))==0);
     assert(((t->BDTR&TIM_BDTR_BK2E)!=0)==(PCB_TEST_AXIS==0 && PCB_STAGE==PCB_MOTOR_RUN));
     uint32_t init_bdtr=t->BDTR;
+    /* Start from an arbitrary down-counting phase with stale update status. */
+    t->CNT=1777;t->CR1|=TIM_CR1_DIR;t->SR=TIM_SR_UIF;t->EGR=0;
     GPIOD->IDR=PCB_STOP;GPIOE->IDR=PCB_NFAULT;
     stop_latched=false;latched_fault=FAULT_NONE;
     wake_requested=driver_ready=true;
@@ -49,6 +53,26 @@ int main(void) {
     board_apply(&out);
     assert(bridge_authorized && (t->BDTR&TIM_BDTR_MOE));
     assert(latched_fault==FAULT_NONE && t->CCER==0x555);
+    assert((t->CR1&TIM_CR1_CEN)!=0 && (t->CR1&TIM_CR1_CMS)==TIM_COUNTERMODE_CENTERALIGNED1);
+#if PCB_PWM_SYNC_START
+    assert(t->CNT==0 && (t->CR1&TIM_CR1_DIR)==0 && t->EGR==TIM_EGR_UG);
+    assert((t->SR&TIM_SR_UIF)==0);
+#else
+    assert(t->CNT==1777 && (t->CR1&TIM_CR1_DIR)!=0 && t->EGR==0);
+#endif
+    /* A running duty update must never restart/rephase the timer. */
+    t->CNT=901;t->EGR=0;
+    board_apply(&out);
+    assert(t->CNT==901 && t->EGR==0 && bridge_authorized);
+    /* Stop/re-arm prepares another deterministic first interval. */
+    board_inhibit();wake_requested=driver_ready=true;
+    t->CNT=1900;t->CR1|=TIM_CR1_DIR;
+    board_apply(&out);
+#if PCB_PWM_SYNC_START
+    assert(t->CNT==0 && (t->CR1&TIM_CR1_DIR)==0 && (t->BDTR&TIM_BDTR_MOE));
+#else
+    assert(t->CNT==1900 && (t->CR1&TIM_CR1_DIR)!=0);
+#endif
     assert(t->CCR1==(uint32_t)(out.duty[0]*2500) && t->CCR2==(uint32_t)(out.duty[1]*2500) && t->CCR3==1250);
 #if PCB_STAGE == PCB_PWM_CHECK
     assert(GPIOG->BSRR==(uint32_t)PCB_ENABLES<<16);

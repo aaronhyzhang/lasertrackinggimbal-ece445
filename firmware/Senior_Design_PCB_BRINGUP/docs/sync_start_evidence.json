@@ -1,0 +1,131 @@
+{
+  "date": "2026-10-24",
+  "tests": {
+    "portable_executables": 18,
+    "compile_guards": 8,
+    "bsp_capture_variants": 2,
+    "timer_variants": 8
+  },
+  "timer_results": {
+    "0": [
+      {
+        "axis": 0,
+        "stage": 1,
+        "CR1": 177,
+        "CCMR1": 26728,
+        "CCMR2": 104,
+        "CCER": 1365,
+        "init_BDTR": 11570,
+        "DIER": 0,
+        "AF1": 0,
+        "AF2": 1,
+        "sync_start": 0
+      },
+      {
+        "axis": 0,
+        "stage": 3,
+        "CR1": 177,
+        "CCMR1": 26728,
+        "CCMR2": 104,
+        "CCER": 1365,
+        "init_BDTR": 16788786,
+        "DIER": 128,
+        "AF1": 0,
+        "AF2": 1,
+        "sync_start": 0
+      },
+      {
+        "axis": 1,
+        "stage": 1,
+        "CR1": 177,
+        "CCMR1": 26728,
+        "CCMR2": 104,
+        "CCER": 1365,
+        "init_BDTR": 11570,
+        "DIER": 0,
+        "AF1": 0,
+        "AF2": 1,
+        "sync_start": 0
+      },
+      {
+        "axis": 1,
+        "stage": 3,
+        "CR1": 177,
+        "CCMR1": 26728,
+        "CCMR2": 104,
+        "CCER": 1365,
+        "init_BDTR": 11570,
+        "DIER": 0,
+        "AF1": 0,
+        "AF2": 1,
+        "sync_start": 0
+      }
+    ],
+    "1": [
+      {
+        "axis": 0,
+        "stage": 1,
+        "CR1": 161,
+        "CCMR1": 26728,
+        "CCMR2": 104,
+        "CCER": 1365,
+        "init_BDTR": 11570,
+        "DIER": 0,
+        "AF1": 0,
+        "AF2": 1,
+        "sync_start": 1
+      },
+      {
+        "axis": 0,
+        "stage": 3,
+        "CR1": 161,
+        "CCMR1": 26728,
+        "CCMR2": 104,
+        "CCER": 1365,
+        "init_BDTR": 16788786,
+        "DIER": 128,
+        "AF1": 0,
+        "AF2": 1,
+        "sync_start": 1
+      },
+      {
+        "axis": 1,
+        "stage": 1,
+        "CR1": 161,
+        "CCMR1": 26728,
+        "CCMR2": 104,
+        "CCER": 1365,
+        "init_BDTR": 11570,
+        "DIER": 0,
+        "AF1": 0,
+        "AF2": 1,
+        "sync_start": 1
+      },
+      {
+        "axis": 1,
+        "stage": 3,
+        "CR1": 161,
+        "CCMR1": 26728,
+        "CCMR2": 104,
+        "CCER": 1365,
+        "init_BDTR": 11570,
+        "DIER": 0,
+        "AF1": 0,
+        "AF2": 1,
+        "sync_start": 1
+      }
+    ]
+  },
+  "native_builds": [
+    "J3 Debug",
+    "J3 Release"
+  ],
+  "cli_arm_builds": [
+    "J4 Debug"
+  ],
+  "active_config_sha256": "5082e25a2703e5266e31fc5ec302055a7ce85073e129c9a6b87e36ed2a80feb0",
+  "active_board_sha256": "e32c4354751be354fc498f012fa9b76509f28af21fee1c9085e88ac0b30a6c36",
+  "profile_changed": false,
+  "hardware_flashed": false,
+  "physical_fix_established": false
+}

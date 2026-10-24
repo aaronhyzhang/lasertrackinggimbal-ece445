@@ -81,3 +81,10 @@ The working J3 result is historical; a latest-image J3 result has not yet been s
 - TI SLVSE39B sections 7.3.1.4, 7.3.5.3, 7.6 (gate drive, VDS detection, profile/register decode): https://www.ti.com/lit/ds/symlink/drv8304.pdf
 - Vishay SiS890ADN electrical characteristics (gate charge): https://www.vishay.com/docs/78019/sis890adn.pdf
 - Local reviewed nine-page schematic, SHA-256 2d538235485d3f2e2b304468b9ff6afa6fb7fc8a22f0789b6c701709f734a144.
+
+
+## Synchronized-start experiment implemented - 2026-10-24
+
+Follow-up to the comparison: PCB_PWM_SYNC_START=1 now prepares a count-zero/up start with all three compares committed while outputs are off. Normal duty updates do not rephase the timer. Set the option to 0 for the previous behavior. This is an experiment, not a confirmed J4 fix. The user confirmed the preceding J3 image was axis=0, stage=3, MOTOR_OPEN_RUNNING, driver_good=true and FAULT_NONE. The updated active image is left on J3/MOTOR_RUN/capture=1 for the first test; both motors must remain disconnected. See [the exact procedure](PWM_SYNC_START_TEST.md). No driver profile or protection threshold changed, and no agent flash occurred.
+
+Verification: 18 portable executables and 8 configuration guards; capture-off/on actual BSP checks; eight real-vendor-timer initialization variants (two axes x PWM/MOTOR x sync off/on). J3 native CubeIDE Debug/Release and J4 CLI ARM Debug builds pass without warnings. Simulated checks do not establish first-pulse electrical timing.
