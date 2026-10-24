@@ -1,5 +1,7 @@
 # J4 open-loop motor test
 
+**Current bench-image note:** the active project now enables [post-fault register capture](FAULT_READBACK.md) with motors disconnected. Restore PCB_BENCH_CAPTURE_DRIVER_FAULT=0 before following this motor-connected procedure.
+
 2026-10-23. User reports both driver checks now pass and an unloaded motor spins on J3. Before that, J4 returned `0x7ff` on its first register-2 readback; the other snapshot entries were unread, not fault-free status. The user reports that J4 passed after desoldering/resoldering. This suggests a connection issue but does not identify a particular failed joint. J4 motor operation with the new TIM8 implementation remains untested on hardware.
 
 ## Select one motor
@@ -10,6 +12,7 @@ The existing `Senior_Design_PCB_BRINGUP` project now supports either connector i
 #define PCB_STAGE PCB_MOTOR_RUN
 #define PCB_TEST_AXIS 1
 #define PCB_BENCH_ALLOW_CPUV_HISTORY 0
+#define PCB_BENCH_CAPTURE_DRIVER_FAULT 0
 ```
 
 Axis 0 selects J3/TIM1; axis 1 selects J4/TIM8. Change only `PCB_TEST_AXIS` to switch motors after each connector's checks. This is still a **single-motor** application: the other ENABLE and its six PWM pins stay low. Repository/archive defaults remain J3 / IO_CHECK / strict verification. The CPUV-history exception is off for motor testing.

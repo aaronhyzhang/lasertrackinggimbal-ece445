@@ -1,0 +1,52 @@
+{
+  "date": "2026-10-23",
+  "base_commit": "12e38a1616d465e32818c5d8f483c9bab95a551d",
+  "change": "Default-off bounded post-trip readonly SPI capture with immediate PWM inhibition",
+  "active_config": {
+    "axis": 1,
+    "stage": "PCB_MOTOR_RUN",
+    "cpuv_history": 0,
+    "fault_capture": 1,
+    "motors": "must be disconnected",
+    "sha256": "63a27fca750ea3771b9ef8341d49a9cc945aa6edd48dc2a292112343ade2914b"
+  },
+  "repository_config": {
+    "axis": 0,
+    "stage": "PCB_IO_CHECK",
+    "cpuv_history": 0,
+    "fault_capture": 0,
+    "sha256": "f2b2be89e87aca4fd26753aa04e194d642411f08f23d8ca04e9fbcfe10e2a594"
+  },
+  "native_capture_on_builds": {
+    "Debug": {
+      "result": "0 errors / 0 warnings",
+      "elf_sha256": "08c0c2c2faa88f7afa0ab2b59cb9cf0292d2fc1e033d3ef8b24d8da8b67d2ee0"
+    },
+    "Release": {
+      "result": "0 errors / 0 warnings",
+      "elf_sha256": "331bbbc1730ba22d68ad419361fbb0a5062954c3bb034c64cb74141a9167f31e"
+    }
+  },
+  "capture_off_ARM_Debug": {
+    "axis0": "36a27d1a635047b13c3b50c2d1316b565dccef17dc88d4e06ca3bf7676ad764e",
+    "axis1": "09c2c37cc372047949bc21fb3c6adbd473bbc918d907f98050cb74cb8e5feef2"
+  },
+  "host_tests": "20 executables (18 portable + 2 actual BSP capture variants), 8 compile guard rejections",
+  "source_sha256": {
+    "Core/Inc/drv8304.h": "885445701b7a3ec1ccc841a11662d227d3d1708fdf20c52869f0306857d5ee5a",
+    "Core/Inc/driver_trip.h": "fd4c994740681c5d47d52eda1fb0e124c28715e0a98ee47e4694b12db58d3c73",
+    "Core/Src/board.c": "eea1c10838818271384823ca765a445381f2ad754b4a8660ebe79fa77362e056",
+    "Core/Src/drv8304.c": "4fbbc29dfe73f1a56c833c9ba0de9eac65944f013d85f65240dc34ce0f9b970a",
+    "Tests/test_driver.c": "d6ba4c7f4c4b725ca0fba37568b32af3a476032ef57dab185a33c17925f6ed57",
+    "Tests/test_bsp.c": "642630e510fcee72aa4149e95ad764a8c0ae3ce117ab22c7922dcec2221ad2da",
+    "Tests/bsp_unused_hal.c": "3f6d0ef2d3c48c20cf7ebb16b5cf6234f04d716551257972032e9c12def2db19",
+    "Tools/test.py": "cd7a508d646b2934ef5cea08830007162441d14cdcfb7e465ce8a07c3654c3df",
+    "Tools/test_bsp.py": "5e03d4e47dc77be937747298096009c5277af14d204e314b02bf4a4549bebcca"
+  },
+  "controls": "No fault masking/clear/retry/PWM restart. S2 and non-driver board faults override capture. Only readonly addresses 0/1 permitted; data after cancellation rejected.",
+  "timing_limit": "5000 us TIM2 budget checked before/after SPI and at control-tick inhibition; tick granularity, running firmware required. No hardware timing validation or halted-CPU deadline guarantee.",
+  "unchanged": "Driver profile, gain 20, gate current, GPIO/timer setup, open-loop/app motor controls; normal capture-off shutdown policy",
+  "agent_flashed": false,
+  "hardware_fault_register_result": "Pending user flash/test",
+  "post_build_note": "Config comment clarified control-tick deadline granularity; no macro, line count or compiled behavior changed."
+}

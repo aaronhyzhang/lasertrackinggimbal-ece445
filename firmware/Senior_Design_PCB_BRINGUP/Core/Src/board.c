@@ -10,6 +10,10 @@ ADC_HandleTypeDef hadc1;
 static SPI_HandleTypeDef hspi2;
 volatile drv8304_snapshot_t g_driver_status;
 volatile driver_trip_snapshot_t g_driver_trip;
+volatile driver_fault_capture_t g_driver_fault={
+    .state=PCB_BENCH_CAPTURE_DRIVER_FAULT?DRIVER_FAULT_WAITING:DRIVER_FAULT_DISABLED};
+static uint32_t fault_capture_started_us;
+static const char fault_capture_spi_context;
 static volatile bool wake_requested, driver_ready;
 static volatile uint32_t wake_ms, wake_epoch;
 static uint32_t last_verify;
@@ -32,11 +36,30 @@ void board_unlock(uint32_t m) { __set_PRIMASK(m); }
 
 uint32_t board_us(void) { return TIM2->CNT; }
 
+static void fault_capture_cancel(driver_fault_capture_state_t state) {
+    if (g_driver_fault.state==DRIVER_FAULT_PENDING) {
+        g_driver_fault.elapsed_us=board_us()-fault_capture_started_us;
+        g_driver_fault.state=state;
+    }
+}
+/* Called with IRQs masked. STOP and the hardware-timer deadline override capture. */
+static bool fault_capture_keep_awake(void) {
+    if (!PCB_BENCH_CAPTURE_DRIVER_FAULT || g_driver_fault.state!=DRIVER_FAULT_PENDING) return false;
+    if (stop_latched || board_stop_pressed()) fault_capture_cancel(DRIVER_FAULT_STOPPED);
+    else if (board_us()-fault_capture_started_us>=DRIVER_FAULT_CAPTURE_US)
+        fault_capture_cancel(DRIVER_FAULT_TIMED_OUT);
+    return g_driver_fault.state==DRIVER_FAULT_PENDING;
+}
+
 void board_inhibit(void) {
     uint32_t mask = board_lock();
     bridge_authorized = false;
     pcb_pwm_stop_all();
-    if (__HAL_RCC_GPIOG_IS_CLK_ENABLED()) pcb_driver_enable(false);
+    if (__HAL_RCC_GPIOG_IS_CLK_ENABLED()) {
+        if (fault_capture_keep_awake())
+            GPIOG->BSRR=(uint32_t)(PCB_ENABLES & ~PCB_SELECTED_ENABLE)<<16;
+        else pcb_driver_enable(false);
+    }
     if (wake_requested) ++wake_epoch;
     wake_requested=driver_ready=false;
     __DSB(); board_unlock(mask);
@@ -44,12 +67,13 @@ void board_inhibit(void) {
 
 void board_trip(motor_fault_t fault) {
     uint32_t mask = board_lock();
+    if (fault!=FAULT_DRIVER) fault_capture_cancel(DRIVER_FAULT_ABORTED);
     if (latched_fault == FAULT_NONE) latched_fault = fault;
     board_inhibit(); board_unlock(mask);
 }
 
-/* Only a few state/register reads precede the existing immediate inhibit.
- * No SPI, waits, retries, fault masking or extra ENABLE-high interval. */
+/* No SPI or waits in the ISR. Optional bench capture preserves an already
+ * awake driver briefly, with PWM inhibited, for foreground status reads only. */
 static void driver_trip(driver_trip_source_t source) {
     uint32_t mask=board_lock();
     if (latched_fault==FAULT_NONE) {
@@ -57,8 +81,17 @@ static void driver_trip(driver_trip_source_t source) {
             .source=source,.wake_age_ms=HAL_GetTick()-wake_ms,
             .nfault_high=(GPIOE->IDR&PCB_NFAULT)!=0,
             .driver_ready=driver_ready,.pwm_authorized=bridge_authorized};
+        if (PCB_BENCH_CAPTURE_DRIVER_FAULT) {
+            bridge_authorized=false; pcb_pwm_stop_all(); /* Before opening the readback window. */
+        }
+        if (PCB_BENCH_CAPTURE_DRIVER_FAULT && PCB_STAGE==PCB_MOTOR_RUN &&
+            g_driver_fault.state==DRIVER_FAULT_WAITING && wake_requested && driver_ready &&
+            !stop_latched && !board_stop_pressed() && (GPIOG->ODR&PCB_SELECTED_ENABLE)!=0) {
+            fault_capture_started_us=board_us();
+            g_driver_fault.state=DRIVER_FAULT_PENDING;
+        }
         board_trip(FAULT_DRIVER);
-        g_driver_trip=snapshot; /* Publish after MOE/ENABLE have been inhibited. */
+        g_driver_trip=snapshot; /* PWM off; ENABLE may have the bounded bench readback window. */
     } else board_trip(FAULT_DRIVER);
     board_unlock(mask);
 }
@@ -321,8 +354,13 @@ void board_apply(const motor_output_t *out) {
 }
 
 static bool spi_transfer(void *context,uint16_t tx,uint16_t *rx) {
-    (void)context;
-    if (!wake_requested || stop_latched || board_stop_pressed()) return false;
+    bool capture=context==&fault_capture_spi_context;
+    uint32_t mask=board_lock();
+    bool allowed=capture ? fault_capture_keep_awake() :
+        (wake_requested && !stop_latched && !board_stop_pressed());
+    if (capture && !allowed) board_inhibit();
+    board_unlock(mask);
+    if (!allowed || (capture && tx!=0x8000u && tx!=0x8800u)) return false;
     pcb_driver_select(false); /* Both selects HIGH throughout inactive spacing. */
     uint32_t begin=board_us(); while (board_us()-begin<2u) {}
     pcb_driver_select(true);
@@ -330,11 +368,39 @@ static bool spi_transfer(void *context,uint16_t tx,uint16_t *rx) {
     HAL_StatusTypeDef result=HAL_SPI_TransmitReceive(&hspi2,(uint8_t *)&tx,(uint8_t *)rx,1,2);
     begin=board_us(); while (board_us()-begin<1u) {}
     pcb_driver_select(false);
-    return result==HAL_OK;
+    if (capture) {
+        mask=board_lock();
+        allowed=fault_capture_keep_awake();
+        if (!allowed) board_inhibit();
+        board_unlock(mask);
+    }
+    return result==HAL_OK && allowed;
+}
+
+static void fault_capture_service(void) {
+    if (!PCB_BENCH_CAPTURE_DRIVER_FAULT) return;
+    uint32_t mask=board_lock();
+    if (g_driver_fault.state!=DRIVER_FAULT_PENDING) { board_unlock(mask); return; }
+    board_inhibit(); /* MOE stays off; also enforce STOP/deadline before SPI. */
+    bool active=g_driver_fault.state==DRIVER_FAULT_PENDING;
+    board_unlock(mask);
+    if (!active) return;
+    drv8304_fault_snapshot_t snapshot={0};
+    bool ok=drv8304_read_faults(spi_transfer,(void *)&fault_capture_spi_context,&snapshot);
+    mask=board_lock();
+    if (g_driver_fault.state==DRIVER_FAULT_PENDING) {
+        g_driver_fault.reg[0]=snapshot.reg[0]; g_driver_fault.reg[1]=snapshot.reg[1];
+        g_driver_fault.read_mask=snapshot.read_mask;
+        g_driver_fault.elapsed_us=board_us()-fault_capture_started_us;
+        g_driver_fault.state=ok?DRIVER_FAULT_COMPLETE:DRIVER_FAULT_SPI_ERROR;
+    }
+    board_inhibit(); /* Success, SPI failure, timeout or STOP all end with EN low. */
+    board_unlock(mask);
 }
 
 void board_service(void) {
     if (PCB_STAGE!=PCB_MOTOR_RUN && PCB_STAGE!=PCB_DRIVER_CHECK) return;
+    fault_capture_service();
     uint32_t mask=board_lock(), epoch=wake_epoch, now=HAL_GetTick();
     bool active=wake_requested && !stop_latched && latched_fault==FAULT_NONE;
     bool ready=driver_ready;

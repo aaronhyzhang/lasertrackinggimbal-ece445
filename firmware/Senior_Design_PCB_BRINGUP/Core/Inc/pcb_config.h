@@ -18,6 +18,17 @@
 #ifndef PCB_BENCH_ALLOW_CPUV_HISTORY
 #define PCB_BENCH_ALLOW_CPUV_HISTORY 0
 #endif
+/* Motor-disconnected diagnostics only: PWM off immediately; 5 ms status-read
+ * budget, with control-tick deadline granularity. See docs/FAULT_READBACK.md. */
+#ifndef PCB_BENCH_CAPTURE_DRIVER_FAULT
+#define PCB_BENCH_CAPTURE_DRIVER_FAULT 0
+#endif
+#if PCB_BENCH_CAPTURE_DRIVER_FAULT != 0 && PCB_BENCH_CAPTURE_DRIVER_FAULT != 1
+#error Invalid PCB_BENCH_CAPTURE_DRIVER_FAULT
+#endif
+#if PCB_BENCH_CAPTURE_DRIVER_FAULT && PCB_STAGE != PCB_MOTOR_RUN
+#error Fault capture requires PCB_MOTOR_RUN and disconnected motors
+#endif
 #if PCB_STAGE < PCB_IO_CHECK || PCB_STAGE > PCB_MOTOR_RUN
 #error Invalid PCB_STAGE
 #endif

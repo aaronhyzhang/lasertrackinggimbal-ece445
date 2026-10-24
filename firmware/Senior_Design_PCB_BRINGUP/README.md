@@ -13,7 +13,7 @@ Self-contained CubeIDE project for the assembled PCB: **selectable J3 / TIM1 or 
 | `PCB_DRIVER_CHECK` | Wake selected J3/J4 DRV8304S, verify SPI | All 12 inputs GPIO low | Selected driver only, S1/neutral-qualified; VR1 outside neutral requests wake |
 | `PCB_MOTOR_RUN` | Selected unloaded motor after checks | Selected-axis open-loop sine PWM | Selected driver, S1/neutral-qualified |
 
-**J4 startup-fault follow-up:** the user reports MCU PWM looks okay, but MOTOR_RUN trips around 22 ms with a previously clean SPI snapshot. The [GPIO/firmware audit and first-trip record](docs/J4_FIRMWARE_AUDIT.md) found no pin-map defect; electrical cause remains unknown. The active diagnostic build adds frozen `g_driver_trip` provenance without changing the driver profile, permission gates or shutdown policy.
+**J4 startup-fault follow-up:** the user reports MCU PWM looks okay, but MOTOR_RUN trips around 22 ms with a previously clean SPI snapshot. The [GPIO/firmware audit and first-trip record](docs/J4_FIRMWARE_AUDIT.md) found no pin-map defect; electrical cause remains unknown. The active bench image now also enables [bounded post-trip status readback](docs/FAULT_READBACK.md): PWM stops immediately, while the selected ENABLE is briefly preserved for foreground reads. Keep both motors disconnected; restore PCB_BENCH_CAPTURE_DRIVER_FAULT=0 before motor connection. Driver protections remain enabled.
 
 Read [the bring-up procedure](docs/BRINGUP.md) before first flash. It includes the schematic pin map, STLINK-V3MINI wiring, expected LED/ADC behavior, driver settings and remaining hardware checks.
 
@@ -33,7 +33,7 @@ python Tools/build.py --config Release
 python Tools/test.py --cc gcc
 ```
 
-Host tests also support `--zig path/to/zig.exe`. CLI-only overrides use `--stage io|pwm|driver|motor` and optional `--axis 0|1`; they do not change the CubeIDE header selection. With both overrides, outputs are under `build/STAGE/AXISn/Debug` or `Release`; with only stage, the existing `build/STAGE/Debug` or `Release` paths apply. Default CLI outputs are under `build/Debug` and `build/Release`. CubeIDE outputs are under `Debug` / `Release`.
+Host tests also support `--zig path/to/zig.exe`. The optional Windows BSP audit uses `python Tools/test_bsp.py --zig path/to/zig.exe --capture 0` and `--capture 1` to check both shutdown policies. CLI-only overrides use `--stage io|pwm|driver|motor` and optional `--axis 0|1`; they do not change the CubeIDE header selection. With both overrides, outputs are under `build/STAGE/AXISn/Debug` or `Release`; with only stage, the existing `build/STAGE/Debug` or `Release` paths apply. Default CLI outputs are under `build/Debug` and `build/Release`. The capture option is default-off and restricted to MOTOR_RUN; select capture=0 for normal motor operation and all other stages. CubeIDE outputs are under `Debug` / `Release`.
 
 Watch `g_app_status` in CubeIDE Live Expressions for raw VR1/VR2, command, buttons, ADC age, stage, **test_axis (0=J3, 1=J4)** and motor-model state. DRIVER_CHECK never produces PWM even if the model advances to ALIGN/RUN. `g_driver_status` is the last SPI verification snapshot, not a measurement of live ENABLE. Halt/step only with motors disconnected and drivers inhibited; a breakpoint can leave hardware PWM running. The agent has not flashed hardware; J3 rotation and successful driver checks are user-reported. J4 switching with the new TIM8 code remains pending.
 

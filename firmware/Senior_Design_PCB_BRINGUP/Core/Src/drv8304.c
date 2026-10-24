@@ -8,6 +8,17 @@
  * SiS890ADN Qg(max)=29 nC at 10 V: Q/I ~1.93 us at 15 mA, below TDRIVE.
  * Confirm actual gate waveforms; this arithmetic does not validate layout. */
 static const uint16_t profile[7] = {0, 0, 0x080, 0x300, 0x300, 0x300, 0x280};
+bool drv8304_read_faults(drv8304_transfer_t transfer, void *ctx,
+                        drv8304_fault_snapshot_t *s) {
+    memset(s,0,sizeof(*s));
+    for (unsigned a=0;a<2;++a) {
+        uint16_t rx=0;
+        if (!transfer(ctx,(uint16_t)(0x8000u|(a<<11)),&rx)) return false;
+        s->reg[a]=rx&0x07ffu;
+        s->read_mask|=(uint8_t)(1u<<a);
+    }
+    return true;
+}
 static bool read_reg(drv8304_transfer_t transfer, void *ctx, unsigned address,
                      drv8304_snapshot_t *s) {
     uint16_t rx;

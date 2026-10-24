@@ -17,4 +17,17 @@ typedef struct {
 /* First board-layer driver trip, captured before inhibit and published after it.
  * Frozen until MCU reset. A high sampled pin can follow a real brief low pulse. */
 extern volatile driver_trip_snapshot_t g_driver_trip;
+typedef enum {
+    DRIVER_FAULT_DISABLED=0, DRIVER_FAULT_WAITING,
+    DRIVER_FAULT_PENDING, DRIVER_FAULT_COMPLETE, DRIVER_FAULT_SPI_ERROR,
+    DRIVER_FAULT_TIMED_OUT, DRIVER_FAULT_STOPPED, DRIVER_FAULT_ABORTED
+} driver_fault_capture_state_t;
+typedef struct {
+    driver_fault_capture_state_t state;
+    uint16_t reg[2];
+    uint8_t read_mask;
+    uint32_t elapsed_us;
+} driver_fault_capture_t;
+extern volatile driver_fault_capture_t g_driver_fault;
+#define DRIVER_FAULT_CAPTURE_US 5000u
 #endif

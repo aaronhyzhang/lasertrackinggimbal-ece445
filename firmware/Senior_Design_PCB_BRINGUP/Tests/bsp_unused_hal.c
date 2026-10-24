@@ -20,8 +20,6 @@ uint32_t HAL_RCC_GetHCLKFreq(void) { unexpected_call(); }
 uint32_t HAL_RCC_GetSysClockFreq(void) { unexpected_call(); }
 HAL_StatusTypeDef HAL_RCC_OscConfig(RCC_OscInitTypeDef *RCC_OscInitStruct) { unexpected_call(); }
 HAL_StatusTypeDef HAL_SPI_Init(SPI_HandleTypeDef *hspi) { unexpected_call(); }
-HAL_StatusTypeDef HAL_SPI_TransmitReceive(SPI_HandleTypeDef *hspi, const uint8_t *pTxData, uint8_t *pRxData,
-                                          uint16_t Size, uint32_t Timeout) { unexpected_call(); }
 void HAL_SYSCFG_AnalogSwitchConfig(uint32_t SYSCFG_AnalogSwitch , uint32_t SYSCFG_SwitchState ) { unexpected_call(); }
 HAL_StatusTypeDef HAL_TIMEx_ConfigBreakDeadTime(TIM_HandleTypeDef *htim,
                                                 const TIM_BreakDeadTimeConfigTypeDef *sBreakDeadTimeConfig) { unexpected_call(); }
@@ -32,7 +30,3 @@ HAL_StatusTypeDef HAL_TIM_Base_Start_IT(TIM_HandleTypeDef *htim) { unexpected_ca
 HAL_StatusTypeDef HAL_TIM_PWM_ConfigChannel(TIM_HandleTypeDef *htim, const TIM_OC_InitTypeDef *sConfig,
                                             uint32_t Channel) { unexpected_call(); }
 HAL_StatusTypeDef HAL_TIM_PWM_Init(TIM_HandleTypeDef *htim) { unexpected_call(); }
-bool drv8304_configure(drv8304_transfer_t transfer, void *context,
-                       drv8304_snapshot_t *snapshot) { unexpected_call(); }
-bool drv8304_verify(drv8304_transfer_t transfer, void *context,
-                    drv8304_snapshot_t *snapshot) { unexpected_call(); }

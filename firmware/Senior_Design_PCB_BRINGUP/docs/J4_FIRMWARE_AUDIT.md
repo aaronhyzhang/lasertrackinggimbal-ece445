@@ -1,5 +1,7 @@
 # J4 GPIO, PWM and fault-path audit
 
+**Follow-up:** the active bench image now adds [bounded post-trip SPI readback](FAULT_READBACK.md). The passive trip record remains, but capture=1 intentionally retains the already-awake selected ENABLE briefly with PWM off. The earlier immediate ENABLE-low policy below describes capture=0.
+
 2026-10-23. The user requested a firmware recheck because J4 passed the earlier driver-only test after resoldering, but MOTOR_RUN now trips with no motor connected. User reports all six MCU PWM outputs look okay in PWM_CHECK. The first saved MOTOR_RUN snapshot had verified=true, registers `[0,0,0x080,0x300,0x300,0x300,0x280]`, motor fault=FAULT_DRIVER, a board-layer driver-fault latch and approximately 22 ms from wake to the app's fault timestamp.
 
 **Result: no pin-map or deterministic GPIO/EXTI configuration defect was found. No physical cause has been established, and a firmware/timing problem remains possible.** The driver-only pass did not exercise switching: its physical PWM inputs stayed low. A valid SPI read before switching does not diagnose a later fault.

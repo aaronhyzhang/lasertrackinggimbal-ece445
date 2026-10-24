@@ -65,5 +65,17 @@ int main(void) {
     d.fail_at=d.calls+2;
     assert(!drv8304_verify(transfer,&d,&s) && !s.verified);
     assert(s.failed_address==1 && s.read_mask==1);
+    /* Fault-time reads retain raw bits without configuration writes/clears. */
+    drv8304_fault_snapshot_t fault;
+    memset(&d,0,sizeof(d));d.reg[0]=0x500;d.reg[1]=0x010;
+    assert(drv8304_read_faults(transfer,&d,&fault));
+    assert(d.calls==2 && fault.read_mask==3 && fault.reg[0]==0x500 && fault.reg[1]==0x010);
+    assert(d.reg[0]==0x500 && d.reg[1]==0x010 && d.reg[2]==0);
+    for (unsigned failure=1;failure<=2;++failure) {
+        d.calls=0;d.fail_at=failure;
+        assert(!drv8304_read_faults(transfer,&d,&fault));
+        assert(fault.read_mask==(failure==1?0:1));
+        assert(fault.reg[1]==0); /* Unread entries are explicitly marked invalid. */
+    }
     printf("PASS: SPI/config/fault capture, failures and CPUV-only bench acceptance=%d; all other fault bits rejected.\n",PCB_BENCH_ALLOW_CPUV_HISTORY);
 }

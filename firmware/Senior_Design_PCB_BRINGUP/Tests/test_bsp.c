@@ -22,9 +22,35 @@ static uint32_t irq_mask;
 #define SCB_EnableICache() ((void)0)
 #undef __HAL_GPIO_EXTI_CLEAR_IT
 #define __HAL_GPIO_EXTI_CLEAR_IT(bits) (EXTI->PR1 &= ~(uint32_t)(bits))
+static uint32_t counter_step;
+static TIM_TypeDef *test_tim2(void) {
+    TIM_TypeDef *timer=(TIM_TypeDef *)TIM2_BASE;
+    timer->CNT+=counter_step;
+    return timer;
+}
+#undef TIM2
+#define TIM2 test_tim2()
 #include "board.c"
 __declspec(dllimport) void *VirtualAlloc(void *,size_t,unsigned long,unsigned long);
 static uint32_t test_ms;
+static unsigned spi_calls,spi_fail_on,spi_interrupt;
+HAL_StatusTypeDef HAL_SPI_TransmitReceive(SPI_HandleTypeDef *h,const uint8_t *tx,
+                                         uint8_t *rx,uint16_t count,uint32_t timeout) {
+    (void)h;(void)timeout;
+    uint16_t frame;memcpy(&frame,tx,sizeof(frame));
+    assert(count==1 && (frame==0x8000u || frame==0x8800u));
+    assert(irq_mask==0 && !bridge_authorized && (TIM8->BDTR&TIM_BDTR_MOE)==0);
+    assert(g_driver_fault.state==DRIVER_FAULT_PENDING);
+    assert(GPIOA->BSRR==(uint32_t)PCB_CS1<<16 && GPIOE->BSRR==PCB_CS0);
+    ++spi_calls;
+    if (spi_interrupt==1) { GPIOD->IDR=0;app_stop(); }
+    if (spi_interrupt==2) TIM2->CNT=fault_capture_started_us+DRIVER_FAULT_CAPTURE_US;
+    if (spi_interrupt==3) board_trip(FAULT_ADC);
+    if (spi_calls==spi_fail_on) return HAL_ERROR;
+    uint16_t value=(frame==0x8000u?0x500u:0x010u)|0xf800u;
+    memcpy(rx,&value,sizeof(value));
+    return HAL_OK;
+}
 uint32_t HAL_GetTick(void) { return test_ms; }
 void HAL_NVIC_SetPriority(IRQn_Type irq,uint32_t priority,uint32_t sub) {
     (void)irq;(void)priority;(void)sub;
@@ -43,6 +69,10 @@ static unsigned mode(GPIO_TypeDef *gpio,unsigned pin) { return (gpio->MODER>>(pi
 static unsigned af(GPIO_TypeDef *gpio,unsigned pin) { return (gpio->AFR[pin/8]>>((pin%8)*4))&15u; }
 static void live(void) {
     driver_trip_snapshot_t empty={0};g_driver_trip=empty;
+    driver_fault_capture_t capture={.state=PCB_BENCH_CAPTURE_DRIVER_FAULT?DRIVER_FAULT_WAITING:DRIVER_FAULT_DISABLED};
+    g_driver_fault=capture;counter_step=1;TIM2->CNT=1000;
+    spi_calls=spi_fail_on=spi_interrupt=0;
+    GPIOG->ODR=PCB_SELECTED_ENABLE;
     latched_fault=FAULT_NONE;stop_latched=false;bridge_authorized=false;
     wake_requested=true;driver_ready=true;wake_ms=0;test_ms=21;
     GPIOD->IDR=PCB_STOP;GPIOE->IDR=PCB_NFAULT;EXTI->PR1=0;
@@ -84,7 +114,19 @@ int main(void) {
     assert(g_driver_trip.source==DRIVER_TRIP_NFAULT_EDGE);
     assert(g_driver_trip.wake_age_ms==21 && !g_driver_trip.nfault_high);
     assert(g_driver_trip.driver_ready && g_driver_trip.pwm_authorized);
-    assert((TIM8->BDTR&TIM_BDTR_MOE)==0 && GPIOG->BSRR==(uint32_t)PCB_ENABLES<<16);
+    assert((TIM8->BDTR&TIM_BDTR_MOE)==0);
+#if PCB_BENCH_CAPTURE_DRIVER_FAULT
+    assert(g_driver_fault.state==DRIVER_FAULT_PENDING && spi_calls==0);
+    assert(GPIOG->BSRR==(uint32_t)(PCB_ENABLES & ~PCB_SELECTED_ENABLE)<<16);
+    board_service();
+    assert(g_driver_fault.state==DRIVER_FAULT_COMPLETE && g_driver_fault.read_mask==3);
+    assert(g_driver_fault.reg[0]==0x500 && g_driver_fault.reg[1]==0x010 && spi_calls==2);
+    assert(g_driver_fault.elapsed_us<DRIVER_FAULT_CAPTURE_US);
+    board_service();assert(spi_calls==2); /* Frozen, no retry. */
+#else
+    assert(g_driver_fault.state==DRIVER_FAULT_DISABLED && spi_calls==0);
+#endif
+    assert(GPIOG->BSRR==(uint32_t)PCB_ENABLES<<16);
     GPIOE->IDR=PCB_NFAULT;board_apply(&out); /* Recovery cannot restart a latched fault. */
     assert((TIM8->BDTR&TIM_BDTR_MOE)==0 && !bridge_authorized);
     assert(g_driver_trip.source==DRIVER_TRIP_NFAULT_EDGE && !g_driver_trip.nfault_high);
@@ -105,5 +147,35 @@ int main(void) {
     live();board_apply(&out);EXTI->PR1=PCB_STOP|PCB_NFAULT;EXTI9_5_IRQHandler();
     assert(stop_latched && latched_fault==FAULT_NONE && g_driver_trip.source==DRIVER_TRIP_NONE);
     assert((TIM8->BDTR&TIM_BDTR_MOE)==0);
-    puts("PASS: actual J4 BSP/vendor GPIO pin modes, AF3, PE6 EXTI route, wake-edge suppression, first PWM, live-low/edge fault inhibition, first-trip preservation, released-pulse latch, STOP priority.");
+#if PCB_BENCH_CAPTURE_DRIVER_FAULT
+    for (unsigned failure=1;failure<=2;++failure) {
+        live();board_apply(&out);EXTI->PR1=PCB_NFAULT;EXTI9_5_IRQHandler();
+        spi_fail_on=failure;board_service();
+        assert(g_driver_fault.state==DRIVER_FAULT_SPI_ERROR);
+        assert(g_driver_fault.read_mask==(failure==1?0:1));
+        assert(GPIOG->BSRR==(uint32_t)PCB_ENABLES<<16);
+    }
+    for (unsigned interrupt=1;interrupt<=3;++interrupt) {
+        live();board_apply(&out);EXTI->PR1=PCB_NFAULT;EXTI9_5_IRQHandler();
+        spi_interrupt=interrupt;board_service();
+        driver_fault_capture_state_t expected=interrupt==1?DRIVER_FAULT_STOPPED:
+            interrupt==2?DRIVER_FAULT_TIMED_OUT:DRIVER_FAULT_ABORTED;
+        assert(g_driver_fault.state==expected && g_driver_fault.read_mask==0);
+        assert((TIM8->BDTR&TIM_BDTR_MOE)==0 && GPIOG->BSRR==(uint32_t)PCB_ENABLES<<16);
+    }
+    live();board_apply(&out);EXTI->PR1=PCB_NFAULT;EXTI9_5_IRQHandler();
+    TIM2->CNT=fault_capture_started_us+DRIVER_FAULT_CAPTURE_US;
+    motor_output_t off={0};board_apply(&off); /* Control tick, no foreground service. */
+    assert(g_driver_fault.state==DRIVER_FAULT_TIMED_OUT && spi_calls==0);
+    assert(GPIOG->BSRR==(uint32_t)PCB_ENABLES<<16);
+    live();TIM2->CNT=UINT32_MAX-16u;board_apply(&out);
+    EXTI->PR1=PCB_NFAULT;EXTI9_5_IRQHandler();board_service();
+    assert(g_driver_fault.state==DRIVER_FAULT_COMPLETE && g_driver_fault.read_mask==3);
+    assert(g_driver_fault.elapsed_us<DRIVER_FAULT_CAPTURE_US); /* Timer wrap. */
+    live();board_apply(&out);EXTI->PR1=PCB_NFAULT;EXTI9_5_IRQHandler();
+    GPIOD->IDR=0;EXTI->PR1=PCB_STOP;EXTI9_5_IRQHandler();
+    assert(g_driver_fault.state==DRIVER_FAULT_STOPPED && spi_calls==0);
+    assert(GPIOG->BSRR==(uint32_t)PCB_ENABLES<<16);
+#endif
+    printf("PASS: capture=%d; actual BSP/GPIO/EXTI, immediate PWM off, foreground-only status, SPI failures, STOP/deadline/abort, frozen provenance.\n",PCB_BENCH_CAPTURE_DRIVER_FAULT);
 }

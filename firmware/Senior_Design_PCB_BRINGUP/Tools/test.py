@@ -20,7 +20,8 @@ def main():
     for name,stage,bench,axis in cases:
         binary=out/(f'{name}_{stage}_{bench}_{axis}'+('.exe' if sys.platform=='win32' else ''))
         flags=['-std=c11','-Wall','-Wextra','-Werror',f'-DPCB_STAGE={stage}',
-               f'-DPCB_BENCH_ALLOW_CPUV_HISTORY={bench}',f'-DPCB_TEST_AXIS={axis}']
+               f'-DPCB_BENCH_ALLOW_CPUV_HISTORY={bench}',f'-DPCB_TEST_AXIS={axis}',
+               '-DPCB_BENCH_CAPTURE_DRIVER_FAULT=0']
         sources=[root/f'Tests/{name}.c']
         if name=='test_app':
             flags+=['-I',str(root/'Tests/fakes')]
@@ -36,6 +37,13 @@ def main():
             input='#include "pcb_config.h"\n',text=True,capture_output=True)
         expected='Invalid PCB_STAGE' if stage not in range(4) else 'Invalid PCB_TEST_AXIS'
         assert result.returncode!=0 and expected in result.stderr,result.stderr
-    print('PASS: compile guards reject invalid stage and axis selections; both axes support all four stages.')
+    for stage,capture in [(0,1),(1,1),(2,1),(3,2)]:
+        result=subprocess.run([*cc,'-std=c11','-fsyntax-only','-x','c',
+            '-I',str(root/'Core/Inc'),f'-DPCB_STAGE={stage}',
+            f'-DPCB_BENCH_CAPTURE_DRIVER_FAULT={capture}','-'],
+            input='#include "pcb_config.h"\n',text=True,capture_output=True)
+        expected='Fault capture requires' if capture==1 else 'Invalid PCB_BENCH_CAPTURE_DRIVER_FAULT'
+        assert result.returncode!=0 and expected in result.stderr,result.stderr
+    print('PASS: 8 compile guards reject invalid stage/axis/capture settings; both axes support all stages with capture off.')
 
 if __name__=='__main__': main()
