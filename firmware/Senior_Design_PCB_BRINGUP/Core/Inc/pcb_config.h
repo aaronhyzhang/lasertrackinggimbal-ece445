@@ -21,6 +21,14 @@
 #if PCB_PWM_SYNC_START != 0 && PCB_PWM_SYNC_START != 1
 #error Invalid PCB_PWM_SYNC_START
 #endif
+/* Gate-drive comparison: high-side turn-on current only. Sink stays 30 mA.
+ * 15 = previous baseline, 45 = motor-disconnected diagnostic comparison. */
+#ifndef PCB_HS_SOURCE_MA
+#define PCB_HS_SOURCE_MA 15
+#endif
+#if PCB_HS_SOURCE_MA != 15 && PCB_HS_SOURCE_MA != 45
+#error Invalid PCB_HS_SOURCE_MA
+#endif
 /* Temporary motor-disconnected bench option. Accept only recorded CPUV;
  * driver CPUV protection and the physical nFAULT interlock remain enabled. */
 #ifndef PCB_BENCH_ALLOW_CPUV_HISTORY

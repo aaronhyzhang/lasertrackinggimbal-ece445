@@ -1,0 +1,19 @@
+{
+  "date": "2026-10-24",
+  "host_executables": 22,
+  "compile_guards": 10,
+  "active_builds": [
+    "J4 Debug",
+    "J4 Release"
+  ],
+  "source_current_mA": 45,
+  "high_side_register": 800,
+  "baseline_register": 768,
+  "sink_current_mA": 30,
+  "protection_changed": false,
+  "spi_mode_or_clock_changed": false,
+  "hardware_flashed": false,
+  "fix_proven": false,
+  "active_config_sha256": "9d5f424b9bc678102d4a128f70acee9e23d99caefe0a4f858d8466de898c8b82",
+  "active_driver_sha256": "9b2eefa9f9f12ef9b636c28c24073871ea9aa5e9f5cbdb912e497dacd348e503"
+}

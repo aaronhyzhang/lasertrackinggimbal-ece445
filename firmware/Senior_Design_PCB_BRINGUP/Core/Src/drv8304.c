@@ -2,12 +2,16 @@
 #include "drv8304.h"
 #include "pcb_config.h"
 #include <string.h>
-/* 6 PWM, OTW reporting, protections enabled; 15 mA source / 30 mA sink;
+/* 6 PWM, OTW reporting, protections enabled; HS source selectable 15/45 mA;
+ * HS sink and both LS currents unchanged: 30 mA sink / 15 mA LS source.
  * 4 us TDRIVE; 400 ns driver dead time; latched all-bridge OCP, VDS 0.15 V;
  * gain 20, VREF/2, sense OCP enabled at 0.25 V (NOT a 4 A shunt limit).
- * SiS890ADN Qg(max)=29 nC at 10 V: Q/I ~1.93 us at 15 mA, below TDRIVE.
+ * SiS890ADN Qg(max)=29 nC at 10 V: Q/I ~1.93 us at 15 mA, ~0.64 us at 45.
  * Confirm actual gate waveforms; this arithmetic does not validate layout. */
-static const uint16_t profile[7] = {0, 0, 0x080, 0x300, 0x300, 0x300, 0x280};
+/* TI Table 16: IDRIVEP_HS bits 6:4 = 000 (15 mA), 010 (45 mA).
+ * LOCK remains 011, sink bits remain 000; every protection field unchanged. */
+#define HS_PROFILE (PCB_HS_SOURCE_MA==45 ? 0x320u : 0x300u)
+static const uint16_t profile[7] = {0, 0, 0x080, HS_PROFILE, 0x300, 0x300, 0x280};
 bool drv8304_read_faults(drv8304_transfer_t transfer, void *ctx,
                         drv8304_fault_snapshot_t *s) {
     memset(s,0,sizeof(*s));

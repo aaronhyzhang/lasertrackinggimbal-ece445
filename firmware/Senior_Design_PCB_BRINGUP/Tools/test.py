@@ -17,11 +17,13 @@ def main():
         cases += [('test_motor',3,0,axis),('test_driver',3,0,axis),('test_driver',3,1,axis)]
         cases += [('test_app',s,0,axis) for s in range(4)]
         cases += [('test_app',3,1,axis),('test_axis',3,0,axis)]
-    for name,stage,bench,axis in cases:
-        binary=out/(f'{name}_{stage}_{bench}_{axis}'+('.exe' if sys.platform=='win32' else ''))
+    cases=[(*case,15) for case in cases]
+    cases += [('test_driver',3,bench,axis,45) for axis in range(2) for bench in range(2)]
+    for name,stage,bench,axis,source_ma in cases:
+        binary=out/(f'{name}_{stage}_{bench}_{axis}_{source_ma}'+('.exe' if sys.platform=='win32' else ''))
         flags=['-std=c11','-Wall','-Wextra','-Werror',f'-DPCB_STAGE={stage}',
                f'-DPCB_BENCH_ALLOW_CPUV_HISTORY={bench}',f'-DPCB_TEST_AXIS={axis}',
-               '-DPCB_BENCH_CAPTURE_DRIVER_FAULT=0']
+               '-DPCB_BENCH_CAPTURE_DRIVER_FAULT=0',f'-DPCB_HS_SOURCE_MA={source_ma}']
         sources=[root/f'Tests/{name}.c']
         if name=='test_app':
             flags+=['-I',str(root/'Tests/fakes')]
@@ -44,6 +46,11 @@ def main():
             input='#include "pcb_config.h"\n',text=True,capture_output=True)
         expected='Fault capture requires' if capture==1 else 'Invalid PCB_BENCH_CAPTURE_DRIVER_FAULT'
         assert result.returncode!=0 and expected in result.stderr,result.stderr
-    print('PASS: 8 compile guards reject invalid stage/axis/capture settings; both axes support all stages with capture off.')
+    for source_ma in [0,30]:
+        result=subprocess.run([*cc,'-std=c11','-fsyntax-only','-x','c',
+            '-I',str(root/'Core/Inc'),f'-DPCB_HS_SOURCE_MA={source_ma}','-'],
+            input='#include "pcb_config.h"\n',text=True,capture_output=True)
+        assert result.returncode!=0 and 'Invalid PCB_HS_SOURCE_MA' in result.stderr,result.stderr
+    print('PASS: 10 compile guards reject invalid stage/axis/capture/source settings; both axes support all stages with capture off.')
 
 if __name__=='__main__': main()
