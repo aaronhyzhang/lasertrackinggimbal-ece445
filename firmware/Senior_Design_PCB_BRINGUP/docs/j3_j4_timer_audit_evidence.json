@@ -1,0 +1,78 @@
+{
+  "date": "2026-10-24",
+  "kind": "private-RAM actual board/vendor timer init, not hardware",
+  "results": [
+    {
+      "axis": 0,
+      "stage": 1,
+      "CR1": 161,
+      "CCMR1": 26728,
+      "CCMR2": 104,
+      "CCER": 1365,
+      "init_BDTR": 11570,
+      "DIER": 0,
+      "AF1": 0,
+      "AF2": 1
+    },
+    {
+      "axis": 0,
+      "stage": 3,
+      "CR1": 161,
+      "CCMR1": 26728,
+      "CCMR2": 104,
+      "CCER": 1365,
+      "init_BDTR": 16788786,
+      "DIER": 128,
+      "AF1": 0,
+      "AF2": 1
+    },
+    {
+      "axis": 1,
+      "stage": 1,
+      "CR1": 161,
+      "CCMR1": 26728,
+      "CCMR2": 104,
+      "CCER": 1365,
+      "init_BDTR": 11570,
+      "DIER": 0,
+      "AF1": 0,
+      "AF2": 1
+    },
+    {
+      "axis": 1,
+      "stage": 3,
+      "CR1": 161,
+      "CCMR1": 26728,
+      "CCMR2": 104,
+      "CCER": 1365,
+      "init_BDTR": 11570,
+      "DIER": 0,
+      "AF1": 0,
+      "AF2": 1
+    }
+  ],
+  "audited_active_core_sha256": {
+    "Core\\Inc\\arm_button.h": "d9198177b1e1e0eef86cc75f945d423f02dec99f729b25adf686157a0a21ff09",
+    "Core\\Inc\\board.h": "03c045b4a416705cdae67e4a533a0c34a4be6099988a1eac744a397e95baec76",
+    "Core\\Inc\\demo_app.h": "2518dd824be611a2a4b225f747d205cfddc1ac7c843e330b551de4548a8c4e37",
+    "Core\\Inc\\demo_config.h": "8afaa7b10a5afa33145ce3939db65170f50f1e09f6b6a20c958c96396c93bf6f",
+    "Core\\Inc\\driver_trip.h": "fd4c994740681c5d47d52eda1fb0e124c28715e0a98ee47e4694b12db58d3c73",
+    "Core\\Inc\\drv8304.h": "885445701b7a3ec1ccc841a11662d227d3d1708fdf20c52869f0306857d5ee5a",
+    "Core\\Inc\\open_loop.h": "1cbe7af9e72f8206f8f1f779bb90db750f887b2a21de8b6f7d045d212361552d",
+    "Core\\Inc\\pcb_config.h": "63a27fca750ea3771b9ef8341d49a9cc945aa6edd48dc2a292112343ade2914b",
+    "Core\\Inc\\pcb_pins.h": "778216162f8df0beded387697100a927ab5af5b9d3af58c0666b99d203f4e493",
+    "Core\\Inc\\pcb_pwm.h": "1a8fd849780b8bb9e3f75b0d26b95e1c7779e40a8197782c256cc288a8056312",
+    "Core\\Inc\\stm32h7xx_hal_conf.h": "482d83c4d3edaaaedb1d3edb1272eb66161a335df8a6153342a118c4fb3d5bae",
+    "Core\\Src\\board.c": "eea1c10838818271384823ca765a445381f2ad754b4a8660ebe79fa77362e056",
+    "Core\\Src\\demo_app.c": "3c436095d5e03adc700e761fd8e536896f9b595066c56a3c5bf13178cf0fc76c",
+    "Core\\Src\\drv8304.c": "4fbbc29dfe73f1a56c833c9ba0de9eac65944f013d85f65240dc34ce0f9b970a",
+    "Core\\Src\\main.c": "40d8f1fb41162620f7ceecd18b057b73356f8528a0b0858dc85a9ebfe015ccb1",
+    "Core\\Src\\modulation.c": "3762deb0150659e7ec53870a3d432b90295e465d51b3e384266920c349d8173a",
+    "Core\\Src\\open_loop.c": "9b9c5d02e6352fdbb11c4542d4b96b1455a71ae0e33da3a7d8ab02970cf8232f",
+    "Core\\Src\\runtime_support.c": "87d203592cf33d4f655a6505ceae8d73d6f3bc535f6c7869d940b19b12e49c19",
+    "Core\\Src\\stm32h7xx_hal_msp.c": "a08168822207db031f13be63f98fe4e95e228511a82e12ef58e9f41046f8bf4d",
+    "Core\\Src\\stm32h7xx_it.c": "bc9999458e308c2ce39017e87f0925d72b1735690c6cf991d171b68096e97478"
+  },
+  "firmware_behavior_changed": false,
+  "active_config": "J4 / MOTOR_RUN / CPUV history=0 / capture=1"
+}
