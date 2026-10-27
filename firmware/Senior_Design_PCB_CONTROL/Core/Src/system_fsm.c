@@ -16,7 +16,7 @@ static void enter(system_fsm_t *f,system_state_t next,uint32_t now_ms) {
     f->previous=f->state; f->state=next; f->entered_ms=now_ms; ++f->transitions;
 }
 static bool calibrating(servo_state_t s) {
-    return s==SERVO_WAKE_CAL || s==SERVO_ALIGN || s==SERVO_SWEEP || s==SERVO_RETURN;
+    return s==SERVO_WAKE_CAL || s==SERVO_ALIGN || s==SERVO_SWEEP || s==SERVO_RETURN || s==SERVO_HOMING;
 }
 /* Priority: latched fault, new fault, init, calibration, arming, running, idle. */
 system_state_t system_fsm_step(system_fsm_t *f,const system_input_t *in,system_output_t *out) {

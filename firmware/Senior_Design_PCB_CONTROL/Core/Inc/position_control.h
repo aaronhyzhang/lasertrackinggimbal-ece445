@@ -2,13 +2,15 @@
 #define POSITION_CONTROL_H
 #include <stdbool.h>
 #include <stdint.h>
+#define POSITION_POLE_PAIRS 11u /* FIT1036 */
+/* SERVO_HOMING is appended so existing STATUS state numbers are unchanged. */
 typedef enum { SERVO_OFF,SERVO_WAKE_CAL,SERVO_ALIGN,SERVO_SWEEP,
-    SERVO_RETURN,SERVO_READY,SERVO_WAKE_RUN,SERVO_RUNNING,SERVO_FAULT } servo_state_t;
+    SERVO_RETURN,SERVO_READY,SERVO_WAKE_RUN,SERVO_RUNNING,SERVO_FAULT,SERVO_HOMING } servo_state_t;
 typedef enum { SERVO_OK,SERVO_DRIVER,SERVO_FEEDBACK,SERVO_ZERO_TIMEOUT,
     SERVO_CALIBRATION,SERVO_CURRENT,SERVO_CURRENT_SUM,SERVO_TRAVEL,
     SERVO_FOLLOWING,SERVO_COMMAND_TIMEOUT,SERVO_SUPPLY,SERVO_TEMPERATURE,
     SERVO_TIMING,SERVO_FOREGROUND,SERVO_INTERNAL } servo_fault_t;
-typedef enum { SERVO_NO_ACTION,SERVO_STOP,SERVO_CALIBRATE,SERVO_SET_ZERO,SERVO_ARM } servo_action_t;
+typedef enum { SERVO_NO_ACTION,SERVO_STOP,SERVO_CALIBRATE,SERVO_SET_ZERO,SERVO_ARM,SERVO_HOME } servo_action_t;
 typedef enum { ENCODER_ACCEPTED,ENCODER_TRANSPORT,ENCODER_STALE,ENCODER_MISSING_MAGNET,
     ENCODER_WEAK_FIELD,ENCODER_SAMPLE_GAP,ENCODER_JUMP } encoder_reject_t;
 typedef struct {
@@ -60,6 +62,8 @@ typedef struct {
     bool trip_captured;
     servo_state_t trip_state;
     control_input_t trip_input; /* First-fault evidence, never replaced by recovery. */
+    bool homing;                /* WAKE_RUN leads to HOMING instead of RUNNING. */
+    uint32_t home_stall_ms;
 } position_control_t;
 void position_init(position_control_t *s);
 void position_init_axis(position_control_t *s,unsigned axis);
@@ -73,4 +77,7 @@ bool position_config_valid(const position_config_t *config);
 float position_voltage_limit(const position_control_t *s,float bus_v);
 float position_duty_span(void);
 float position_effort_sign(const position_control_t *s);
+float position_coordinate_sign(const position_control_t *s);
+/* Homing drives toward a configured hard stop (motor_profiles.h); voltage mode only. */
+bool position_home_supported(const position_control_t *s);
 #endif

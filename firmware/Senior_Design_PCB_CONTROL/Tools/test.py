@@ -29,4 +29,17 @@ for enabled,current_pi in ((0,0),(1,0),(1,1)):
         str(root/'Tests/test_position.c'),str(root/'Core/Src/position_control.c'),
         str(root/'Core/Src/demo_protocol.c'),'-lm','-o',str(exe)],check=True)
     subprocess.run([str(exe)],check=True)
+for name,defines,sources in (
+        ('system_fsm',['-DCONTROL_DUAL_AXIS=1'],['Tests/test_system_fsm.c','Core/Src/system_fsm.c']),
+        ('target_protocol',['-DCONTROL_DUAL_AXIS=1'],['Tests/test_target_protocol.c','Core/Src/demo_protocol.c']),
+        ('cal_store',['-DCONTROL_DUAL_AXIS=1','-DCONTROL_MOTION_ENABLED=1'],
+         ['Tests/test_cal_store.c','Core/Src/cal_store.c','Core/Src/position_control.c']),
+        ('cal_store_tilt_zero',['-DCONTROL_DUAL_AXIS=1','-DCONTROL_MOTION_ENABLED=1','-DCAL_RESTORE_ZERO_TILT=1'],
+         ['Tests/test_cal_store.c','Core/Src/cal_store.c','Core/Src/position_control.c']),
+        ('homing',['-DCONTROL_DUAL_AXIS=0','-DPCB_TEST_AXIS=1','-DCONTROL_MOTION_ENABLED=1'],
+         ['Tests/test_homing.c','Core/Src/position_control.c'])):
+    exe=out/f'{name}.exe'
+    subprocess.run([str(a.zig),'cc','-std=c11',*defines,'-O1','-UNDEBUG','-Wall','-Wextra','-Werror',
+        '-I',str(root/'Core/Inc'),*[str(root/s) for s in sources],'-lm','-o',str(exe)],check=True)
+    subprocess.run([str(exe)],check=True)
 subprocess.run([sys.executable,'-m','unittest','discover','-s',str(root/'Tests'),'-p','test_client*.py','-v'],check=True)

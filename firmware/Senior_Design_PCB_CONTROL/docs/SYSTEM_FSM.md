@@ -30,7 +30,7 @@ on the PCB.**
 | State | Condition | Outputs |
 |---|---|---|
 | INIT | Until `init_done` | `stop` |
-| CALIBRATING | Any axis in WAKE_CAL, ALIGN, SWEEP or RETURN | none |
+| CALIBRATING | Any axis in WAKE_CAL, ALIGN, SWEEP, RETURN or HOMING (see CALIBRATION_STORE.md) | none |
 | IDLE | No axis calibrating, waking or running | `can_arm` when both axes READY, calibrated and zeroed |
 | ARMING | Any axis WAKE_RUN (takes priority over RUNNING) | none |
 | TRACKING | Axis RUNNING and vision report ≤ `target_stale_ms` old with ball detected | none |

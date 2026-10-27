@@ -151,6 +151,7 @@ static void received(void *arg,struct udp_pcb *pcb,struct pbuf *p,const ip_addr_
     if (!same) {
         bool inhibited=s.servo.state==SERVO_OFF || s.servo.state==SERVO_READY;
         if ((command.operation!=NET_POSITION && command.operation!=NET_CALIBRATE && command.operation!=NET_ZERO &&
+             command.operation!=NET_HOME && command.operation!=NET_FORGET &&
              command.operation!=NET_SET && command.operation!=NET_TEST) || !inhibited ||
             (owner_valid && now-owner_ms<=CONTROL_COMMAND_MAX_AGE_MS)) { reply(ip,port,"ERR owner"); return; }
         owner_ip=*ip; owner_port=port; owner_session=command.session;
@@ -161,6 +162,8 @@ static void received(void *arg,struct udp_pcb *pcb,struct pbuf *p,const ip_addr_
             command.operation==NET_TEST ? app_test_prepare(command.args) :
             command.operation==NET_ZERO ? app_zero(SOURCE_ETHERNET) :
             command.operation==NET_CALIBRATE ? app_calibrate(SOURCE_ETHERNET) :
+            command.operation==NET_HOME ? app_home(SOURCE_ETHERNET) :
+            command.operation==NET_FORGET ? app_forget(SOURCE_ETHERNET) :
             command.operation==NET_POSITION ? app_position(SOURCE_ETHERNET,command.millidegrees) :
             command.operation==NET_TARGET ? app_target(command.args[0]!=0u) :
                                              app_heartbeat(SOURCE_ETHERNET);

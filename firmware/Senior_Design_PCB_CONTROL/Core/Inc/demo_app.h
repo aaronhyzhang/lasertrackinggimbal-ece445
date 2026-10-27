@@ -28,6 +28,9 @@ bool app_heartbeat(command_source_t source);
 bool app_target(bool detected);
 bool app_calibrate(command_source_t source);
 bool app_zero(command_source_t source);
+/* Dual-axis build only: homing request (physical S1 starts it) and calibration erase. */
+bool app_home(command_source_t source);
+bool app_forget(command_source_t source);
 void app_config_text(char *text,size_t length);
 void app_test_text(char *text,size_t length);
 size_t app_trace_read(uint32_t first,void *bytes,size_t length);

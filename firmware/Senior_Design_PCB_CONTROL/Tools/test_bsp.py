@@ -11,7 +11,12 @@ for inc in ('Core/Inc','Core/Src','Drivers/STM32H7xx_HAL_Driver/Inc','Drivers/CM
     flags+=['-I',str(root/inc)]
 cases=[]
 cases.append(('dual_app',['-DCONTROL_DUAL_AXIS=1','-DCONTROL_MOTION_ENABLED=1'],
-    [root/'Tests/test_dual_app.c',root/'Core/Src/position_control.c']))
+    [root/'Tests/test_dual_app.c',root/'Core/Src/position_control.c',root/'Core/Src/system_fsm.c',root/'Core/Src/cal_store.c']))
+cases.append(('dual_calibration',['-DCONTROL_DUAL_AXIS=1','-DCONTROL_MOTION_ENABLED=1'],
+    [root/'Tests/test_dual_calibration.c',root/'Core/Src/position_control.c',root/'Core/Src/system_fsm.c',root/'Core/Src/cal_store.c']))
+# 32-bit: HAL_FLASH_Program takes a uint32_t source address, as on the Cortex-M7.
+cases.append(('cal_flash',['-target','x86-windows-gnu','-DCONTROL_DUAL_AXIS=1','-DCONTROL_MOTION_ENABLED=1'],
+    [root/'Tests/test_cal_flash.c',root/'Core/Src/cal_flash.c',root/'Core/Src/cal_store.c',root/'Core/Src/position_control.c']))
 for current_pi in (0,1):
     cases.append((f'pan_coordinates_{current_pi}',
         ['-DPCB_TEST_AXIS=1','-DCONTROL_MOTION_ENABLED=1',f'-DCONTROL_CURRENT_PI_ENABLED={current_pi}'],

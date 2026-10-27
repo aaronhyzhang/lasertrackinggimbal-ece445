@@ -2,12 +2,15 @@
  * S2, DISABLE, shared nFAULT and either controller fault inhibit BOTH bridges. */
 #include "motor_profiles.h"
 #include "system_fsm.h"
+#include "cal_store.h"
+#include "cal_flash.h"
 #if CONTROL_CURRENT_PI_ENABLED
 #error Dual-axis bring-up supports voltage commutation only
 #endif
 typedef struct {
     position_control_t servo;
     bool valid,calibrate,calibrating,zero;
+    bool home,homing; /* HOME queued for S1 / homing in progress. */
     float target;
     uint32_t command_ms,revision;
 } dual_axis_t;
@@ -21,6 +24,11 @@ static uint32_t dual_foreground_ms,dual_last_tick,dual_last_feed;
 /* Gimbal-level state (docs/SYSTEM_FSM.md): observes both servos, may only stop/inhibit. */
 system_fsm_t g_system;
 static struct { bool seen,detected; uint32_t ms; } dual_target;
+/* Calibration persistence (docs/CALIBRATION_STORE.md). cal_saved mirrors what
+ * flash holds, or will hold once cal_dirty is written by the foreground. */
+static cal_data_t cal_saved;
+static bool cal_dirty,cal_checked[2];
+static uint8_t cal_restored[2]; /* cal_restore_t */
 void app_select_axis(unsigned axis) { if(axis<2) command_axis=axis; }
 static bool dual_active(const position_control_t *s) {
     return s->state==SERVO_WAKE_CAL || s->state==SERVO_WAKE_RUN || position_driving(s);
@@ -41,10 +49,13 @@ void app_init(void) {
     dual_foreground_ms=dual_last_feed=HAL_GetTick();dual_last_tick=board_us();
     command_axis=PCB_TEST_AXIS;dual_stop=false;
     system_fsm_init(&g_system,NULL,HAL_GetTick());memset(&dual_target,0,sizeof(dual_target));
+    cal_scan_t scan;cal_flash_init(&scan);memset(&cal_saved,0,sizeof(cal_saved));
+    if(scan.found)cal_saved=scan.latest;
+    cal_dirty=false;memset(cal_checked,0,sizeof(cal_checked));memset(cal_restored,0,sizeof(cal_restored));
 }
 void app_stop(void) {
     uint32_t m=board_lock();dual_stop=true;board_kill();
-    for(unsigned i=0;i<2;i++) dual[i].valid=dual[i].calibrate=dual[i].calibrating=dual[i].zero=false;
+    for(unsigned i=0;i<2;i++) dual[i].valid=dual[i].calibrate=dual[i].calibrating=dual[i].zero=dual[i].home=dual[i].homing=false;
     board_unlock(m);
 }
 static control_input_t dual_inputs(unsigned i) {
@@ -79,20 +90,48 @@ void app_control_tick(void) {
     if(stop) { board_kill();dual_arm.released=false; }
     for(unsigned i=0;i<2;i++) {
         dual_axis_t *d=&dual[i];control_input_t in=dual_inputs(i);servo_action_t action=SERVO_NO_ACTION;
-        if(stop) { action=SERVO_STOP;d->valid=d->calibrating=d->calibrate=d->zero=false; }
+        if(stop) { action=SERVO_STOP;d->valid=d->calibrating=d->calibrate=d->zero=d->home=d->homing=false; }
         else if(d->calibrate) { d->calibrate=false;d->calibrating=true;action=SERVO_CALIBRATE;board_release_stop(); }
         else if(d->zero) { d->zero=false;action=SERVO_SET_ZERO; }
+        else if(arm && d->home && d->servo.state==SERVO_READY) { d->home=false;d->homing=true;action=SERVO_HOME;board_release_stop(); }
         else if(arm && d->valid && d->servo.state==SERVO_READY) { action=SERVO_ARM;board_release_stop(); }
+        if(d->home && in.now_ms-d->command_ms>CONTROL_COMMAND_MAX_AGE_MS) d->home=d->valid=false; /* S1 never came. */
         if(d->calibrating && in.now_ms-d->command_ms>CONTROL_COMMAND_MAX_AGE_MS)
             position_trip(&d->servo,&in,SERVO_COMMAND_TIMEOUT);
         if(g_axis_status[i].ticks && (elapsed<700 || elapsed>1500)) position_trip(&d->servo,&in,SERVO_TIMING);
         position_tick(&d->servo,&in,action);
         if(d->calibrating && (d->servo.state==SERVO_READY || d->servo.state==SERVO_FAULT))
             d->valid=d->calibrating=false;
+        if(d->homing && d->servo.state!=SERVO_WAKE_RUN && d->servo.state!=SERVO_HOMING) {
+            d->homing=d->valid=false;
+            /* A homed zero far from a stored one means a false stall (friction, cable)
+             * or changed mechanics: refuse it rather than track from a wrong origin. */
+            cal_axis_t homed=cal_capture(&d->servo);
+            if(homed.zero && cal_saved.axis[i].zero &&
+               fabsf(cal_zero_delta_deg(homed.zero_raw,cal_saved.axis[i].zero_raw))>CAL_HOME_TOLERANCE_DEG)
+                position_trip(&d->servo,&in,SERVO_CALIBRATION);
+        }
         if(d->servo.state==SERVO_FAULT) { board_kill();dual_stop=true;stop=true; }
         motor_output_t out={0};out.enable=dual_active(&d->servo);out.pwm=position_driving(&d->servo);
         for(unsigned j=0;j<3;j++)out.duty[j]=.5f;
         board_apply(&out);dual_publish(i,&in);
+    }
+    for(unsigned i=0;i<2;i++) {
+        position_control_t *s=&dual[i].servo;
+        if(!cal_checked[i]) { /* Once per boot, after the first accepted encoder sample. */
+            if(s->state!=SERVO_OFF || s->commutation_calibrated) cal_checked[i]=true;
+            else if(s->unwrap_started) { cal_restored[i]=(uint8_t)cal_restore(s,&cal_saved.axis[i]);cal_checked[i]=true; }
+            if(!cal_checked[i]) continue;
+        }
+        cal_axis_t now=cal_capture(s),*saved=&cal_saved.axis[i];
+        if(now.electrical && (!saved->electrical || now.direction!=saved->direction ||
+                              now.electrical_offset!=saved->electrical_offset)) {
+            saved->electrical=true;saved->direction=now.direction;saved->electrical_offset=now.electrical_offset;
+            saved->zero=false;cal_dirty=true; /* New electrical calibration voids the old zero. */
+        }
+        if(now.zero && (!saved->zero || now.zero_raw!=saved->zero_raw)) {
+            saved->zero=true;saved->zero_raw=now.zero_raw;cal_dirty=true;
+        }
     }
     system_input_t si={0};system_output_t so;
     si.now_ms=HAL_GetTick();si.init_done=true; /* app_init() runs after board and network setup. */
@@ -109,8 +148,18 @@ void app_control_tick(void) {
     for(unsigned i=0;i<2;i++)if(used>g_axis_status[i].max_control_us)g_axis_status[i].max_control_us=used;
     board_select_axis(saved);board_unlock(m);board_adc_tick();
 }
+/* Flash writes only while both bridges are idle; an erase never blocks (cal_flash.h). */
+static void cal_foreground(void) {
+    cal_flash_service();
+    uint32_t m=board_lock();
+    bool write=cal_dirty && cal_flash_state()==CAL_FLASH_IDLE && !dual_active(&dual[0].servo) && !dual_active(&dual[1].servo);
+    cal_data_t snapshot=cal_saved;
+    if(write) { cal_dirty=false;snapshot.sequence=++cal_saved.sequence; }
+    board_unlock(m);
+    if(write) { uint8_t record[CAL_RECORD_BYTES];cal_pack(&snapshot,record);(void)cal_flash_write(record); }
+}
 void app_foreground(void) {
-    uint32_t now=HAL_GetTick();dual_foreground_ms=now;board_service();network_poll();
+    uint32_t now=HAL_GetTick();dual_foreground_ms=now;board_service();network_poll();cal_foreground();
     if(now-dual_last_feed>=20) {
         uint32_t m=board_lock(),age=board_us()-dual_last_tick;board_unlock(m);
         if(age<20000) board_watchdog_feed();else board_trip(FAULT_CONTROL_TIMING);
@@ -124,7 +173,8 @@ void app_status(app_status_t *s) { uint32_t m=board_lock();*s=g_axis_status[comm
 bool app_position(command_source_t source,uint32_t deg) {
     uint32_t m=board_lock();dual_axis_t *d=&dual[command_axis];
     bool ok=source==SOURCE_ETHERNET && CONTROL_MOTION_ENABLED && deg<=(command_axis?337000u:360000u) &&
-        (d->servo.state==SERVO_READY || d->servo.state==SERVO_RUNNING || d->servo.state==SERVO_WAKE_RUN) && d->servo.zero_set && !board_stop_pressed() && g_system.state!=SYS_FAULT;
+        (d->servo.state==SERVO_READY || d->servo.state==SERVO_RUNNING || d->servo.state==SERVO_WAKE_RUN) && d->servo.zero_set && !board_stop_pressed() && g_system.state!=SYS_FAULT &&
+        !dual[0].home && !dual[1].home && !dual[0].homing && !dual[1].homing;
     if(d->servo.state==SERVO_RUNNING && HAL_GetTick()-d->command_ms>500)ok=false;
     if(ok) { d->target=deg/1000.0f;d->command_ms=HAL_GetTick();d->valid=true; }
     board_unlock(m);return ok;
@@ -140,11 +190,37 @@ bool app_target(bool detected) {
     dual_target.seen=true;dual_target.detected=detected;dual_target.ms=HAL_GetTick();
     board_unlock(m);return true;
 }
+/* Queue homing for the selected axis; physical S1 starts it. The laptop must keep
+ * the lease alive (HEARTBEAT) while waiting and while homing. */
+bool app_home(command_source_t source) {
+    uint32_t m=board_lock();dual_axis_t *d=&dual[command_axis],*other=&dual[1-command_axis];
+    bool ok=source==SOURCE_ETHERNET && CONTROL_MOTION_ENABLED && !board_stop_pressed() && g_system.state!=SYS_FAULT &&
+        d->servo.state==SERVO_READY && d->servo.commutation_calibrated && position_home_supported(&d->servo) &&
+        !d->valid && !d->calibrate && !dual_active(&other->servo) && !other->valid && !other->calibrate && !other->home;
+    if(ok) { d->home=true;d->valid=true;d->command_ms=HAL_GetTick(); }
+    board_unlock(m);return ok;
+}
+/* Erase stored and in-RAM calibration for both axes (e.g. after remounting a magnet). */
+bool app_forget(command_source_t source) {
+    uint32_t m=board_lock();bool ok=source==SOURCE_ETHERNET && !board_stop_pressed();
+    for(unsigned i=0;i<2;i++)
+        ok=ok && !dual_active(&dual[i].servo) && !dual[i].valid && !dual[i].calibrate && !dual[i].home;
+    if(ok) {
+        for(unsigned i=0;i<2;i++) {
+            position_control_t *s=&dual[i].servo;s->commutation_calibrated=s->zero_set=false;
+            if(s->state!=SERVO_FAULT) position_stop(s);
+            cal_restored[i]=CAL_RESTORE_NONE;
+        }
+        memset(cal_saved.axis,0,sizeof(cal_saved.axis));cal_dirty=true;
+    }
+    board_unlock(m);return ok;
+}
 bool app_calibrate(command_source_t source) {
     uint32_t m=board_lock();dual_axis_t *d=&dual[command_axis],*other=&dual[1-command_axis];
     bool ok=source==SOURCE_ETHERNET && CONTROL_MOTION_ENABLED && !board_stop_pressed() &&
         !dual_active(&other->servo) && !other->calibrate && !other->valid &&
-        (d->servo.state==SERVO_OFF || d->servo.state==SERVO_READY) && g_system.state!=SYS_FAULT;
+        (d->servo.state==SERVO_OFF || d->servo.state==SERVO_READY) && g_system.state!=SYS_FAULT &&
+        !d->home && !other->home;
     if(ok) { d->calibrate=true;d->valid=true;d->command_ms=HAL_GetTick(); }
     board_unlock(m);return ok;
 }
@@ -165,12 +241,16 @@ bool app_set_parameter(uint32_t key,uint32_t value) {
 }
 void app_status_text(char *text,size_t length) {
     app_status_t s;app_status(&s);position_control_t *v=&s.servo;
-    uint32_t m=board_lock();unsigned sys=g_system.state,reason=g_system.reason;board_unlock(m);
-    snprintf(text,length,"S1 axis=%u source=1 enabled=%u state=%u fault=%u calibrated=%u zero=%u position_mdeg=%ld target_mdeg=%ld rpm_milli=%ld iq_ma=%ld current_age_us=%lu encoder_age_us=%lu settled=%u weak=%u regulation=voltage network=%s dual=1 phase_trip_enabled=%u sys=%u sys_reason=%u",
+    uint32_t m=board_lock();unsigned sys=g_system.state,reason=g_system.reason;
+    const cal_axis_t *saved=&cal_saved.axis[command_axis];
+    unsigned stored=saved->zero?2u:saved->electrical?1u:0u,restored=cal_restored[command_axis],pending=cal_dirty;
+    unsigned homing_supported=position_home_supported(&dual[command_axis].servo);board_unlock(m);
+    snprintf(text,length,"S1 axis=%u source=1 enabled=%u state=%u fault=%u calibrated=%u zero=%u position_mdeg=%ld target_mdeg=%ld rpm_milli=%ld iq_ma=%ld current_age_us=%lu encoder_age_us=%lu settled=%u weak=%u regulation=voltage network=%s dual=1 phase_trip_enabled=%u sys=%u sys_reason=%u stored=%u restored=%u save_pending=%u flash=%u home_supported=%u",
         command_axis,CONTROL_MOTION_ENABLED,v->state,v->fault,v->commutation_calibrated,v->zero_set,
         (long)lroundf(v->position_deg*1000),(long)lroundf(v->target_deg*1000),(long)lroundf(v->velocity_rpm*1000),
         (long)lroundf(v->iq_a*1000),(unsigned long)v->current_age_us,(unsigned long)v->encoder_age_us,
-        v->settled,v->weak_magnet,network_status(),CONTROL_SOFTWARE_PHASE_TRIP_ENABLED,sys,reason);
+        v->settled,v->weak_magnet,network_status(),CONTROL_SOFTWARE_PHASE_TRIP_ENABLED,sys,reason,
+        stored,restored,pending,(unsigned)cal_flash_state(),homing_supported);
 }
 void app_config_text(char *text,size_t length) {
     uint32_t m=board_lock();position_config_t c=dual[command_axis].servo.config;uint32_t rev=dual[command_axis].revision;board_unlock(m);

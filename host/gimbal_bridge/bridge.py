@@ -7,6 +7,9 @@ loop turns the latest observation into absolute G1 POSITION targets for tilt
 Safety behaviour (unchanged firmware rules apply on top of these):
   * start() requires both axes READY, calibrated and zeroed, and first commands
     each axis to its CURRENT measured position, so pressing S1 causes no jump.
+    With a start_pose (e.g. after homing leaves pan at its 0-degree stop, outside
+    the tracking window) S1 instead moves to that pose at the firmware's speed and
+    acceleration limits, and tracking starts once both axes have settled there.
   * Arming is only the physical S1 button.
   * Target lost / stale vision -> hold the last target (SEARCHING), keep leases.
   * Firmware with the system state machine (STATUS has sys=) also receives
@@ -44,10 +47,13 @@ class AxisState:
 
 class Bridge:
     def __init__(self, cfg=None, host=DEFAULT_HOST, tilt_port=TILT_PORT, pan_port=PAN_PORT,
-                 rate_hz=50.0, timeout=0.05, log_path=None):
+                 rate_hz=50.0, timeout=0.05, log_path=None, clients=None):
         self.cfg = cfg or TrackerConfig()
         self.cfg.validate()
-        self.clients = [G1Client(host, tilt_port, timeout), G1Client(host, pan_port, timeout)]
+        # Reuse the calibration step's sessions: the board refuses a new session for
+        # 500 ms after the previous owner's last command.
+        self._own_clients = clients is None
+        self.clients = clients or [G1Client(host, tilt_port, timeout), G1Client(host, pan_port, timeout)]
         self.limits = [self.cfg.tilt_limits, self.cfg.pan_limits]
         self.signs = [self.cfg.tilt_sign, self.cfg.pan_sign]
         self.axes = [AxisState(), AxisState()]
@@ -94,7 +100,7 @@ class Bridge:
             self.system_state = s['sys']
         return s
 
-    def check_ready(self):
+    def check_ready(self, require_in_window=True):
         """Verify both axes run the dual Ethernet build and are calibrated, zeroed and READY."""
         problems = []
         for axis, name in enumerate(AXES):
@@ -107,7 +113,7 @@ class Bridge:
                 problems.append(f'{name}: needs calibration and mechanical zero (Tools/calibrate_motor.py)')
             elif s['state'] != SERVO_READY:
                 problems.append(f"{name}: state {STATE_NAMES.get(s['state'], s['state'])}, expected READY")
-            else:
+            elif require_in_window:
                 low, high = self.limits[axis]
                 if not low <= self.axes[axis].measured_deg <= high:
                     problems.append(f'{name}: at {self.axes[axis].measured_deg:.1f} deg, outside '
@@ -116,13 +122,31 @@ class Bridge:
             raise BridgeError('; '.join(problems))
         self.send_target = self.system_state is not None
 
-    def hold_current(self):
-        """Queue each axis's current position as its target (S1 then arms without a jump)."""
+    def hold_current(self, pose=None):
+        """Queue each axis's target for S1: its current position (no jump), or pose=(tilt, pan)."""
         for axis in (0, 1):
             a = self.axes[axis]
-            a.target_deg = a.measured_deg
+            a.target_deg = a.measured_deg if pose is None else pose[axis]
             self.clients[axis].position(a.target_deg)
             a.last_command_s = time.monotonic()
+
+    def wait_settled(self, timeout_s=15.0, tolerance_deg=1.0):
+        """After S1 with a start pose: keep leases alive until both axes are at their targets."""
+        deadline = time.monotonic() + timeout_s
+        while time.monotonic() < deadline:
+            done = True
+            for axis in (0, 1):
+                self.clients[axis].heartbeat()
+                self._status(axis)
+                a = self.axes[axis]
+                if a.fault or a.state != SERVO_RUNNING:
+                    raise BridgeError(f'{AXES[axis]} stopped while moving to the start pose: state '
+                                      f'{STATE_NAMES.get(a.state, a.state)} fault {FAULT_NAMES.get(a.fault, a.fault)}')
+                done &= abs(a.measured_deg - a.target_deg) <= tolerance_deg
+            if done:
+                return
+            time.sleep(HEARTBEAT_S)
+        raise BridgeError('start pose not reached before timeout')
 
     def wait_armed(self, timeout_s=60.0):
         """Keep leases alive until both axes report RUNNING (after the user presses S1)."""
@@ -205,14 +229,23 @@ class Bridge:
         finally:
             self.disable()
 
-    def start(self, arm_timeout_s=60.0, on_waiting_for_s1=None):
-        """check_ready -> hold_current -> wait for S1 -> run the loop in a background thread."""
-        self.check_ready()
+    def start(self, arm_timeout_s=60.0, on_waiting_for_s1=None, start_pose=None):
+        """check_ready -> queue targets -> wait for S1 [-> move to start_pose] -> run the loop.
+
+        start_pose: optional (tilt_deg, pan_deg) inside the tracking windows."""
+        if start_pose is not None:
+            for axis, name in enumerate(AXES):
+                low, high = self.limits[axis]
+                if not low <= start_pose[axis] <= high:
+                    raise BridgeError(f'{name} start pose {start_pose[axis]} outside tracking window {low}..{high}')
+        self.check_ready(require_in_window=start_pose is None)
         try:
-            self.hold_current()
+            self.hold_current(start_pose)
             if on_waiting_for_s1:
                 on_waiting_for_s1()
             self.wait_armed(arm_timeout_s)
+            if start_pose is not None:
+                self.wait_settled()
         except BaseException:
             self.disable()
             raise
@@ -239,7 +272,8 @@ class Bridge:
 
     def close(self):
         self.stop()
-        for client in self.clients:
-            client.close()
+        if self._own_clients:
+            for client in self.clients:
+                client.close()
         if self._log_file:
             self._log_file.close()

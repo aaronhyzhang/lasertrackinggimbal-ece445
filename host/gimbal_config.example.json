@@ -1,0 +1,63 @@
+{
+  "board": {
+    "host": "192.168.10.2",
+    "tilt_port": 5005,
+    "pan_port": 5006
+  },
+  "tracking": {
+    "pan_sign": -1,
+    "tilt_sign": 1,
+    "gain": 0.8,
+    "deadband_deg": 0.5,
+    "max_step_deg": 20.0,
+    "tilt_limits": [
+      15.0,
+      345.0
+    ],
+    "pan_limits": [
+      15.0,
+      320.0
+    ],
+    "stale_s": 0.3,
+    "rate_hz": 50.0
+  },
+  "camera": {
+    "source": 0,
+    "width": 640,
+    "height": 480,
+    "fps": 30,
+    "intrinsics": "camera.json",
+    "hfov_deg": 70.0
+  },
+  "detector": {
+    "type": "color",
+    "hsv_ranges": [
+      [
+        [
+          20,
+          80,
+          80
+        ],
+        [
+          40,
+          255,
+          255
+        ]
+      ]
+    ],
+    "min_area": 60,
+    "min_circularity": 0.6
+  },
+  "aim_offset_deg": {
+    "pan": 0.0,
+    "tilt": 0.0
+  },
+  "synthetic": {
+    "amplitude_deg": 10.0,
+    "period_s": 8.0,
+    "dropout": 0.0
+  },
+  "start_pose": "center",
+  "arm_timeout_s": 60.0,
+  "log_dir": "logs/run"
+}

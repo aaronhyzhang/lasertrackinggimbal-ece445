@@ -1,16 +1,20 @@
-# Host: laptop bridge (vision → PCB)
+# Host: laptop software (camera → PCB)
 
-Laptop-side software for the tracking gimbal. It connects the vision pipeline to the
-custom PCB running `firmware/Senior_Design_PCB_CONTROL` (dual-axis build) over Ethernet.
+Everything that runs on the laptop for the tracking gimbal: calibration, camera, ball
+detection, the bridge that commands the PCB over Ethernet, and R&V measurements. It talks
+to `firmware/Senior_Design_PCB_CONTROL` (dual-axis build) using its `G1` UDP protocol.
 
 ```text
-camera ──► vision code ──► host bridge ──► Ethernet (UDP) ──► PCB firmware ──► pan / tilt motors
-           (finds ball)     (this folder)                        (Colin's)
+USB camera ─► detector ─► pixel → angle ─► bridge ─► Ethernet (UDP) ─► PCB firmware ─► pan / tilt
+            (vision.py)  (camera_model.py) (bridge.py)                  (Colin's + cal/FSM)
 ```
 
-- Uses the firmware's existing `G1` protocol. **No firmware changes are needed.**
-- Python 3 standard library only. Nothing to `pip install`.
-- Tested against a fake board on localhost. **It has not been run on the real PCB yet.**
+- **One command:** `py -3 -m gimbal_bridge.run_gimbal --config gimbal_config.json`
+- Python 3. The bridge, calibration and R&V tools use the standard library only; camera and
+  detection need `numpy` and `opencv-python` (YOLO is optional, see Detector).
+- Tested against a fake board and a synthetic camera. **Not yet run on the real PCB.**
+
+All commands below are run from this `host/` folder.
 
 ---
 
@@ -18,44 +22,45 @@ camera ──► vision code ──► host bridge ──► Ethernet (UDP) ─�
 
 | File | What it does |
 |---|---|
-| `gimbal_bridge/g1.py` | **The messenger.** Sends `G1` commands (`POSITION`, `HEARTBEAT`, `STATUS`, `DISABLE`) to one axis and parses replies. |
-| `gimbal_bridge/tracking.py` | **The math.** Turns "ball is 3° right, 1° up" into new absolute targets. Also `pixel_to_angles()` for the vision code. |
-| `gimbal_bridge/bridge.py` | **The driver.** 50 Hz loop: applies targets, sends heartbeats, reads positions, stops everything on trouble, writes a CSV log. |
-| `gimbal_bridge/track.py` | **The program you run.** Feeds the bridge a fake ball (`synthetic`) or real vision data (`udp`). |
-| `gimbal_bridge/rv.py` | **R&V measurements.** Latency, throughput and bad-packet rejection for the design document. |
-| `gimbal_bridge/fake_board.py` | **Pretend PCB** on your laptop for testing without hardware. |
-| `tests/test_bridge.py` | 16 automated tests against the fake board. |
+| `gimbal_bridge/run_gimbal.py` | **The launcher.** Calibrate if needed → camera + detector → S1 → track → clean stop |
+| `gimbal_bridge/calibration.py` | Brings both axes to calibrated + zeroed READY (uses what the board restored from flash; homes pan; asks for a hand zero on tilt) |
+| `gimbal_bridge/bridge.py` | 50 Hz loop: vision error → absolute targets, heartbeats, TARGET reports, status, safety stops, CSV log |
+| `gimbal_bridge/vision.py` | Camera → detector → angles → bridge, with timing stats |
+| `gimbal_bridge/detector.py` | Ball detectors: HSV colour + circularity (default), optional YOLO |
+| `gimbal_bridge/camera_model.py` | Camera intrinsics, lens-distortion removal, pixel → angle |
+| `gimbal_bridge/camera.py` | USB camera reader (newest frame, capture timestamp) and a synthetic camera |
+| `gimbal_bridge/camcal.py` | Camera calibration with an OpenCV checkerboard → `camera.json` |
+| `gimbal_bridge/tracking.py` | Target math (gain, deadband, step limit, window clamp) |
+| `gimbal_bridge/g1.py` | G1 protocol client |
+| `gimbal_bridge/track.py` | Bridge-only runner (synthetic ball or UDP vision input), no camera code |
+| `gimbal_bridge/rv.py` | Communications R&V: latency, throughput, bad-packet rejection |
+| `gimbal_bridge/fake_board.py` | Fake PCB on localhost, including calibration, HOME, FORGET and power cycles |
+| `gimbal_config.example.json` | Every setting, with defaults. Copy to `gimbal_config.json` and edit |
+| `tests/` | 39 tests (bridge, calibration, vision, launcher) |
 
-Axis map, set by the firmware:
-
-| Axis | Motion | Connector | UDP port | Firmware command range |
-|---|---|---|---|---|
-| 0 | Tilt | J3 | 5005 | 2–358° |
-| 1 | Pan | J4 | 5006 | 2–337° (0° = clockwise hard stop) |
-
-All commands below are run from this `host/` folder.
+Axis map (firmware): **tilt = axis 0 = J3 = UDP 5005**, **pan = axis 1 = J4 = UDP 5006**.
 
 ---
 
-## Quick start: try it without hardware
+## Try everything without hardware
 
-Terminal 1, the fake board:
-
-```bash
-py -3 -m gimbal_bridge.fake_board
-```
-
-Terminal 2, the bridge with a fake ball:
+Terminal 1, a fake board that starts uncalibrated (Enter = S1, `s` = S2, `p` = power cycle):
 
 ```bash
-py -3 -m gimbal_bridge.track --host 127.0.0.1
+py -3 -m gimbal_bridge.fake_board --uncalibrated
 ```
 
-When terminal 2 says *Press physical S1*, press **Enter** in terminal 1 (that is the fake S1).
-Terminal 2 then prints both axes following the fake ball. Type `s` + Enter in terminal 1 to
-simulate S2, or press Ctrl-C in terminal 2 to stop.
+Terminal 2, the full system with a rendered ball instead of a camera:
 
-Run the tests:
+```bash
+py -3 -m gimbal_bridge.run_gimbal --host 127.0.0.1 --synthetic
+```
+
+It calibrates tilt (press Enter when asked for the hand zero), asks for S1 to home pan
+(press Enter in terminal 1), then asks for S1 again to start tracking. Ctrl-C stops.
+Press `p` in terminal 1 and run again: pan comes back already zeroed from the "flash".
+
+Tests:
 
 ```bash
 py -3 -m unittest discover -s tests -v
@@ -63,186 +68,173 @@ py -3 -m unittest discover -s tests -v
 
 ---
 
+## Running on the real gimbal
+
+### One-time setup
+1. Flash the **dual-axis** build (`CONTROL_DUAL_AXIS=1`, Ethernet source, motion on). See
+   `firmware/Senior_Design_PCB_CONTROL/docs/DUAL_AXIS.md`.
+2. Laptop Ethernet adapter: **192.168.10.1 / 255.255.255.0**, no gateway (board is 192.168.10.2).
+3. `py -3 -m pip install numpy opencv-python`
+4. Calibrate the camera (below) to get `camera.json`.
+5. Copy `gimbal_config.example.json` to `gimbal_config.json`. Set at least the **tilt
+   limits** (`tracking.tilt_limits`) to the real safe range and the **ball colour** (`detector`).
+
+### Every run
+
+```bash
+py -3 -m gimbal_bridge.run_gimbal --config gimbal_config.json --preview
+```
+
+1. Connects to both axes and prints what the board restored from flash.
+2. Calibrates only what is missing:
+   - not electrically calibrated → CALIBRATE (shaft aligns, sweeps ~8 degrees, returns)
+   - pan without zero → **press S1**: pan homes slowly to its clockwise hard stop (= 0 degrees)
+   - tilt without zero → move it by hand to its 0-degree mark, press Enter
+3. Opens the camera and detector (fails here, before anything moves, if the camera is missing).
+4. **Press S1**: the gimbal moves to the start pose (centre of the tracking windows by default,
+   `start_pose` in the config), then follows the ball.
+5. Ctrl-C (or `q` in the preview window) → DISABLE. **S2** on the board stops everything at any time.
+
+After the first full calibration, a power cycle normally needs only the tilt hand zero (pan's
+zero is restored; see Calibration).
+
+---
+
+## Calibration
+
+The board stores calibration in flash with a checksum and restores it at boot
+(`firmware/.../docs/CALIBRATION_STORE.md`). `calibration.py` uses that, and only does what is missing.
+
+| Situation after power-up | What happens |
+|---|---|
+| Fresh board | Tilt: calibrate + hand zero. Pan: calibrate + HOME (S1) |
+| Calibrated before | Pan: restored (nothing to do). Tilt: hand zero only (its zero is not restored until its mechanical travel is confirmed under one turn) |
+| Magnet/encoder remounted | Run with `--forget` first, then calibrate again |
+
+Standalone: `py -3 -m gimbal_bridge.calibration` (add `--forget` or `--no-home`).
+
+## Camera calibration
+
+Print a checkerboard and count its **inner** corners (a 10x7-square board has 9x6).
+
+```bash
+py -3 -m gimbal_bridge.camcal --camera 0 --board 9x6 --square-mm 25 --out camera.json
+```
+
+SPACE saves a view when the corners are found (15–25 views at different distances, tilts and
+image corners), ENTER calibrates, ESC quits. RMS under ~0.5 px is good. Calibrate at the
+tracking resolution. From photos instead: `--images calib/*.png`.
+
+## Detector
+
+Default `color`: HSV threshold + roundness. Tune `hsv_ranges` (OpenCV HSV, H 0–179) to the ball;
+use `--preview` to check. Red wraps around H=0, so give two ranges. `min_area` (px) and
+`min_circularity` (0–1) reject noise and non-round blobs.
+
+`yolo`: `py -3 -m pip install ultralytics`, then
+`"detector": {"type": "yolo", "model": "yolo11n.pt", "classes": ["sports ball"], "conf": 0.35}`.
+Any other detector only needs a `detect(frame) -> Detection | None` method.
+
+---
+
 ## How tracking works
 
-The vision code reports the ball's **angle from the centre of the image**:
-
-| Value | Positive means |
-|---|---|
-| `pan_error_deg` | ball is **right** of centre |
-| `tilt_error_deg` | ball is **above** centre |
-
-Every new frame, for each axis:
+The detector's ball centre becomes an angular error from the image centre (right of centre and
+above are positive), corrected for lens distortion, plus `aim_offset_deg`. Each new frame, per axis:
 
 ```text
 target = clamp( measured_position + sign × gain × error , axis window )
 ```
 
-- The correction is added to the **measured** motor position (where the camera was pointing
-  when the frame was taken), not to the previous target.
-- Errors smaller than the **deadband** (0.5°) are ignored, to avoid jitter.
-- One frame can move a target by at most **max step** (20°).
-- Targets are clamped to the **axis window**. Defaults are tilt 15–345° and pan 15–320°,
-  Colin's sweep-test values. Set the real ones.
-- Target changes under 0.1° are sent as heartbeats instead.
+The correction is added to the **measured** motor position. Errors under the deadband are
+ignored; one frame moves a target at most `max_step_deg`. The bridge also sends `TARGET 1/0`
+so the board's own state machine shows TRACKING / SEARCHING.
 
-| Setting (`track.py` flag) | Default | Meaning |
+| Setting | Default | Meaning |
 |---|---|---|
-| `--pan-sign` | `-1` | Pan position increases counter-clockwise, so a ball on the right usually needs a smaller pan angle |
-| `--tilt-sign` | `+1` | Depends on how J3 is mounted. **Unconfirmed** |
-| `--gain` | `0.8` | Fraction of the error corrected per frame |
-| `--deadband` | `0.5` | Degrees |
-| `--max-step` | `20` | Degrees per frame |
-| `--tilt-min/max`, `--pan-min/max` | 15/345, 15/320 | Allowed target window |
-| `--rate` | `50` | Bridge loop rate, Hz |
-
----
+| `tracking.pan_sign` / `tilt_sign` | -1 / +1 | Direction of correction. **Confirm on the bench** |
+| `tracking.gain` | 0.8 | Fraction of the error corrected per frame |
+| `tracking.deadband_deg` | 0.5 | Ignore smaller errors |
+| `tracking.max_step_deg` | 20 | Largest correction from one frame |
+| `tracking.tilt_limits`, `pan_limits` | 15–345, 15–320 | Allowed target window. **Narrow tilt to the real range** |
+| `tracking.stale_s` | 0.3 | Newest frame older than this = ball lost |
+| `start_pose` | `"center"` | Where S1 first sends the gimbal; `{"tilt": .., "pan": ..}`, or `null` to stay put |
+| `aim_offset_deg` | 0, 0 | Fixed correction for where the gimbal should aim relative to the camera centre |
+| `camera.intrinsics` | `camera.json` | From `camcal`; if missing, a field-of-view estimate is used with a warning |
 
 ## Safety behaviour
 
-The firmware's own protections always apply. On top of them the bridge does the following:
+The firmware's protections always apply. On top of them:
 
 | Situation | What happens |
 |---|---|
-| Start | Refuses unless both axes are READY, calibrated, zeroed and inside their windows |
-| Before arming | Commands each axis to **where it already is**, so S1 causes no jump |
-| Arming | **Physical S1 only.** No network command can arm |
-| Ball not detected, or newest frame older than 0.3 s | **SEARCHING**: holds the last target and keeps the motors' command timeout alive |
-| Board has the system state machine (STATUS shows `sys=`) | Also sends `TARGET 1/0` on the tilt port every cycle, so the board's own state follows TRACKING/SEARCHING. Older firmware: skipped automatically |
-| Fault, refused command, S2, or 8 missed replies in a row | Sends **DISABLE** to both axes and exits |
-| Ctrl-C or normal exit | Sends DISABLE to both axes |
-| Laptop program crashes or the cable is pulled | The firmware's **500 ms timeout** stops the motors by itself |
+| Start | Refuses unless both axes are calibrated, zeroed, READY and fault-free |
+| Arming | **Physical S1 only.** HOME also needs S1. No network command arms |
+| Before S1 | Targets are the current position, or the start pose (moved to at the firmware's speed limits) |
+| Ball lost / frames stale | SEARCHING: hold the last target, keep the 500 ms lease alive |
+| Fault, refused command, S2, lost link | DISABLE both axes and stop |
+| Laptop crash or cable pulled | The firmware's own 500 ms lease stops the motors |
+| Homing stalls somewhere other than the known stop | Board faults instead of trusting the zero |
 
 > DISABLE releases holding torque. A loaded tilt axis can drop; support it.
 
----
+## Communications R&V (design doc 2.3.3)
 
-## Running on the real PCB
+With both axes stopped: `py -3 -m gimbal_bridge.rv all --port 5005` (and `--port 5006`).
+Latency (one-way < 5 ms for 99 %), throughput (≥ 1 Mbps), 20 malformed packets rejected.
+Results in `logs/rv/`. `run_gimbal` also prints the laptop-side pipeline time
+(capture → command) and detector time, and logs every cycle to `logs/run/`.
 
-### 1. One-time setup
-1. Colin flashes the **dual-axis build** (`CONTROL_DUAL_AXIS=1`, Ethernet source). See
-   `firmware/Senior_Design_PCB_CONTROL/docs/DUAL_AXIS.md`.
-2. Laptop Ethernet adapter: IPv4 **192.168.10.1**, mask **255.255.255.0**, no gateway.
-   The board is **192.168.10.2**. Allow Python through the firewall for this network.
-
-### 2. Every power-up
-Calibration is lost on reset (it's stored in RAM only). From `firmware/Senior_Design_PCB_CONTROL`:
-
-```bash
-py -3 Tools/calibrate_motor.py --axis 0 --port 5005
-py -3 Tools/calibrate_motor.py --axis 1 --port 5006
-```
-
-### 3. Communications R&V (motors stopped)
-
-```bash
-py -3 -m gimbal_bridge.rv all --port 5005
-py -3 -m gimbal_bridge.rv all --port 5006
-```
-
-| Test | Design-doc requirement | Method |
-|---|---|---|
-| `latency` | One-way < 5 ms for 99 % of messages | 2000 STATUS round trips; one-way = round trip / 2 |
-| `throughput` | ≥ 1 Mbps | STATUS requests kept in flight for 5 s; reports UDP payload and on-wire Mbps |
-| `reject` | Bad messages rejected and never applied | 20 malformed packets must all get `ERR syntax`; target must not change |
-
-Results print as PASS/FAIL and are saved to `logs/rv/*.json`. Also compare the reject count
-with `g_network.rejected` in CubeIDE Live Expressions. The tool refuses to run while an
-axis is RUNNING unless you pass `--allow-running`.
-
-### 4. First tracking run (synthetic ball, no camera)
-
-```bash
-py -3 -m gimbal_bridge.track --input synthetic --amplitude 5 --period 10
-```
-
-Press **S1** on the board when asked. Both motors should follow the fake ball smoothly.
-
-- **An axis runs to its limit or oscillates:** press **S2**, then flip that axis's sign
-  (`--pan-sign 1` or `--tilt-sign -1`) or lower `--gain`.
-- When it is smooth, increase `--amplitude` and add `--dropout 0.2` to test losing and
-  re-finding the target.
-
-> The synthetic ball uses the same sign setting as the bridge, so this run checks
-> stability and tuning, **not** real camera direction. Confirm direction with the real
-> camera: a ball on the right must turn the camera to the right.
-
-Logs go to `logs/track/*.csv`: time, mode, vision errors, target, measured position and
-state per axis, command round-trip time, and the board's system state. The console line shows
-the bridge mode and the board's state (`board TRACKING`, `-` on older firmware).
-
----
-
-## Connecting the vision code
-
-### Option A: same Python program
+## Using the bridge from your own code
 
 ```python
-import time
-from gimbal_bridge import Bridge, Observation, TrackerConfig, pixel_to_angles
+from gimbal_bridge import Bridge, Observation, TrackerConfig
+from gimbal_bridge.camera_model import Intrinsics
 
-cfg = TrackerConfig(tilt_limits=(60, 120), pan_limits=(15, 320))  # use the real safe limits
-bridge = Bridge(cfg)                                                 # board at 192.168.10.2
-bridge.start(on_waiting_for_s1=lambda: print('Press S1 on the board'))
-try:
-    while bridge.running():
-        frame = camera.read()
-        t_capture = time.monotonic()            # time the frame was grabbed
-        box = detect_ball(frame)                # your detector
-        if box is None:
-            bridge.submit(Observation(False))
-        else:
-            # fx, fy, cx, cy come from OpenCV camera calibration
-            pan_err, tilt_err = pixel_to_angles(box.center_x, box.center_y, fx, fy, cx, cy)
-            bridge.submit(Observation(True, pan_err, tilt_err, t_capture))
-finally:
-    bridge.close()                              # always sends DISABLE
+k = Intrinsics.load('camera.json')
+bridge = Bridge(TrackerConfig(tilt_limits=(60, 120)))
+bridge.start(on_waiting_for_s1=lambda: print('Press S1'), start_pose=(90, 160))
+...
+pan_err, tilt_err = k.angles(ball_u, ball_v)                     # per frame
+bridge.submit(Observation(True, pan_err, tilt_err, t_capture))   # or Observation(False)
+...
+bridge.close()                                                   # DISABLE
 ```
 
-### Option B: separate program, any language
-
-Start the bridge listening for vision data:
-
-```bash
-py -3 -m gimbal_bridge.track --input udp
-```
-
-Then send **one JSON datagram per frame** to `127.0.0.1:5100`:
-
-```json
-{"detected": true, "pan_error_deg": 1.5, "tilt_error_deg": -0.4}
-```
-
-Send `{"detected": false}` when no ball is found. Optional `"t_capture"` must be a
-`time.monotonic()` value from the same machine.
-
-> Any fixed offset between where the camera points and where the gimbal should aim is not
-> compensated yet. Add it to the errors before submitting.
-
----
+Or send JSON to `track.py --input udp` on `127.0.0.1:5100`:
+`{"detected": true, "pan_error_deg": 1.5, "tilt_error_deg": -0.4}`.
 
 ## Troubleshooting
 
 | Message | Likely cause / fix |
 |---|---|
-| `needs calibration and mechanical zero` | Board was reset. Rerun `calibrate_motor.py` for that axis |
 | `not the dual Ethernet motion build` | Single-axis or pot-source firmware is flashed |
-| `state FAULT` / `fault ...` | Read the fault name, fix the cause, reset the board, recalibrate |
-| `outside tracking window` | Move the axis inside `--*-min/--*-max` before starting |
-| `S1 was not pressed` | Press S1 within `--arm-timeout` (60 s) |
-| `refused a command` | Command timeout expired, S2 pressed, or the other axis stopped |
-| `replies missed; link lost` | Check cable, laptop IP 192.168.10.1/24, firewall |
-| `rv`: `no replies` | Same as above; check that STATUS works with `firmware/.../Tools/position_client.py` |
+| `fault ...` | Fix the cause, reset the board; `CALIBRATION` after HOME = false stall or changed mechanics |
+| `S1 was not pressed` | Press S1 within the timeout (HOME: 60 s, tracking: `arm_timeout_s`) |
+| `outside tracking window` | Use `start_pose` (default) or move the axis inside the window |
+| `cannot open camera` | Wrong `camera.source` index, or another program holds the camera |
+| `camera.json not found` warning | Run `camcal`; aiming is approximate until then |
+| `refused a command` | Lease expired, S2 pressed, or the other axis stopped |
+| `replies missed; link lost` | Cable, laptop IP 192.168.10.1/24, firewall |
+| Ball found but gimbal runs away | A `*_sign` is wrong: S2, flip it |
 
----
+## Tests
 
-## Limitations / still to do
+```bash
+py -3 -m unittest discover -s tests -v
+```
 
-- Not yet validated on the real PCB; pan and tilt signs are unconfirmed.
-- The fake board copies the firmware's protocol rules, not its motor dynamics, timing or
-  electrical behaviour. Passing the tests is not hardware validation.
-- The latency figure is a round trip halved; it assumes symmetric delay and does not include
-  camera or detector time. Measure end-to-end latency separately.
-- No aim-offset or depth compensation yet.
-- The board's system state machine (`firmware/.../docs/SYSTEM_FSM.md`) has no e-stop pin
-  yet; its e-stop input is wired to `false` until one is assigned.
+39 tests: tracking math, G1 client, bridge (arming, tracking, holding, stops, lease, TARGET,
+older firmware), calibration (fresh board, restore after power cycle, faults, missed S1,
+FORGET, older firmware), vision (detector, distortion, camera calibration recovering known
+intrinsics within 2 %, closed loop with the synthetic camera), launcher end to end, R&V tools.
+
+They use `fake_board.py`, which copies the firmware's protocol and calibration rules but not
+its motor dynamics, timing or electrical behaviour. **Passing them is not hardware validation.**
+
+## Still to do on hardware
+
+- Confirm pan/tilt signs, tilt limits, start pose and detector colours on the real gimbal.
+- Confirm tilt mechanical travel; if under one turn, enable its zero restore in firmware.
+- Measure end-to-end latency (camera capture to motion) for the R&V table.
+- Determine `aim_offset_deg` if the aim point differs from the camera centre.

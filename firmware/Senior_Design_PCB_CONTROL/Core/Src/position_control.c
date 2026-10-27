@@ -8,13 +8,18 @@
 #include <string.h>
 #define PI 3.14159265358979323846f
 #define TURN (2.0f*PI)
-#define PP 11.0f
+#define PP ((float)POSITION_POLE_PAIRS)
 static float clamp(float v,float lo,float hi) { return fminf(hi,fmaxf(lo,v)); }
 static float wrap(float v) { v=fmodf(v,TURN);return v<0?v+TURN:v; }
 static float radians(float degrees) { return degrees*(PI/180.0f); }
 static float coordinate_sign(const position_control_t *s) {
     return (s->axis?PAN_ENCODER_POSITIVE_SIGN:TILT_ENCODER_POSITIVE_SIGN)!=0 ? (float)(s->axis?PAN_ENCODER_POSITIVE_SIGN:TILT_ENCODER_POSITIVE_SIGN) : (float)s->direction;
 }
+float position_coordinate_sign(const position_control_t *s) { return coordinate_sign(s); }
+static int home_direction(const position_control_t *s) {
+    return CONTROL_CURRENT_PI_ENABLED?0:(s->axis?PAN_HOME_DIRECTION:TILT_HOME_DIRECTION);
+}
+bool position_home_supported(const position_control_t *s) { return home_direction(s)!=0; }
 float position_effort_sign(const position_control_t *s) {
     /* Electrical commutation polarity is calibrated independently of the
      * mechanical coordinate. Positive pan is CCW even if phase order reverses. */
@@ -22,10 +27,11 @@ float position_effort_sign(const position_control_t *s) {
 }
 static bool active(const position_control_t *s) {
     return s->state==SERVO_WAKE_CAL || s->state==SERVO_ALIGN || s->state==SERVO_SWEEP ||
-        s->state==SERVO_RETURN || s->state==SERVO_WAKE_RUN || s->state==SERVO_RUNNING;
+        s->state==SERVO_RETURN || s->state==SERVO_WAKE_RUN || s->state==SERVO_RUNNING || s->state==SERVO_HOMING;
 }
 bool position_driving(const position_control_t *s) {
-    return s->state==SERVO_ALIGN || s->state==SERVO_SWEEP || s->state==SERVO_RETURN || s->state==SERVO_RUNNING;
+    return s->state==SERVO_ALIGN || s->state==SERVO_SWEEP || s->state==SERVO_RETURN || s->state==SERVO_RUNNING ||
+        s->state==SERVO_HOMING;
 }
 static void fail(position_control_t *s,servo_fault_t f,const control_input_t *in) {
     if (s->state==SERVO_FAULT) return; /* Preserve the first trip, not shutdown side effects. */
@@ -64,6 +70,7 @@ void position_stop(position_control_t *s) {
     s->iq_target_a=s->vq_target_v=s->trajectory_rpm=0;s->settled=false;
     s->fast_count=s->previous_sequence=0;
     s->id_integral=s->iq_integral=s->velocity_integral=0;
+    s->homing=false;s->home_stall_ms=0;
 }
 static bool encoder_update(position_control_t *s,const control_input_t *in) {
     s->encoder_age_us=in->now_us-in->encoder_us;
@@ -106,6 +113,32 @@ static bool encoder_update(position_control_t *s,const control_input_t *in) {
 static void enter(position_control_t *s,servo_state_t state,uint32_t now) {
     s->state=state;s->stage_ms=now;s->cal_good_samples=0;
 }
+/* Velocity loop at CONTROL_HOME_RPM toward the stop with effort capped at
+ * CONTROL_HOME_VOLTS. All feedback/driver/current/supply/thermal checks in
+ * position_tick() still apply. A sustained saturated push with no motion
+ * defines the stop. */
+static void home_tick(position_control_t *s,const control_input_t *in) {
+    uint32_t elapsed=in->now_ms-s->stage_ms;
+    if (!in->command_valid || in->now_ms-in->command_ms>CONTROL_COMMAND_MAX_AGE_MS) {
+        fail(s,SERVO_COMMAND_TIMEOUT,in);return;
+    }
+    if (elapsed>CONTROL_HOME_TIMEOUT_MS) { fail(s,SERVO_CALIBRATION,in);return; } /* No stop found. */
+    float dir=(float)home_direction(s),target=dir*CONTROL_HOME_RPM*(TURN/60);
+    float ev=target-s->velocity_rad_s;
+    float limit=fminf(CONTROL_HOME_VOLTS,position_voltage_limit(s,in->bus_v));
+    float candidate=s->velocity_integral+s->config.velocity_ki*ev*0.001f;
+    float effort=s->config.velocity_kp*ev+candidate,applied=clamp(effort,-limit,limit);
+    if (fabsf(effort)<=limit || ev*effort<0) s->velocity_integral=candidate;
+    s->velocity_target_rad_s=target;s->velocity_error_rad_s=ev;s->velocity_p_v=s->config.velocity_kp*ev;
+    s->requested_v=effort;s->voltage_saturated=effort!=applied;s->vq_target_v=applied;s->iq_target_a=0;
+    bool pushing=elapsed>=CONTROL_HOME_SETTLE_MS && s->voltage_saturated && applied*dir>0 &&
+        fabsf(s->velocity_rpm)<CONTROL_HOME_STALL_RPM;
+    if (!pushing) { s->home_stall_ms=0;return; }
+    if (++s->home_stall_ms<CONTROL_HOME_STALL_MS) return;
+    float home=s->axis?PAN_HOME_POSITION_DEG:TILT_HOME_POSITION_DEG;
+    s->zero_turns=s->raw_turns-coordinate_sign(s)*home/360.0f;
+    s->position_deg=home;s->zero_set=true;position_stop(s);
+}
 void position_tick(position_control_t *s,const control_input_t *in,servo_action_t action) {
     bool enc=encoder_update(s,in);
     s->current_age_us=in->now_us-in->current_us;
@@ -127,14 +160,18 @@ void position_tick(position_control_t *s,const control_input_t *in,servo_action_
                in->command_valid && CONTROL_MOTION_ENABLED) {
         s->trajectory_deg=s->position_deg;s->trajectory_rpm=0;s->move_profile_valid=false;
         s->velocity_integral=s->id_integral=s->iq_integral=0;
-        s->following_ms=s->settled_ms=0;
+        s->following_ms=s->settled_ms=0;s->homing=false;
+        enter(s,SERVO_WAKE_RUN,in->now_ms);
+    } else if (action==SERVO_HOME && s->state==SERVO_READY && s->commutation_calibrated && enc &&
+               in->command_valid && CONTROL_MOTION_ENABLED && home_direction(s)!=0) {
+        s->zero_set=false;s->velocity_integral=0;s->home_stall_ms=0;s->homing=true;
         enter(s,SERVO_WAKE_RUN,in->now_ms);
     }
     uint32_t elapsed=in->now_ms-s->stage_ms;
     if (s->state==SERVO_WAKE_CAL || s->state==SERVO_WAKE_RUN) {
         if (elapsed>2000u) { fail(s,SERVO_ZERO_TIMEOUT,in);return; }
         if (elapsed>=350u && in->driver_good && in->zero_ready && in->current_valid && s->current_age_us<=CONTROL_CURRENT_MAX_AGE_US) {
-            enter(s,s->state==SERVO_WAKE_CAL?SERVO_ALIGN:SERVO_RUNNING,in->now_ms);
+            enter(s,s->state==SERVO_WAKE_CAL?SERVO_ALIGN:s->homing?SERVO_HOMING:SERVO_RUNNING,in->now_ms);
         }
     } else if (s->state==SERVO_ALIGN && elapsed>=2000u) {
         if (s->cal_good_samples<100u) { fail(s,SERVO_CALIBRATION,in);return; }
@@ -159,6 +196,7 @@ void position_tick(position_control_t *s,const control_input_t *in,servo_action_
             s->commutation_calibrated=true;position_stop(s);
         }
     }
+    if (s->state==SERVO_HOMING) { home_tick(s,in);return; }
     if (s->state!=SERVO_RUNNING) return;
     if (!s->zero_set || !enc) { fail(s,SERVO_FEEDBACK,in);return; }
     if (!in->command_valid || in->now_ms-in->command_ms>CONTROL_COMMAND_MAX_AGE_MS) {
@@ -267,12 +305,13 @@ void position_fast(position_control_t *s,const control_input_t *in,control_outpu
     else s->sum_bad_count=0;
     float alpha=in->current_a[0]-sum/3;
     float beta=(in->current_a[1]-in->current_a[2])*0.5773502692f;
-    float theta=s->state==SERVO_RUNNING?
+    bool encoder_angle=s->state==SERVO_RUNNING || s->state==SERVO_HOMING;
+    float theta=encoder_angle?
         wrap((float)s->direction*PP*(float)in->encoder_raw*(TURN/4096.0f)+s->electrical_offset):s->cal_angle;
     float c=cosf(theta),sn=sinf(theta);
     s->id_a=alpha*c+beta*sn;s->iq_a=-alpha*sn+beta*c;
     float vd=0,vq=0,limit=position_voltage_limit(s,in->bus_v);
-    if (s->state!=SERVO_RUNNING) {
+    if (!encoder_angle) {
         uint32_t elapsed=in->now_ms-s->stage_ms;
         vd=fminf((s->axis?PAN_CAL_VOLTS:TILT_CAL_VOLTS),limit);
         if (s->state==SERVO_ALIGN) vd*=clamp((float)elapsed/500,0,1);
@@ -285,8 +324,10 @@ void position_fast(position_control_t *s,const control_input_t *in,control_outpu
          * quadrature sine vector produces torque; measured current is used
          * for diagnostics and trips, not amplitude regulation in this stage. */
         float demand=s->vq_target_v;
-        if ((s->position_deg<=(s->axis?PAN_COMMAND_MIN_DEG:TILT_COMMAND_MIN_DEG) && demand<0) ||
-            (s->position_deg>=(s->axis?PAN_COMMAND_MAX_DEG:TILT_COMMAND_MAX_DEG) && demand>0)) demand=0;
+        /* Homing has no zero yet and must push into its stop: no endpoint cut-off. */
+        if (s->state==SERVO_RUNNING &&
+            ((s->position_deg<=(s->axis?PAN_COMMAND_MIN_DEG:TILT_COMMAND_MIN_DEG) && demand<0) ||
+             (s->position_deg>=(s->axis?PAN_COMMAND_MAX_DEG:TILT_COMMAND_MAX_DEG) && demand>0))) demand=0;
         vq=position_effort_sign(s)*clamp(demand,-limit,limit);
         s->id_integral=s->iq_integral=0;
     } else {

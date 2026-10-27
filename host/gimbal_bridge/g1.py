@@ -5,6 +5,7 @@ Wire format, as implemented in firmware/Senior_Design_PCB_CONTROL/Core/Src/demo_
     G1 <session> <sequence> POSITION <0..360000 millidegrees>
     G1 <session> <sequence> TARGET <0|1>          (vision report; firmware with sys= in STATUS)
     G1 <session> <sequence> HEARTBEAT | STATUS | DISABLE | CONFIG
+    G1 <session> <sequence> CALIBRATE | ZERO | HOME | FORGET   (calibration; HOME needs S1)
 
 Accepted POSITION/TARGET/HEARTBEAT reply `OK G1 <session> <sequence>`; a refused one
 replies `ERR G1 <session> <sequence>`. STATUS replies `S1 key=value ...`,
@@ -19,9 +20,10 @@ import socket
 import time
 
 # position_control.h servo states
-SERVO_OFF, SERVO_READY, SERVO_WAKE_RUN, SERVO_RUNNING, SERVO_FAULT = 0, 5, 6, 7, 8
+SERVO_OFF, SERVO_READY, SERVO_WAKE_RUN, SERVO_RUNNING, SERVO_FAULT, SERVO_HOMING = 0, 5, 6, 7, 8, 9
+SERVO_CALIBRATING = (1, 2, 3, 4)
 STATE_NAMES = {0: 'OFF', 1: 'WAKE_CAL', 2: 'ALIGN', 3: 'SWEEP', 4: 'RETURN', 5: 'READY',
-               6: 'WAKE_RUN', 7: 'RUNNING', 8: 'FAULT'}
+               6: 'WAKE_RUN', 7: 'RUNNING', 8: 'FAULT', 9: 'HOMING'}
 FAULT_NAMES = {0: 'OK', 1: 'DRIVER', 2: 'FEEDBACK', 3: 'ZERO_TIMEOUT', 4: 'CALIBRATION',
                5: 'CURRENT', 6: 'CURRENT_SUM', 7: 'TRAVEL', 8: 'FOLLOWING', 9: 'COMMAND_TIMEOUT',
                10: 'SUPPLY', 11: 'TEMPERATURE', 12: 'TIMING', 13: 'FOREGROUND', 14: 'INTERNAL'}
@@ -137,6 +139,18 @@ class G1Client:
 
     def target(self, detected):
         return self.request('TARGET', 1 if detected else 0)
+
+    def calibrate(self):
+        return self.request('CALIBRATE')
+
+    def zero(self):
+        return self.request('ZERO')
+
+    def home(self):
+        return self.request('HOME')
+
+    def forget(self):
+        return self.request('FORGET')
 
     def heartbeat(self):
         return self.request('HEARTBEAT')

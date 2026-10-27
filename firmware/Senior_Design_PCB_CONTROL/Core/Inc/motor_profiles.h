@@ -33,6 +33,22 @@
 #define PAN_ACCEPT_MAX_DEG 337.0f
 #define PAN_TRAVEL_MAX_DEG 339.8f
 
+/* Homing: HOME request, then physical S1. Low-voltage, slow move toward a hard
+ * stop; a sustained stall there sets that stop as HOME_POSITION_DEG. Direction is
+ * in the mechanical coordinate: -1 decreasing, +1 increasing, 0 = no homing.
+ * The pan clockwise stop is its 0-degree reference. */
+#define PAN_HOME_DIRECTION (-1)
+#define PAN_HOME_POSITION_DEG 0.0f
+#define TILT_HOME_DIRECTION 0   /* No confirmed tilt hard stop yet. */
+#define TILT_HOME_POSITION_DEG 0.0f
+#define CONTROL_HOME_RPM 5.0f          /* 30 deg/s */
+#define CONTROL_HOME_VOLTS 2.0f        /* Effort ceiling while homing (pan calibration uses 2 V). */
+#define CONTROL_HOME_STALL_RPM 0.5f
+#define CONTROL_HOME_STALL_MS 300u     /* Saturated, pushing toward the stop and not moving. */
+#define CONTROL_HOME_SETTLE_MS 500u    /* Ignore start-up before judging a stall. */
+/* Full pan travel at the homing speed, plus margin. */
+#define CONTROL_HOME_TIMEOUT_MS ((uint32_t)((PAN_TRAVEL_MAX_DEG+20.0f)/(CONTROL_HOME_RPM*6.0f)*1000.0f)+CONTROL_HOME_SETTLE_MS+1000u)
+
 /* Trial: select once per target, not from shrinking distance-to-go.
  * Tilt keeps its existing trajectory. 0 threshold disables this policy. */
 #define PAN_SMALL_MOVE_DEG 20.0f

@@ -43,6 +43,10 @@ void board_watchdog_feed(void) {}
 void board_leds(bool a,bool b,bool c,uint32_t n) { (void)a;(void)b;(void)c;(void)n; }
 void network_poll(void) {}
 const char *network_status(void) { return "TEST"; }
+void cal_flash_init(cal_scan_t *scan) { memset(scan,0,sizeof(*scan)); }
+bool cal_flash_write(const uint8_t record[CAL_RECORD_BYTES]) { (void)record;return true; }
+void cal_flash_service(void) {}
+cal_flash_state_t cal_flash_state(void) { return CAL_FLASH_IDLE; }
 
 static void tick(void){us+=1000;dual_foreground_ms=HAL_GetTick();app_control_tick();}
 int main(void){

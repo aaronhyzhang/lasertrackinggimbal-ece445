@@ -51,6 +51,8 @@ bool protocol_parse(const void *bytes,size_t length,net_command_t *out) {
     else if (!strcmp(token[3],"DISABLE")) out->operation=NET_DISABLE;
     else if (!strcmp(token[3],"CALIBRATE")) out->operation=NET_CALIBRATE;
     else if (!strcmp(token[3],"ZERO")) out->operation=NET_ZERO;
+    else if (!strcmp(token[3],"HOME")) out->operation=NET_HOME;
+    else if (!strcmp(token[3],"FORGET")) out->operation=NET_FORGET;
     else if (!strcmp(token[3],"CONFIG")) out->operation=NET_CONFIG;
     else if (!strcmp(token[3],"TESTINFO")) out->operation=NET_TESTINFO;
     else return false;

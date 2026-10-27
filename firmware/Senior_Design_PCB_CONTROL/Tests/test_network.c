@@ -32,6 +32,8 @@ bool app_position(command_source_t source,uint32_t mdeg) {
     assert(source==SOURCE_ETHERNET && mdeg<=360000);target=mdeg;++positions;return true;
 }
 bool app_heartbeat(command_source_t source) { assert(source==SOURCE_ETHERNET);return true; }
+static unsigned targets;static bool target_detected;
+bool app_target(bool detected) { ++targets;target_detected=detected;return true; }
 void app_config_text(char *text,size_t length) { snprintf(text,length,"C1 schema=1"); }
 void app_test_text(char *text,size_t length) { snprintf(text,length,"T1 trial=1"); }
 size_t app_trace_read(uint32_t first,void *bytes,size_t length) { (void)first;(void)length;memcpy(bytes,"TEST",4);return 4; }
@@ -45,6 +47,9 @@ bool app_calibrate(command_source_t source) {
 bool app_zero(command_source_t source) {
     assert(source==SOURCE_ETHERNET);return app.servo.state==SERVO_READY;
 }
+static unsigned homes,forgets;
+bool app_home(command_source_t source) { assert(source==SOURCE_ETHERNET);++homes;return app.servo.state==SERVO_READY; }
+bool app_forget(command_source_t source) { assert(source==SOURCE_ETHERNET);++forgets;return true; }
 void HAL_NVIC_SetPriority(IRQn_Type i,uint32_t a,uint32_t b) { (void)i;(void)a;(void)b; }
 void HAL_NVIC_EnableIRQ(IRQn_Type i) { (void)i; }
 static unsigned gpio_groups;
@@ -114,8 +119,15 @@ int main(void) {
     inject("G1 2 2 HEARTBEAT",1,40001,"OK G1 2 2",false);
     target_port=DEMO_UDP_PORT;
     inject("G1 1 2 HEARTBEAT",1,40000,"OK G1 1 2",false);
+    /* TARGET: owner and sequence checked like HEARTBEAT; cannot acquire ownership. */
+    inject("G1 1 3 TARGET 1",1,40000,"OK G1 1 3",false);assert(targets==1 && target_detected);
+    inject("G1 1 3 TARGET 0",1,40000,"ERR sequence",false);assert(targets==1);
+    inject("G1 1 4 TARGET 0",1,40000,"OK G1 1 4",false);assert(targets==2 && !target_detected);
+    inject("G1 7 1 TARGET 1",3,40000,"ERR owner",false);assert(targets==2);
+    inject("G1 1 5 TARGET 2",1,40000,"ERR syntax",false);assert(targets==2);
     inject("G1 9 1 DISABLE",1,40000,"OK DISABLED",false);
     assert(!owners[0].valid && !owners[1].valid && stopped==1);
+    inject("G1 1 6 TARGET 1",1,40000,"ERR owner",false);assert(targets==2); /* released by DISABLE */
     puts("PASS real LwIP two-port routing, independent ownership/sequence/heartbeat, global DISABLE");return 0;
 #endif
     inject("G1 1 1 POSITION 90000",1,40000,"OK G1 1 1",false);assert(target==90000 && positions==1);
@@ -145,6 +157,12 @@ int main(void) {
     inject("G1 10 5 TEST 1 300 100 8000 180000 30000",1,40000,"OK G1 10 5",false);
     inject("G1 10 6 TESTINFO",1,40000,"T1 trial=1",false);
     inject("G1 10 6 TRACE 0",1,40000,"TEST",false);
+    /* HOME / FORGET may acquire an idle endpoint like CALIBRATE; owner and replay checked. */
+    inject("G1 10 7 HOME",1,40000,"OK G1 10 7",false);assert(homes==1);
+    inject("G1 10 7 HOME",1,40000,"ERR sequence",false);assert(homes==1);
+    inject("G1 10 8 FORGET",1,40000,"OK G1 10 8",false);assert(forgets==1);
+    inject("G1 12 1 FORGET",2,40000,"ERR owner",false);assert(forgets==1);
+    inject("G1 10 9 HOME 1",1,40000,"ERR syntax",false);assert(homes==1);
     link=false;network_poll();assert(stopped==2 && g_network.state==NETWORK_LINK_DOWN);
     /* Custom RX pbuf ownership and chained lengths use the actual adapter. */
     uint8_t *a,*b;void *first=NULL,*last=NULL;
