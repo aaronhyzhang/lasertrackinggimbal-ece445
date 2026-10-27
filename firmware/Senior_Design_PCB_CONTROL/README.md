@@ -1,5 +1,18 @@
 # H743 PCB: encoder-based sinusoidal position control and Ethernet
 
+Persistent defaults now live in [motor_profiles.h](Core/Inc/motor_profiles.h):
+J3/axis 0 is tilt (saved user settings); J4/axis 1 is pan (separate starting
+profile, motion disabled until hard-stop travel/polarity preparation).
+See [tilt/pan setup](docs/MOTOR_PROFILES.md). J3 remains selected.
+
+2026-10-27 commissioning update: [measured tuning tool](docs/COMMISSIONING_TOOL.md)
+is the current guide. It adds verified runtime settings, MCU-timed experiments,
+1-kHz binary traces, model-based candidate trials and a separate speed/acceleration
+search. Voltage PWM range is now 25..75% (6 V at 24 V) and velocity anti-windup
+uses the actual output ceiling. Hardware qualification of this change is pending.
+Offline demo: `py -3 Tools/run_commission.py demo` (no hardware connection).
+Earlier commissioning notes below describe the previous 3.6-V duty ceiling.
+
 Development project, 2026-10-26. User reports calibration reaches READY and is
 tuning pot-position response; Ethernet hardware validation remains pending.
 The separate `Senior_Design_PCB_BRINGUP` project is unchanged and remains the

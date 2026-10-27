@@ -28,7 +28,7 @@ sources={str(f.relative_to(root)).replace('\\','/'):sha(f) for folder in ('Core'
          for f in (root/folder).rglob('*') if f.is_file() and f.suffix in ('.c','.h','.s','.py')}
 sources.update({name:sha(root/name) for name in ('.project','.cproject','STM32H743ZITX_FLASH.ld')})
 elfs={str(f.relative_to(root)).replace('\\','/'):sha(f) for f in (root/'build').rglob('*.elf')}
-evidence={'date':'2026-10-26','hardware_validated':False,'current_pi_default':False,
+evidence={'date':'2026-10-27','hardware_validated':False,'current_pi_default':False,
           'tests_and_builds':records,'source_sha256':sources,'elf_sha256':elfs}
 (root/'docs/validation_evidence.json').write_text(json.dumps(evidence,indent=2)+'\n')
 print('All software checks passed. Hardware commissioning remains required.',flush=True)

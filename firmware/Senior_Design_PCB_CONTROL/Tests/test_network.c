@@ -14,6 +14,7 @@ __declspec(dllimport) void *VirtualAlloc(void *,size_t,unsigned long,unsigned lo
 static uint32_t now;
 static app_status_t app;
 static unsigned stopped,positions,responses;
+static unsigned calibrations;
 static bool link=true;
 static uint32_t target;
 static char response[700];
@@ -29,6 +30,19 @@ bool app_position(command_source_t source,uint32_t mdeg) {
     assert(source==SOURCE_ETHERNET && mdeg<=360000);target=mdeg;++positions;return true;
 }
 bool app_heartbeat(command_source_t source) { assert(source==SOURCE_ETHERNET);return true; }
+void app_config_text(char *text,size_t length) { snprintf(text,length,"C1 schema=1"); }
+void app_test_text(char *text,size_t length) { snprintf(text,length,"T1 trial=1"); }
+size_t app_trace_read(uint32_t first,void *bytes,size_t length) { (void)first;(void)length;memcpy(bytes,"TEST",4);return 4; }
+bool app_set_parameter(uint32_t key,uint32_t value) { return key<6 && value<1000000; }
+bool app_test_prepare(const uint32_t a[6]) { return a[0]<4; }
+bool app_calibrate(command_source_t source) {
+    assert(source==SOURCE_ETHERNET);
+    if (app.servo.state!=SERVO_OFF && app.servo.state!=SERVO_READY) return false;
+    ++calibrations;app.servo.state=SERVO_WAKE_CAL;return true;
+}
+bool app_zero(command_source_t source) {
+    assert(source==SOURCE_ETHERNET);return app.servo.state==SERVO_READY;
+}
 void HAL_NVIC_SetPriority(IRQn_Type i,uint32_t a,uint32_t b) { (void)i;(void)a;(void)b; }
 void HAL_NVIC_EnableIRQ(IRQn_Type i) { (void)i; }
 static unsigned gpio_groups;
@@ -103,6 +117,20 @@ int main(void) {
     app.servo.state=SERVO_READY;
     inject("G1 2 1 POSITION 180000",2,40000,"OK G1 2 1",false);
     inject("G1 9 1 DISABLE",3,40100,"OK DISABLED",false);assert(stopped==1);
+    inject("G1 10 1 CALIBRATE",1,40000,"OK G1 10 1",false);assert(calibrations==1);
+    inject("G1 10 1 CALIBRATE",1,40000,"ERR sequence",false);assert(calibrations==1);
+    inject("G1 11 1 CALIBRATE",2,40000,"ERR owner",false);assert(calibrations==1);
+    inject("G1 10 2 HEARTBEAT",1,40000,"OK G1 10 2",false);
+    inject("G1 10 3 ZERO",1,40000,"ERR G1 10 3",false);
+    app.servo.state=SERVO_READY;
+    inject("G1 10 3 ZERO",1,40000,"OK G1 10 3",false);
+    inject("G1 10 3 ZERO",1,40000,"ERR sequence",false);
+    inject("G1 10 4 CONFIG",1,40000,"C1 schema=1",false);
+    inject("G1 10 4 SET 0 650",1,40000,"OK G1 10 4",false);
+    inject("G1 10 4 SET 0 650",1,40000,"ERR sequence",false);
+    inject("G1 10 5 TEST 1 300 100 8000 180000 30000",1,40000,"OK G1 10 5",false);
+    inject("G1 10 6 TESTINFO",1,40000,"T1 trial=1",false);
+    inject("G1 10 6 TRACE 0",1,40000,"TEST",false);
     link=false;network_poll();assert(stopped==2 && g_network.state==NETWORK_LINK_DOWN);
     /* Custom RX pbuf ownership and chained lengths use the actual adapter. */
     uint8_t *a,*b;void *first=NULL,*last=NULL;

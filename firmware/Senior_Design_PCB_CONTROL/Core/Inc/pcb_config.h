@@ -13,7 +13,7 @@
 /* 0 = J3 / TIM1, 1 = J4 / TIM8. Only one axis runs at a time. */
 /* VR1 commands either selected axis; VR2 is telemetry only and may be unpopulated. */
 #ifndef PCB_TEST_AXIS
-#define PCB_TEST_AXIS 0
+#define PCB_TEST_AXIS 1
 #endif
 /* Shared J3/J4 baseline: 0 uses the original counter/start sequence.
  * Diagnostic option 1 commits duties and restarts at count 0/up. */

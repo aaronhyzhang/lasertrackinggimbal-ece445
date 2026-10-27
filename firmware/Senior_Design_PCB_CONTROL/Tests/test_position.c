@@ -84,7 +84,7 @@ static void current(void) {
     for (unsigned k=0;k<2000;++k) {
         in=sample(1100+k*50);position_fast(&s,&in,&out);
         assert(out.pwm && hypotf(s.vd_v,s.vq_v)<=CONTROL_VOLT_LIMIT+0.001f);
-        for(unsigned j=0;j<3;++j) assert(out.duty[j]>=0.35f && out.duty[j]<=0.65f);
+        for(unsigned j=0;j<3;++j) assert(out.duty[j]>=0.5f-position_duty_span() && out.duty[j]<=0.5f+position_duty_span());
     }
     in=sample(101100);in.current_a[0]=1.6f;position_fast(&s,&in,&out);
     assert(s.fault==SERVO_CURRENT && !out.pwm && !out.enable);

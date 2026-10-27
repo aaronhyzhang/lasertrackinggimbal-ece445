@@ -10,9 +10,14 @@ for inc in ('Core/Inc','Core/Src','Drivers/STM32H7xx_HAL_Driver/Inc','Drivers/CM
             'Drivers/CMSIS/Device/ST/STM32H7xx/Include','Middlewares/LwIP/src/include'):
     flags+=['-I',str(root/inc)]
 cases=[]
+for current_pi in (0,1):
+    cases.append((f'pan_coordinates_{current_pi}',
+        ['-DPCB_TEST_AXIS=1','-DCONTROL_MOTION_ENABLED=1',f'-DCONTROL_CURRENT_PI_ENABLED={current_pi}'],
+        [root/'Tests/test_pan_coordinates.c',root/'Core/Src/position_control.c',root/'Core/Src/commission.c']))
+cases.append(('commission',[],[root/'Tests/test_commission.c',root/'Core/Src/commission.c',root/'Core/Src/position_control.c']))
 for motion,source in ((0,0),(1,0),(1,1)):
     cases.append((f'app_{motion}_{source}',[f'-DCONTROL_MOTION_ENABLED={motion}',f'-DCONTROL_SOURCE_ETHERNET={source}'],
-                  [root/'Tests/test_app.c',root/'Core/Src/position_control.c']))
+                  [root/'Tests/test_app.c',root/'Core/Src/position_control.c',root/'Core/Src/commission.c']))
 for axis in (0,1):
     for revision in ('V','Y'):
         for current_pi in (0,1):

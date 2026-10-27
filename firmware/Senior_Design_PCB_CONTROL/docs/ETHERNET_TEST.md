@@ -1,5 +1,34 @@
 # Ethernet bench test
 
+For faster tuning iterations, use `py -3 .\Tools\position_sweep.py --axis 0 --tune`.
+Both tuning and ordinary sweeps now save CSV/JSON and print one suggested change
+after completion/failure. See [logged position tuning](TUNING.md) for metrics,
+comparison rules and limitations. This script-only update needs no reflash.
+
+## Remote electrical calibration
+
+The CALIBRATE command requires the updated CONTROL firmware, motion enabled and
+CONTROL_SOURCE_ETHERNET=1. It is accepted only while stopped in OFF or READY,
+not while running, calibrating or faulted. The script starts motor alignment
+and the short electrical calibration sweep immediately; no S1 press is needed.
+Keep the shaft clear and away from a hard stop, as with S2 calibration.
+
+```powershell
+py -3 .\Tools\calibrate_motor.py --axis 0
+```
+
+The client maintains heartbeats, waits for calibration to enter its active
+states, then requires calibrated READY before reporting PASS. It sends DISABLE
+on completion/error/Ctrl-C. S2 stops immediately; lost heartbeats trip after
+500 ms. Commands use the same owner/session/sequence checks as POSITION.
+Calibration invalidates old mechanical zero. By default the updated script
+prompts you to place the stopped shaft at the physical zero, release it and
+press Enter. It sends ZERO, accepted only in calibrated READY, and verifies
+zero=true with measured position near zero. No PWM is enabled by ZERO and no
+position command is armed. Use --skip-zero for electrical calibration only;
+physical S2 long-press/release remains available. Updated firmware is required
+for the ZERO protocol command. It shares session/owner/replay checks.
+
 The saved checkpoint uses pot input, voltage commutation, and motion enabled.
 User tuning at this checkpoint: 550 RPM, 200 RPM/s, RUN_VOLTS=6, VOLT_LIMIT=6.
 These are saved settings, not validated system limits. The duty cap still limits
@@ -73,3 +102,27 @@ automatically rearm. A latched fault needs reset and repeat calibration/zero.
 Keep the supply shutoff accessible. Record status, final position, faults and
 network counters for each test. Hardware Ethernet and closed-loop motion are
 not marked validated until these board tests pass.
+
+## 4. One-arm sweep sequence
+
+From READY with electrical calibration and mechanical zero complete:
+
+```powershell
+py -3 .\Tools\position_sweep.py --axis 0
+```
+
+The script queues 2 degrees, prompts for S1, and maintains one command session
+through 2->358->2, six random moves, then 2->358->2. It checks the echoed target
+and measured position within 2.5 degrees for 0.5 seconds, with at most 1 degree
+peak-to-peak movement and absolute estimated velocity <=2 RPM throughout.
+It does not require the firmware settled flag, whose tighter 0.5-RPM condition
+may chatter at rest. It never wraps across
+the boundary or automatically rearms after a stop. Final completion, timeout,
+fault, Ctrl-C and errors attempt DISABLE. The board's command lease remains active.
+
+For a smaller first trial use --min-deg 20 --max-deg 60. Change --random-moves 6,
+--seed 1 or --move-timeout 30 as needed; --arm-timeout defaults to 60 seconds.
+The seed makes the random sequence repeatable. No firmware changes/reflash are
+needed if the installed image already uses Ethernet source. Host UDP regression
+tests cover sequencing, bounds, settling timeout and stop cancellation; physical
+sweep performance remains to be tested.

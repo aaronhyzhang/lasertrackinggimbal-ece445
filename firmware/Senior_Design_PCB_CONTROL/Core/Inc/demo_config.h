@@ -13,8 +13,8 @@
 #define DEMO_DRIVER_WAKE_MS 20u /* Includes foreground SPI configuration. */
 #define DEMO_OPEN_WAKE_MS 350u /* Gates off: allow 256 stable current-zero samples. */
 #define DEMO_CURRENT_ZERO_TIMEOUT_MS 2000u /* Still gate-off; latch a fault if zero never qualifies. */
-#define DEMO_OPEN_MAX_RPM 350.0f
-#define DEMO_OPEN_ACCEL_RPM_S 150.0f
+#define DEMO_OPEN_MAX_RPM 100.0f
+#define DEMO_OPEN_ACCEL_RPM_S 75.0f
 #define DEMO_OPEN_NEUTRAL_LOW 1.3f
 #define DEMO_OPEN_NEUTRAL_HIGH 1.7f
 #define DEMO_OPEN_NEUTRAL_DWELL_MS 200u

@@ -100,7 +100,7 @@ static void reply(const ip_addr_t *ip,uint16_t port,const char *text) {
 }
 static void received(void *arg,struct udp_pcb *pcb,struct pbuf *p,const ip_addr_t *ip,u16_t port) {
     (void)arg; (void)pcb;
-    char bytes[80]; net_command_t command;
+    char bytes[192]; net_command_t command;
     if (!p) return;
     bool parsed=p->tot_len<sizeof(bytes) &&
         pbuf_copy_partial(p,bytes,p->tot_len,0)==p->tot_len && protocol_parse(bytes,p->tot_len,&command);
@@ -111,18 +111,38 @@ static void received(void *arg,struct udp_pcb *pcb,struct pbuf *p,const ip_addr_
     if (command.operation==NET_STATUS) {
         char response[640]; app_status_text(response,sizeof(response)); reply(ip,port,response); return;
     }
+    if (command.operation==NET_CONFIG || command.operation==NET_TESTINFO) {
+        char response[640];
+        if (command.operation==NET_CONFIG) app_config_text(response,sizeof(response));
+        else app_test_text(response,sizeof(response));
+        reply(ip,port,response);return;
+    }
+    if (command.operation==NET_TRACE) {
+        uint8_t bytes_out[728];size_t length=app_trace_read(command.args[0],bytes_out,sizeof(bytes_out));
+        struct pbuf *out=pbuf_alloc(PBUF_TRANSPORT,(u16_t)length,PBUF_RAM);
+        if (out) {
+            if (pbuf_take(out,bytes_out,(u16_t)length)==ERR_OK) (void)udp_sendto(endpoint,out,ip,port);
+            pbuf_free(out);
+        }
+        return;
+    }
     app_status_t s; app_status(&s); uint32_t now=HAL_GetTick();
     if (s.source!=SOURCE_ETHERNET) { reply(ip,port,"ERR source"); return; }
     bool same=owner_valid && ip_addr_cmp(ip,&owner_ip) && port==owner_port && command.session==owner_session;
     if (!same) {
         bool inhibited=s.servo.state==SERVO_OFF || s.servo.state==SERVO_READY;
-        if (command.operation!=NET_POSITION || !inhibited ||
+        if ((command.operation!=NET_POSITION && command.operation!=NET_CALIBRATE && command.operation!=NET_ZERO &&
+             command.operation!=NET_SET && command.operation!=NET_TEST) || !inhibited ||
             (owner_valid && now-owner_ms<=CONTROL_COMMAND_MAX_AGE_MS)) { reply(ip,port,"ERR owner"); return; }
         owner_ip=*ip; owner_port=port; owner_session=command.session;
         owner_valid=true; owner_sequence=command.sequence-1u;
     }
     if (!protocol_newer(command.sequence,owner_sequence)) { reply(ip,port,"ERR sequence"); return; }
-    bool ok=command.operation==NET_POSITION ? app_position(SOURCE_ETHERNET,command.millidegrees) :
+    bool ok=command.operation==NET_SET ? app_set_parameter(command.args[0],command.args[1]) :
+            command.operation==NET_TEST ? app_test_prepare(command.args) :
+            command.operation==NET_ZERO ? app_zero(SOURCE_ETHERNET) :
+            command.operation==NET_CALIBRATE ? app_calibrate(SOURCE_ETHERNET) :
+            command.operation==NET_POSITION ? app_position(SOURCE_ETHERNET,command.millidegrees) :
                                              app_heartbeat(SOURCE_ETHERNET);
     if (ok) { owner_sequence=command.sequence; owner_ms=now; }
     char response[64]; snprintf(response,sizeof(response),"%s G1 %lu %lu",ok?"OK":"ERR",

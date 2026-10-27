@@ -1,5 +1,1 @@
-/build/
-/Debug/
-/Release/
-*.launch
-__pycache__/
+/logs/

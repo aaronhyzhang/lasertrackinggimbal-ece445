@@ -1,16 +1,18 @@
 #ifndef CONTROL_CONFIG_H
 #define CONTROL_CONFIG_H
 #include "pcb_config.h"
+#include "motor_profiles.h"
 #if PCB_STAGE != PCB_MOTOR_RUN || PCB_BENCH_CAPTURE_DRIVER_FAULT || PCB_BENCH_ALLOW_CPUV_HISTORY
 #error Control project requires motor pin mapping and normal immediate driver shutdown
 #endif
 /* Initial commissioning limits, not established motor capabilities. */
 #ifndef CONTROL_SOURCE_ETHERNET
-#define CONTROL_SOURCE_ETHERNET 0
+#define CONTROL_SOURCE_ETHERNET 1
 #endif
-/* Start with network/sensor validation. Set 1 after the current-window scope test. */
+/* Tilt is commissioned. Pan has hard stops; keep it inhibited until its safe
+ * travel/zero are defined. An explicit CLI define overrides this build default. */
 #ifndef CONTROL_MOTION_ENABLED
-#define CONTROL_MOTION_ENABLED 1
+#define CONTROL_MOTION_ENABLED (PCB_TEST_AXIS == 1)
 #endif
 /* First commissioning stage: encoder-based sinusoidal VOLTAGE commutation.
  * Current PI is reserved for the later FOC stage, never enabled implicitly. */
@@ -22,20 +24,14 @@
 #define CONTROL_ALLOW_WEAK_MAGNET 1
 #define CONTROL_ENCODER_MAX_AGE_US 4000u
 #define CONTROL_COMMAND_MAX_AGE_MS 500u
-#define CONTROL_MAX_RPM 550.0f
-#define CONTROL_ACCEL_RPM_S 200.0f
 #define CONTROL_IQ_LIMIT_A 0.5f
 #define CONTROL_PHASE_TRIP_A 1.5f
 #define CONTROL_VOLT_LIMIT 6.0f
-#define CONTROL_RUN_VOLTS 6.0f
-#define CONTROL_VELOCITY_KP_V 0.5f
-#define CONTROL_VELOCITY_KI_V 0.5f
 #define CONTROL_CURRENT_KP 2.0f
 #define CONTROL_CURRENT_KI 300.0f
-#define CONTROL_POSITION_KP 3.0f
 #define CONTROL_VELOCITY_KP 0.08f
 #define CONTROL_VELOCITY_KI 0.10f
-#define CONTROL_CAL_VOLTS 1.0f
+#define CONTROL_CAL_VOLTS 2.0f
 #define CONTROL_END_MARGIN_DEG 2.0f
 #define CONTROL_LONG_PRESS_MS 2000u
 #define DEMO_UDP_PORT 5005u

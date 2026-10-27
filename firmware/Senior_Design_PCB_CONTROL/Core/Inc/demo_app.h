@@ -22,5 +22,12 @@ void app_stop(void);
 void app_status(app_status_t *snapshot);
 bool app_position(command_source_t source,uint32_t millidegrees);
 bool app_heartbeat(command_source_t source);
+bool app_calibrate(command_source_t source);
+bool app_zero(command_source_t source);
+void app_config_text(char *text,size_t length);
+void app_test_text(char *text,size_t length);
+size_t app_trace_read(uint32_t first,void *bytes,size_t length);
+bool app_set_parameter(uint32_t key,uint32_t value);
+bool app_test_prepare(const uint32_t args[6]);
 void app_status_text(char *text,size_t length);
 #endif

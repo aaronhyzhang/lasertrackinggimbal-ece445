@@ -1,5 +1,5 @@
 {
-  "date": "2026-10-26",
+  "date": "2026-10-27",
   "hardware_validated": false,
   "current_pi_default": false,
   "tests_and_builds": [
@@ -10,7 +10,7 @@
         "--zig",
         "C:\\Users\\colin\\OneDrive\\Documents\\STM32CubeIDE_Workspace_2025\\Senior_Design_FW\\tmp\\host_tools\\ziglang\\zig.exe"
       ],
-      "log_sha256": "51d2523ada52277f4b8a964da8ff9568ba59211b84298b056cd5bbee1dff3511"
+      "log_sha256": "4fdfacd305d19ed597697d7a2421e7fbae6be42e8a8e7f6755217921601fefdf"
     },
     {
       "name": "bsp",
@@ -19,7 +19,7 @@
         "--zig",
         "C:\\Users\\colin\\OneDrive\\Documents\\STM32CubeIDE_Workspace_2025\\Senior_Design_FW\\tmp\\host_tools\\ziglang\\zig.exe"
       ],
-      "log_sha256": "697c499d7da83fca3132d70037d8d4077888edff9e5367d53457a4b4ee956f1b"
+      "log_sha256": "0bc204f84073df6fcd8ef93ed4471974573bdcb817a6cf6f3421a16a3e009055"
     },
     {
       "name": "Debug_axis0_off_pot",
@@ -34,7 +34,7 @@
         "--source",
         "pot"
       ],
-      "log_sha256": "6929cf450997cecf9c99eecbc14ca78053a7c39a01c3fa2035821099cb3dbc67"
+      "log_sha256": "b3fa1d42fe5ae1223287be66576ebc98d3fac9b5e38aa1ab0147e4da11238a10"
     },
     {
       "name": "Release_axis0_off_pot",
@@ -49,7 +49,7 @@
         "--source",
         "pot"
       ],
-      "log_sha256": "f013e389ec36ad46a1f3157f1a3b8529730b1e11eac91a1aaab1d81370bf61a2"
+      "log_sha256": "5ea4ecd0cba305efb615f6f17e071c3faf6f1a286dd4e0935d36b843110b3a17"
     },
     {
       "name": "Debug_axis0_on_pot",
@@ -64,7 +64,7 @@
         "--source",
         "pot"
       ],
-      "log_sha256": "f85e59cf6e9e0d75355867ce6bd878764093b4df87eb008763f7d60601b3edaf"
+      "log_sha256": "ee4a9c9e88b8ef9c4484297995b2d935ef6f15a86c959225a84ad00ebf565c49"
     },
     {
       "name": "Release_axis0_on_ethernet",
@@ -79,7 +79,7 @@
         "--source",
         "ethernet"
       ],
-      "log_sha256": "b165808a058aecd6fca5deb78923e7ac1bda9df9ccdc8eef8982178af1fbee1d"
+      "log_sha256": "ff6b24e402e662f1249d5e620f81948a6f93f8626515ba50a508cbb7c47c8af9"
     },
     {
       "name": "Release_axis1_on_pot",
@@ -94,7 +94,7 @@
         "--source",
         "pot"
       ],
-      "log_sha256": "7400937822688d5cb13cb3a226a6f0c6af894eaacd3dccb111ccfccae9396dc3"
+      "log_sha256": "1c4a18e50ff3c48cb22e00cbbfe771ad8613b05d2f4262af3c8eb9cd66494655"
     },
     {
       "name": "Release_axis1_on_ethernet",
@@ -109,39 +109,42 @@
         "--source",
         "ethernet"
       ],
-      "log_sha256": "6f8ddb5d84fb67b2a97d43f4ea317731a19380983716c1a7bf066ff8002e81e1"
+      "log_sha256": "e390d78dca035b725b2bbb6333ca08622d023f8fde620db12010b2ed35018992"
     }
   ],
   "source_sha256": {
     "Core/Inc/arm_button.h": "d9198177b1e1e0eef86cc75f945d423f02dec99f729b25adf686157a0a21ff09",
     "Core/Inc/board.h": "9b32f7ccdf4cbc1ca28db20b4e8202d0af1b0d53155e8671df9d59e6dd4b90c0",
-    "Core/Inc/control_config.h": "e631f2d6cfc8a534d3c5903d24dc10ddbb1aca58c4bee25d370a1ea453867bc4",
-    "Core/Inc/demo_app.h": "e4d5d711a0f7623eefb515b7fe0653373d854a55a2f4ef7b710fa3e6007d135c",
-    "Core/Inc/demo_config.h": "2365aaa7d590a7b401ee300b85221077d51d0be4891dde35bfd1d4cb010f76ac",
+    "Core/Inc/commission.h": "e0278916727fbcb6fbacb4d0f07324be0fa9e99a77da14c7b3dfbfb2a8cf579f",
+    "Core/Inc/control_config.h": "26d87b25f74c7b01fd4f28cfac0e3a2f9eace47f6959a275a2fbb67fcbb7f7ea",
+    "Core/Inc/demo_app.h": "b5340120402020d8c2f49c2ae22f9459f086db885564833adc82863abc886593",
+    "Core/Inc/demo_config.h": "8a67d453952f90f50f27ef4b10d644a550131a17f5e9a076069eb0e407fa21ef",
     "Core/Inc/demo_network.h": "a116dccd1a455defd639a0cde360b45803785a46eb79cb814ee31383e964fa88",
-    "Core/Inc/demo_protocol.h": "841c3f9d29488df6fdae71ce6b231a5d7fd043bf97b65efb11717190c098dcd3",
+    "Core/Inc/demo_protocol.h": "be552d59f5c762a6b574667b51e52544519eb7a4de590a8ed5b8b8694aa5f031",
     "Core/Inc/driver_trip.h": "a9a44c79a3d69fbc3f18622455d1e798295dc9caa4285e9e243de41d0b1229ba",
     "Core/Inc/drv8304.h": "885445701b7a3ec1ccc841a11662d227d3d1708fdf20c52869f0306857d5ee5a",
     "Core/Inc/lwipopts.h": "2d2760e0549b197061cb4c88d7555190652caa6ea1b18a1f0cef3b85a35281c3",
+    "Core/Inc/motor_profiles.h": "6baa117c7baa78ff9c10879563ffeb21eba2117dcfd9e2f160248dc116716e8f",
     "Core/Inc/open_loop.h": "d7b84afbb9aa8c8c4c50801ab232e623a1dee3c683fb27c15fd0b50e22bec1ef",
     "Core/Inc/pcb_config.h": "fbbb425702b371d3db3993d7c6d04d6906cff8ed089f8c68e2ec379e6ae1739e",
     "Core/Inc/pcb_pins.h": "778216162f8df0beded387697100a927ab5af5b9d3af58c0666b99d203f4e493",
     "Core/Inc/pcb_pwm.h": "1a8fd849780b8bb9e3f75b0d26b95e1c7779e40a8197782c256cc288a8056312",
     "Core/Inc/pcb_sense.h": "9ed7f5772c77c172d28855dd3daa0a919dbfd0de16446d3631687759de5e7a4e",
-    "Core/Inc/position_control.h": "fb3a93f4fb66929ad000f63213891d06c9ce47903f1dec8cb41ebc323dc727fc",
+    "Core/Inc/position_control.h": "2f4a5dd71115be952949d8781c1d8f7b45fde3cf0397bd19c0941b9355514928",
     "Core/Inc/sense_math.h": "b4beb899d5ae069deb4f0ebd6661e83630a26a25529e94dc9bf0f7f68c7fb283",
     "Core/Inc/stm32h7xx_hal_conf.h": "b6c0556a46d30a9dafc879ab482c10384146475d7b98fe3b3b225867baee5921",
     "Core/Inc/thermistor_table.h": "42747dbab43f765f2b0487ad02628ded640aeac32c6609b81972a4c73c945b05",
     "Core/Src/board.c": "0a62f725d2236a564161d49784f05fba4fa5eb9dee793a5d14338554605c238e",
-    "Core/Src/demo_app.c": "efb68ba887f21a86bd0cfeb3ba19ce01f44ba548b286d147bd42f081fe572998",
-    "Core/Src/demo_network.c": "df07692706a8a85e0268bc766f942e6db591ff14df4f97fcbb43ea47e4555351",
-    "Core/Src/demo_protocol.c": "b12ec0952ca27515ab94b7018fc757715676b9a1a0dfc536d3a74ac6f4423cb2",
+    "Core/Src/commission.c": "d311ca640af38b1691a287cb354590aa9d80ba1bb0f2c18b531f652f2f2efb83",
+    "Core/Src/demo_app.c": "32d18077b14e6bc2569e4f51f0cc2762e39959b59e90d555c3a4d6fc2ebd18ce",
+    "Core/Src/demo_network.c": "1297a12bba7054f0d681cc64aee3fcb20eb168be92675ce0aed039e64eee631a",
+    "Core/Src/demo_protocol.c": "8ecac13fb86298546601f7681c4e358d384ff960aec6328efb16db8265e63522",
     "Core/Src/drv8304.c": "25de199871abfb688a9e5cd80c494a803356598a0a8dc08df35f947b65e9e2eb",
     "Core/Src/main.c": "0fac4317ec61d58b44806de7c774d3bed8e9a083677e2c056eec83929e34bb61",
     "Core/Src/modulation.c": "3762deb0150659e7ec53870a3d432b90295e465d51b3e384266920c349d8173a",
     "Core/Src/open_loop.c": "89613461a3de06058b50e830bb87e67c5b01994cc7e3958687ea010711bbd311",
     "Core/Src/pcb_sense.c": "7e993d47d7f25f420d4feb4f84450769d9825e109ea3505393545847b03fb26b",
-    "Core/Src/position_control.c": "4bbcc5ef2c70432d25d2c83ae67038358f4128c799bf95dd752309cb3706bded",
+    "Core/Src/position_control.c": "2a96aacb1742810f37c4bb87c5715db0efb01e453b5d27bff1bcf6741fe04d7f",
     "Core/Src/runtime_support.c": "87d203592cf33d4f655a6505ceae8d73d6f3bc535f6c7869d940b19b12e49c19",
     "Core/Src/sense_math.c": "a7485cf133a6ed3626442b92bf0b767bbd96c04de2e879156c3dfc29b94fb794",
     "Core/Src/stm32h7xx_hal_msp.c": "a08168822207db031f13be63f98fe4e95e228511a82e12ef58e9f41046f8bf4d",
@@ -206,15 +209,28 @@
     "Drivers/CMSIS/Device/ST/STM32H7xx/Include/system_stm32h7xx.h": "edbd2ae253530241ca82470fde1db4de1b0ba856590d69b17d3342b952c1fcba",
     "Drivers/CMSIS/Device/ST/STM32H7xx/Source/Templates/system_stm32h7xx.c": "2ea5c2bd1c55e454fcbe26612c0b2a57f321fffb857ccd92844682288dd62518",
     "Tools/build.py": "f9155d5bad92162c8fc8057344ef521df62c9bf54baedecbf940a5509bd4dbfc",
+    "Tools/calibrate_motor.py": "3091192f92f498468d1aeef1d74d24345a81e255b117569bc6c1ea8f8c3ebef1",
+    "Tools/commission.py": "795ef70bc7a1cce1b3e4d4a86b9b6551a3daa76c7466b875797f68437c111980",
+    "Tools/commission_model.py": "9cc0dbe0b60c5c356ebb7cee9ce2bf3e5ae7f278a4ec5d2edadaef9dc3b643cc",
     "Tools/position_client.py": "7da2f656a79859f1409b0e1e4b40a81d6413d6a50dc79b3e58a1fb5b6f4b2ee8",
-    "Tools/test.py": "011d8d1bb3044165ee9b90200338849f5bc2b214b1e3668914502c908568fa0c",
-    "Tools/test_bsp.py": "a65c5df68ecaf4966be452090a6265aa034ca6b8d5522b08f3ac6b98b44644d3",
-    "Tools/validate.py": "cc4d8d8470a96f3b3b160aadb776479d01a68dc6eecfd9dae95d902ac67bfde8",
+    "Tools/position_sweep.py": "46083875708b8a600cd27abe526b375ffd99f945b88bb72d09ba38de7d762d5e",
+    "Tools/position_tuning.py": "8a9f23a274cbddcd033c2a4f46bcea03811425e37bbe14d1420abb75eb08aa61",
+    "Tools/run_commission.py": "260b50791b144991f0d583d2c2bb7043a322fdf9d69f405985852e7e642eb72b",
+    "Tools/test.py": "95d8c7d45d8557b83e48340e015a97e1ac9df03d81178f748ac8e04271bb3347",
+    "Tools/test_bsp.py": "3d843b75ff71c25365e4d622a1ebfe3d6435a1039c2651fcf57b3cf6d40ca694",
+    "Tools/validate.py": "c9face163db0590908ac9df03591b72f58b2361fe6454db4a155f1f4398b2bb3",
     "Tests/test_acquisition.c": "9b2c90569850f0ed96ac8475eade354c346714801533f0df4505646272c562fc",
-    "Tests/test_app.c": "e446597b389a26bc478cd2b7048ef663b6512fc98af3c4dfb4156d6652af26e7",
+    "Tests/test_app.c": "55deb8cc0525766115844f7b409ad01d5db7900b3bab31f40da043efee284ebc",
     "Tests/test_client.py": "38e8bfcca4c139ff870a4cce1b4bc2502f4e55b2f180a92c6d5294f4f49d8bc0",
-    "Tests/test_network.c": "591b6d6ad8141ef750e6ab22e03f05d9ff5375b8f78ac3ed3fe47718109326d1",
-    "Tests/test_position.c": "4ca8b204c5adcabdd4da9373fe095e23a959ff6bb077836b61d9ace8bbfdda7b",
+    "Tests/test_client_calibration.py": "fdebe9a3fecc1e1e7df68b0e45d9052fd379d0df01b47c0dfe953720ef613a59",
+    "Tests/test_client_commission.py": "b5fc3837d5e6d8f01a11a5b3b3b5e8db3fcf48c837bd4873aec4e87878b04f53",
+    "Tests/test_client_sweep.py": "280aa2c30525930597c3f70fd815b9a27873cfc477b4661f607aaeebd508bd57",
+    "Tests/test_client_tuning.py": "15b2bbbd2eebff98a528e656c614b53a0691f721687211f88bd25e8eb7e7c84a",
+    "Tests/test_commission.c": "12987401f35ff49472ef99754e52f80019f13849c0c589886421b739dc0e3c81",
+    "Tests/test_motor_profiles.c": "2c2f80370bb7cfbd8a95ba91d5b332aa1368d4fa4f022939066041b30e82ed2d",
+    "Tests/test_network.c": "3a273e85445ac59570bd42f6ee08f5566c19a341f8941b026440e1f3370273dd",
+    "Tests/test_pan_coordinates.c": "6e6db278e168cc00b7568e266cab8c0a07b1615ecccf7e5f0cd655f99c502395",
+    "Tests/test_position.c": "34628c7ea1dc687c1ce594fcc76cf1e483adb6a898db764cc3e24c7263a515be",
     ".project": "8afcda972e30a28548df45ed3e40b41ccdea78847e294fbf0d8fbd8aef8247ed",
     ".cproject": "9f4384f4851b1d072c967f0b6327fcab1c9a8ea407e487da244d8161401e017a",
     "STM32H743ZITX_FLASH.ld": "7ea16e85615855424b5dd2ee2e20f7b2b69e814f34cb3c7845fa23c3b45ccf55",
@@ -419,28 +435,51 @@
   "elf_sha256": {
     "build/Release/Senior_Design_PCB_CONTROL.elf": "5468a98e371aad4185d4fd45bcc527e1b7c6d074be330e355cfb7355a4704c3f",
     "build/Release/motion-on_ethernet/Senior_Design_PCB_CONTROL.elf": "8f3c70ce093dbf39724ab464b4cb3cbd3cb849d4f7a6eba425154194b22b62fe",
-    "build/AXIS1/Release/motion-on_ethernet/Senior_Design_PCB_CONTROL.elf": "d74cbef086d23d05685f11bb35ee689499474e6d40dec57696183b526117fac9",
-    "build/AXIS1/Release/motion-on_pot/Senior_Design_PCB_CONTROL.elf": "66d6928508d100a615ca28d717b9afc3a680a7be0072cad55a9c8bb31de36721",
-    "build/AXIS0/Release/motion-off_pot/Senior_Design_PCB_CONTROL.elf": "7e989b1666d094fa750bff9920e88326fd11be9946760d4b4e79716cf7f4779a",
-    "build/AXIS0/Release/motion-on_ethernet/Senior_Design_PCB_CONTROL.elf": "5c7f83819ade7fac9de9bb28497143af823b02898585dcb50d2d979f1c52a5a2",
-    "build/AXIS0/Debug/motion-off_pot/Senior_Design_PCB_CONTROL.elf": "7e989b1666d094fa750bff9920e88326fd11be9946760d4b4e79716cf7f4779a",
-    "build/AXIS0/Debug/motion-on_pot/Senior_Design_PCB_CONTROL.elf": "7da6280ad7bcd3d739ba99efeb7587139a12269a95d86c5779e83f8d5cf001aa"
+    "build/AXIS1/Release/motion-on_ethernet/Senior_Design_PCB_CONTROL.elf": "3a9d3274c2fea4bbe740eb4ae247fd7b2f3e9add3d8c26ff90de68a811e97054",
+    "build/AXIS1/Release/motion-on_pot/Senior_Design_PCB_CONTROL.elf": "a49a60d564a873da9b477bb1baa35e2857e2a53690eb6a398263f85d3d1ce141",
+    "build/AXIS0/Release/motion-off_pot/Senior_Design_PCB_CONTROL.elf": "8dc821dc5053a5fb0ad806a4d10f68d07845bd7461190bb9be3d3dcada892200",
+    "build/AXIS0/Release/motion-on_ethernet/Senior_Design_PCB_CONTROL.elf": "2f4958fb68a9cbe94a1210b89454882b7584af7c5fc16c212c846eb71d889dd0",
+    "build/AXIS0/Debug/motion-off_pot/Senior_Design_PCB_CONTROL.elf": "8dc821dc5053a5fb0ad806a4d10f68d07845bd7461190bb9be3d3dcada892200",
+    "build/AXIS0/Debug/motion-on_ethernet/Senior_Design_PCB_CONTROL.elf": "b4c9df634888ddc988d8b4d300d2c401e28cc7f8e212e64fe620efcf0a6694ca",
+    "build/AXIS0/Debug/motion-on_pot/Senior_Design_PCB_CONTROL.elf": "fae5a1c51176e2c1b19a571ec873f5d30c71ecc553f8499fe74f8401ec18b4c2"
   },
   "native_cubeide": {
     "project": "C:\\Users\\colin\\OneDrive\\Documents\\STM32CubeIDE_Workspace_2025\\Senior_Design_PCB_CONTROL",
-    "log_sha256": "d3ba127dd6f64b4d5003b5f6a1dbaff2fdfc8c47acceb9c0b58de639e32eb302",
+    "log_sha256": "1ca87dab0b639d451c5c461dc72344578729cc9ff1481711f9a57496b1116611",
     "builds": {
       "Debug": {
-        "elf_sha256": "7fab322e73921afe421f565eca937f8aa39dab87ee14bd0b21af48042f0c0691",
+        "elf_sha256": "482dd6e028a4859040913a3003ca7b86aacd6f8af93109c3b894869322829c3d",
         "eth_dma_address": "0x30000000",
         "eth_dma_size": 19264
       },
       "Release": {
-        "elf_sha256": "0fa1aac2eb75cf471845da9023d669c9eaf0ec5cb78ba7079fb477a9a620a3f7",
+        "elf_sha256": "d18cff7cddb87b81e212ea8b7ed4a78d95a2ecb5da74da02bfdefb5a2129431a",
         "eth_dma_address": "0x30000000",
         "eth_dma_size": 19264
       }
     },
     "user_configuration_overrides": {}
+  },
+  "pan_sensor_only": {
+    "elf": "C:\\Users\\colin\\OneDrive\\Documents\\STM32CubeIDE_Workspace_2025\\Senior_Design_PCB_CONTROL\\build\\AXIS1\\Debug\\motion-off_ethernet\\Senior_Design_PCB_CONTROL.elf",
+    "elf_sha256": "4a7a7fbcd9cf955388309c47dfba1bb6e873fd37aee9c61e31bf732ce17ddc3f",
+    "axis": 1,
+    "motion_enabled": false,
+    "source": "ethernet",
+    "log_sha256": "3f2303435ec083d9d34c3269e01ac9f7ec7412a0d25f8667cc75b7aef60f5bc1"
+  },
+  "pan_motion_image": {
+    "elf": "C:\\Users\\colin\\OneDrive\\Documents\\STM32CubeIDE_Workspace_2025\\Senior_Design_PCB_CONTROL\\build\\AXIS1\\Debug\\motion-on_ethernet\\Senior_Design_PCB_CONTROL.elf",
+    "elf_sha256": "c577893d39891bc632503dd78bf9d9cd01adf05bfaed25ed3adf774b4773c8f1",
+    "axis": 1,
+    "motion_enabled": true,
+    "source": "ethernet",
+    "command_range_deg": [
+      2,
+      337
+    ],
+    "positive_encoder_sign": -1,
+    "log_sha256": "8954ae71f9af85cdb1166f83374aa714bbcd55bb5c63114aea11dddcbad869c9",
+    "hardware_validated": false
   }
 }

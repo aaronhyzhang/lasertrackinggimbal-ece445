@@ -1,4 +1,114 @@
-# Validation record, 2026-10-26
+# Validation record, 2026-10-27
+
+Pan hard-stop mapping increment: manual endpoints imply approximately 339.7..339.8
+degrees of free travel, with raw angle decreasing CCW. Pan uses a fixed negative
+encoder-coordinate sign, separate from calibrated electrical phase polarity;
+voltage/current targets and trace voltage polarity follow the mechanical frame.
+Pan command limits are 2..337 degrees; oversized network targets and experiment
+windows are rejected. Fast effort gating prevents outward requested effort at
+the endpoint limits. Tilt calibration-derived coordinates and travel stay intact.
+New host tests cover both possible pan phase orders in voltage and current-PI
+builds, positive mechanical feedback/effort, endpoints, travel rejection and trace
+polarity. Python tests reject pan captures with mismatched bounds/polarity and
+out-of-range experiment windows before TEST. Full software/build checks are rerun.
+No powered pan test or automatic flash is claimed; pan still defaults to motion
+disabled until explicitly enabled for midpoint calibration and a first +10 move.
+
+Persistent motor-profile increment: J3/axis0/TIM1/I2C1 is tilt, J4/axis1/TIM8/I2C2
+is pan. Tilt defaults save the user's latest 0.215/18.795/5.5 gains, 110 RPM,
+150 RPM/s and 6 V. Pan has independent seed defaults and is motion-disabled by
+default because its hard-stop span/polarity remain to be measured. No actual pan
+motion or full-range qualification is claimed. Host tests initialize both axis
+profiles, confirm reset restores the correct defaults and pan starts inhibited.
+Sweep source labels resolve the selected profile. The full software matrix and
+native builds are rerun for this firmware configuration change. MOTOR_PROFILES.md
+records the midpoint-calibration / clockwise-end-zero preparation and remaining
+pan travel/polarity work.
+
+Position objective follow-up: the completed user acceleration sweep passed every
+step through 150 RPM/s, improving worst +/-1-degree arrival 0.275 -> 0.200 seconds.
+The old selector retained 75 RPM/s on a 0.926-ms confirmation difference. Ranking
+now minimizes worst time to enter and remain within the user's +/-1-degree band;
+stability and overshoot must still qualify, and confirmation time breaks ties.
+Auto, verify and envelope share this objective. All 46 Python tests pass,
+including faster arrival with nearly equal confirmation and rejection of fast
+arrivals without stability. Firmware and compiled motor defaults are unchanged.
+See BENCH_TUNING_20261027.md for measured currents/response and the next experiment.
+
+Position score schema-2 increment: separate arrival, final stable-interval start
+and confirmation time; use one 0.5-second dwell and require stability to continue
+through the end of a constant-target segment. Tests cover an early temporary
+hold followed by target loss and uint32 timestamp wrap. The SET CLI now releases
+its owner after inhibited gain writes so the next script can start immediately.
+Envelope search measures a baseline and recommends the fastest qualifying worst
+settling result rather than the largest passing limit, with regression coverage
+for a slower higher limit and baseline retention. All 44 Python tests pass.
+Firmware is unchanged. The successful user position/holdout evidence and accepted
+local gain pair are recorded in BENCH_TUNING_20261027.md; hardware-wide/thermal
+maxima and larger moves remain unqualified.
+
+Python-only explicit position verification: the three user velocity trials
+completed without controller faults but all failed the original whole-trial
+velocity RMS screen. That screen and its rejected scores remain unchanged.
+The verify command can compare an explicitly selected hardware-tested gain
+pair against the baseline's position performance, retain position Kp and limits,
+require two position holdouts for any improvement recommendation, and restore
+baseline settings with acknowledged readback. The report records restoration
+and failure evidence. All 38 Python client/model tests pass, including success,
+failed position score, fault/restore and rejected limit-change paths. Firmware
+images and their earlier build evidence are unchanged. These are local tests;
+the new position verification has not yet been run on the mechanism.
+
+Python-only capture follow-up: replay of the user's completed 0.6-V / 50-ms /
+1.2-second capture now converges (252 evaluations; original budget was 80), with
+0.224 normalized holdout error. The candidate grid now covers positive-Kp
+designs for the fitted high damping; quantized gains retain the same phase and
+nonlinear simulation screens. Saved completed captures can seed auto with
+live build/config/axis matching instead of repeating excitation. Velocity
+validation runs eight complete 800-ms cycles. All 34 Python client/model tests
+pass, including measured-capture replay, mismatched/incomplete capture rejection,
+saved-trace execution and baseline restoration. Firmware sources/images are
+unchanged by this follow-up; no flash or board commands were issued. The model
+and its candidates have not yet passed closed-loop hardware holdouts.
+
+Commissioning tool increment: voltage duty range .25..75 makes 6 V available at
+24 V; current-PI range remains .35..65. A common measured-bus voltage ceiling
+drives PWM and velocity anti-windup. Runtime RAM-only parameters have readback,
+revision and FNV checksum. SET is prohibited while moving. MCU-timed experiment
+modes cover position, velocity, bipolar voltage and balanced PRBS. A single S1
+grants a live test batch; STOP/fault/disconnect revokes it. Acquisition samples
+at 1 kHz into a 2048*88-byte ring with explicit trace version, trial and sequence.
+Host tests cover true-output saturation/reversal, ring wrap, waveform timing,
+local travel abort, S1/STOP/lease and actual LwIP SET/TEST/TRACE/replay handling.
+Python loopback tests cover readback, dropped traces and staged optimizer/rollback.
+Synthetic output-error identification recovers a known delayed/filtered plant
+and tests held-out records before deriving/screening gains. The exported plots
+were inspected. NumPy/SciPy/Matplotlib live in a workspace-local environment.
+No hardware commands or motion were attempted for this increment. The expanded
+duty/current window, streaming timing, fitted real model and 6-V operation still
+require actual-board validation. New authoritative guide: COMMISSIONING_TOOL.md.
+Earlier entries below are commissioning history, not current duty/tool limits.
+
+Keyboard-zero increment: ZERO is queued only in calibrated READY with Ethernet
+motion selected, STOP released and no calibration pending. The 1-kHz controller
+captures the current accepted encoder coordinate; STOP cancels queued ZERO.
+It does not enable PWM or arm position control. The calibration script defaults
+to an Enter prompt after electrical calibration has disabled the bridge, then
+requires zero=true and position within 1 degree of zero; --skip-zero omits this.
+Tests cover actual application gating/capture/STOP, actual LwIP replay/rejection,
+and client keyboard flow. Hardware retest required. User's active 100 RPM,
+75 RPM/s, position gain 4 tuning was preserved, not increased automatically.
+
+Remote calibration increment: strict CALIBRATE protocol command shares Ethernet
+ownership/replay checks, only queues from OFF/READY with motion+Ethernet enabled,
+and is consumed by the existing 1-kHz calibration state machine. S2/STOP cancels
+queued work and inhibits active work. Remote calibration needs a live 500-ms
+command lease; client loss trips COMMAND_TIMEOUT. It clears prior mechanical
+zero and never arms position control. HAL/app tests cover blocked modes/running,
+STOP priority and lease expiry. Actual LwIP endpoint tests cover acceptance,
+replay and other-owner rejection. Fourteen Python client tests pass separately,
+including calibration completion/fault/precondition checks. New firmware and
+script require assembled-board commissioning; no hardware flash was performed.
 
 Latest requirement audit after a 26-us first-callback SERVO_TIMING capture:
 voltage mode uses a 45-us execution budget within the 50-us trigger period;

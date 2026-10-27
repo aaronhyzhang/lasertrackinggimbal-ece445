@@ -43,6 +43,24 @@ const char *network_status(void) { return "TEST"; }
 static void tick(void) { us+=1000;foreground_ms=HAL_GetTick();app_control_tick(); }
 static void reset(void) { us=1000;arm=stop=enabled=pwm=false;app_init();stop_previous=stop_eligible=false; }
 int main(void) {
+    if (CONTROL_SOURCE_ETHERNET && CONTROL_MOTION_ENABLED) {
+        reset();servo.state=SERVO_READY;servo.commutation_calibrated=servo.zero_set=true;
+        servo.unwrap_started=true;servo.raw_turns=0.5f;servo.position_deg=180;servo.previous_raw=2048;
+        assert(app_set_parameter(0,650));assert(servo.config.velocity_kp==0.65f);
+        uint32_t plan[6]={0,10000,6000,1000,180000,30000};
+        assert(app_test_prepare(plan));
+        for(unsigned j=0;j<25;++j)tick();
+        assert(servo.state==SERVO_READY && !g_commission.authorized);
+        arm=true;
+        for(unsigned j=0;j<400;++j) { if(j%100==0)assert(app_heartbeat(SOURCE_ETHERNET));tick(); }
+        assert(g_commission.running && g_commission.authorized);
+        assert(!app_set_parameter(0,700)); /* No moving gain swap. */
+        for(unsigned j=0;j<1100;++j) { if(j%100==0)assert(app_heartbeat(SOURCE_ETHERNET));tick(); }
+        assert(g_commission.complete && servo.state==SERVO_READY && g_commission.authorized);
+        assert(app_test_prepare(plan));tick();assert(servo.state==SERVO_WAKE_RUN); /* Same S1 batch. */
+        app_stop();tick();assert(!g_commission.authorized && !g_commission.running);
+        assert(servo.state==SERVO_READY);
+    }
     reset();us=25000;last_tick_us=us;interrupt_on_clock_read=true;trip_fault=FAULT_NONE;
     app_foreground();
     assert(trip_fault==FAULT_NONE); /* A newer TIM7 stamp cannot underflow the age. */
@@ -55,6 +73,24 @@ int main(void) {
     simulated_work_us=46;app_current_sample();
     assert(servo.state==SERVO_FAULT && servo.fault==SERVO_TIMING);
     simulated_work_us=0;reset();
+    bool remote_enabled=CONTROL_SOURCE_ETHERNET && CONTROL_MOTION_ENABLED;
+    assert(app_calibrate(SOURCE_ETHERNET)==remote_enabled);
+    if (remote_enabled) {
+        tick();assert(servo.state==SERVO_WAKE_CAL && !servo.zero_set);
+        assert(!app_calibrate(SOURCE_ETHERNET));
+        for(unsigned j=0;j<510;++j) tick();
+        assert(servo.state==SERVO_FAULT && servo.fault==SERVO_COMMAND_TIMEOUT);
+        reset();assert(app_calibrate(SOURCE_ETHERNET));app_stop();tick();
+        assert(servo.state==SERVO_OFF && !calibration_pending && !remote_calibration);
+        reset();servo.state=SERVO_RUNNING;assert(!app_calibrate(SOURCE_ETHERNET));
+        assert(!app_zero(SOURCE_ETHERNET));
+        reset();assert(!app_zero(SOURCE_ETHERNET));
+        servo.state=SERVO_READY;servo.commutation_calibrated=true;
+        assert(app_zero(SOURCE_ETHERNET));assert(!servo.zero_set);
+        tick();assert(servo.zero_set && servo.state==SERVO_READY && servo.position_deg==0 && !pwm);
+        assert(app_zero(SOURCE_ETHERNET));app_stop();tick();assert(!zero_pending && !pwm);
+    }
+    reset();
     stop=true;app_stop();
     for(unsigned j=0;j<2100;++j) { tick();assert(!enabled && !pwm); }
     stop=false;tick();
