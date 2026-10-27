@@ -14,6 +14,8 @@ typedef struct {
     uint32_t foreground_age_ms,control_age_us;
 } app_status_t;
 extern volatile app_status_t g_app_status;
+extern volatile app_status_t g_axis_status[2];
+void app_select_axis(unsigned axis);
 void app_init(void);
 void app_control_tick(void);
 void app_current_sample(void);

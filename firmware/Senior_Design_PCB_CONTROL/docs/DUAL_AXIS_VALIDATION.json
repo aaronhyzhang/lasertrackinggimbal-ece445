@@ -1,0 +1,34 @@
+{
+  "date": "2026-10-27",
+  "pan_checkpoint": "3323cde",
+  "hardware_tested": false,
+  "flashed": false,
+  "active_native_dual_enabled": true,
+  "repository_dual_default": 0,
+  "results": {
+    "python_tests": 53,
+    "controller_tests": "passed",
+    "dual_app": "passed",
+    "dual_adc_contexts": "passed",
+    "dual_real_lwip": "passed",
+    "native_debug_release": "0 errors, 0 warnings",
+    "single_axis_fallback": "built"
+  },
+  "limitations": [
+    "Dual operation needs PCB validation, including ADC routing/timing and shared shutdown.",
+    "Dual mode supports voltage commutation only; single-axis TEST/TRACE is unavailable.",
+    "PWM carriers use software-aligned starts; physical phase and sample aperture need checking."
+  ],
+  "validation_log_sha256": {
+    "dual_cubeide_final.log": "85c276540d93dc5d524b18e77cc27415be2fffdcac5de9c2e32bfe652686dc61",
+    "dual_portable_tests.log": "ee7690860675b9c21bd774627abc3d77c55790b3d570084ede559406c1f8dab5",
+    "dual_python_final.log": "6bc6777fdb35941341c5897db8dc00b2379d8064e8daee97e878b655f1d8b931",
+    "dual_bsp_tests.log": "091d4175ce138c9e96f26caf32916e0c1550e1c54ea3c53e6b69f5d8b28f6b5a",
+    "dual_single_build.log": "d8670e1d48cc43744d30f82383a0e8785bb14f8925928695f0411b52094bc48d",
+    "dual_release_build.log": "a574d08c0933b1f62d226c6c23468206fcea7fa718293a3ddcb9796c21e85093"
+  },
+  "active_elf_sha256": {
+    "Debug\\Senior_Design_PCB_CONTROL.elf": "0f366cc018d9cfcd4282656c7c3243972172ae9c66e81f32c92cbdc6f0180707",
+    "Release\\Senior_Design_PCB_CONTROL.elf": "edc537723474b0f2a87e513915b2d3a04d13dd986b86f9f210f859a95701aa49"
+  }
+}

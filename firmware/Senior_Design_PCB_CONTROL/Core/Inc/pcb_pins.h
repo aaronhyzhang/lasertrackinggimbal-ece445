@@ -22,7 +22,10 @@
 #define PCB_RED           GPIO_PIN_10 /* PD10 / LED3, active high */
 #define PCB_VR1_PIN       GPIO_PIN_4  /* PA4 / POT1 / ADC1_INP18 / TP12 */
 #define PCB_VR2_PIN       GPIO_PIN_0  /* PA0 / POT0 / ADC1_INP16 / TP13 */
-#if PCB_TEST_AXIS == 0
+#if CONTROL_DUAL_AXIS
+extern unsigned board_active_axis;
+#define PCB_SELECTED_ENABLE (board_active_axis?GPIO_PIN_7:GPIO_PIN_4)
+#elif PCB_TEST_AXIS == 0
 #define PCB_SELECTED_ENABLE GPIO_PIN_4
 #else
 #define PCB_SELECTED_ENABLE GPIO_PIN_7
@@ -30,11 +33,19 @@
 /* BSRR sets the selected ENABLE and resets the other in a single write. */
 static inline void pcb_driver_enable(bool awake) {
     uint32_t selected=awake ? PCB_SELECTED_ENABLE : 0u;
+#if CONTROL_DUAL_AXIS
+    GPIOG->BSRR=awake?selected:(uint32_t)PCB_SELECTED_ENABLE<<16;
+#else
     GPIOG->BSRR=((uint32_t)(PCB_ENABLES & ~selected)<<16)|selected;
+#endif
 }
 /* Deselect the inactive driver before touching the selected chip select. */
 static inline void pcb_driver_select(bool selected) {
-#if PCB_TEST_AXIS == 0
+#if CONTROL_DUAL_AXIS
+    GPIOA->BSRR=PCB_CS1;GPIOE->BSRR=PCB_CS0;
+    if (selected) { if (board_active_axis) GPIOA->BSRR=(uint32_t)PCB_CS1<<16;
+        else GPIOE->BSRR=(uint32_t)PCB_CS0<<16; }
+#elif PCB_TEST_AXIS == 0
     GPIOA->BSRR=PCB_CS1;
     GPIOE->BSRR=selected ? (uint32_t)PCB_CS0<<16 : PCB_CS0;
 #else

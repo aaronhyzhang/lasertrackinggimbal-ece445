@@ -33,6 +33,7 @@ typedef struct {
 } control_input_t;
 typedef struct { bool enable,pwm; float duty[3]; } control_output_t;
 typedef struct {
+    unsigned axis;
     position_config_t config;
     /* Latched on a new effective target; visible in Live Expressions. */
     float move_target_deg,move_distance_deg,move_accel_rpm_s;
@@ -61,6 +62,7 @@ typedef struct {
     control_input_t trip_input; /* First-fault evidence, never replaced by recovery. */
 } position_control_t;
 void position_init(position_control_t *s);
+void position_init_axis(position_control_t *s,unsigned axis);
 void position_stop(position_control_t *s);
 void position_trip(position_control_t *s,const control_input_t *input,servo_fault_t reason);
 void position_tick(position_control_t *s,const control_input_t *in,servo_action_t action);

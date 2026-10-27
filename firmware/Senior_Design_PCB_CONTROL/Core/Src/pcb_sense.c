@@ -36,14 +36,15 @@ static volatile bool zero_ready[2];
 static volatile uint32_t zero_ready_epoch[2];
 static uint32_t zero_sequence[2],published_ms;
 static bool cold_start;
-static volatile uint16_t fast_raw[3];
-static volatile uint32_t fast_us,fast_sequence;
-static volatile bool fast_window;
-static volatile uint32_t fast_timer_count,fast_timer_cr1;
+typedef struct { uint16_t raw[3];uint32_t us,sequence,timer_count,timer_cr1;bool window; } current_frame_t;
+static volatile current_frame_t frames[2];
+static uint32_t injected_contexts[2];
+volatile unsigned pcb_current_axis;
+static unsigned next_injected_axis;
 static float control_reference=NAN,control_bus=NAN;
 static uint32_t control_analog_ms;
-static bool control_analog_valid,control_temp_valid;
-static float control_temp;
+static bool control_analog_valid,control_temp_valid[2];
+static float control_temp[2];
 
 static void check(HAL_StatusTypeDef s) { if (s!=HAL_OK) Error_Handler(); }
 static telemetry_output_t telemetry_output(const sense_axis_t *axis) {
@@ -159,16 +160,22 @@ void pcb_sense_init(void) {
     ADC_InjectionConfTypeDef inj={0};
     inj.InjectedNbrOfConversion=3;inj.InjectedSamplingTime=ADC_SAMPLETIME_16CYCLES_5;
     inj.InjectedSingleDiff=ADC_SINGLE_ENDED;inj.InjectedOffsetNumber=ADC_OFFSET_NONE;
-    inj.ExternalTrigInjecConv=PCB_TEST_AXIS?ADC_EXTERNALTRIGINJEC_T8_TRGO2:ADC_EXTERNALTRIGINJEC_T1_TRGO2;
+    inj.ExternalTrigInjecConv=(!CONTROL_DUAL_AXIS && PCB_TEST_AXIS)?ADC_EXTERNALTRIGINJEC_T8_TRGO2:ADC_EXTERNALTRIGINJEC_T1_TRGO2;
     inj.ExternalTrigInjecConvEdge=ADC_EXTERNALTRIGINJECCONV_EDGE_RISING;
     inj.QueueInjectedContext=DISABLE;inj.AutoInjectedConv=DISABLE;
     static const uint32_t channels[2][3]={{ADC_CHANNEL_5,ADC_CHANNEL_2,ADC_CHANNEL_6},
         {ADC_CHANNEL_10,ADC_CHANNEL_15,ADC_CHANNEL_3}};
     static const uint32_t ranks[3]={ADC_INJECTED_RANK_1,ADC_INJECTED_RANK_2,ADC_INJECTED_RANK_3};
-    for (unsigned i=0;i<3;++i) {
-        inj.InjectedChannel=channels[PCB_TEST_AXIS][i];inj.InjectedRank=ranks[i];
-        check(HAL_ADCEx_InjectedConfigChannel(&hadc1,&inj));
+    for(unsigned axis=0;axis<2;axis++) {
+        if (!CONTROL_DUAL_AXIS && axis!=PCB_TEST_AXIS) continue;
+        for(unsigned i=0;i<3;i++) {
+            inj.InjectedChannel=channels[axis][i];inj.InjectedRank=ranks[i];
+            check(HAL_ADCEx_InjectedConfigChannel(&hadc1,&inj));
+        }
+        injected_contexts[axis]=hadc1.Instance->JSQR;
     }
+    next_injected_axis=CONTROL_DUAL_AXIS?0:PCB_TEST_AXIS;
+    hadc1.Instance->JSQR=injected_contexts[next_injected_axis];
     HAL_NVIC_SetPriority(ADC_IRQn,1,0);HAL_NVIC_EnableIRQ(ADC_IRQn);
     HAL_NVIC_SetPriority(ADC3_IRQn,3,0);HAL_NVIC_EnableIRQ(ADC3_IRQn);
     __HAL_RCC_I2C1_CLK_ENABLE();__HAL_RCC_I2C2_CLK_ENABLE();
@@ -358,7 +365,7 @@ void pcb_sense_service(void) {
     control_analog_valid=fresh[0] && fresh[1] && fresh[2] && isfinite(reference) && a[1].raw[0]<65503u;
     control_analog_ms=now;
     float ohms;
-    control_temp_valid=sense_temperature(a[2].raw[6+PCB_TEST_AXIS],&ohms,&control_temp) && fresh[2];
+    for(unsigned i=0;i<2;i++) control_temp_valid[i]=sense_temperature(a[2].raw[6+i],&ohms,&control_temp[i]) && fresh[2];
     board_unlock(mask);
     if (now-published_ms<50u) return;
     published_ms=now;feedback_t f={0};f.snapshot_ms=now;
@@ -417,17 +424,20 @@ void pcb_sense_service(void) {
     }
     /* The selected axis uses PWM-synchronous winding currents in the debugger
      * too. Unselected-axis regular scans remain diagnostic while inhibited. */
-    control_input_t current={0};pcb_control_read(&current);
-    sense_axis_t *selected=&f.axis[PCB_TEST_AXIS];
+    for(unsigned axis=0;axis<2;axis++) {
+        if (!CONTROL_DUAL_AXIS && axis!=PCB_TEST_AXIS) continue;
+    control_input_t current={0};pcb_control_read_axis(axis,&current);
+    sense_axis_t *selected=&f.axis[axis];
     selected->current_window_valid=current.current_window_valid;
     selected->current_age_ms=(current.now_us-current.current_us)/1000u;
     selected->current_valid=current.current_valid && current.now_us-current.current_us<=150u &&
         selected->driver.awake && selected->driver.configured && selected->driver.gain_v_per_v==20 &&
-        zero_ready_epoch[PCB_TEST_AXIS]==selected->driver.epoch;
+        zero_ready_epoch[axis]==selected->driver.epoch;
     for (unsigned j=0;j<3;++j) {
         selected->current_raw[j]=current.current_raw[j];
         selected->current_v[j]=sense_pin_volts(current.current_raw[j],reference);
         selected->current_a[j]=selected->current_zero_valid?current.current_a[j]:NAN;
+    }
     }
     telemetry_t telemetry=telemetry_snapshot(&f);
     mask=board_lock();g_feedback=f;g_telemetry=telemetry;board_unlock(mask);
@@ -441,20 +451,25 @@ void ADC3_IRQHandler(void) { HAL_ADC_IRQHandler(&hadc3);pcb_sense_adc_resume(&ha
 /* Called by the vendor HAL before it clears JEOS. No waits or SPI in this path. */
 void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *h) {
     if (h!=&hadc1 || !__HAL_ADC_GET_FLAG(h,ADC_FLAG_JEOS)) return;
-    fast_raw[0]=(uint16_t)h->Instance->JDR1;fast_raw[1]=(uint16_t)h->Instance->JDR2;
-    fast_raw[2]=(uint16_t)h->Instance->JDR3;
-    fast_us=board_us();++fast_sequence;
+    unsigned axis=next_injected_axis;
+    pcb_current_axis=axis;
+    /* JSQR fields may be updated with ADC enabled (vendor HAL ADC_JSQR_FIELDS).
+     * Change only after JEOS; retain the common TIM1 external trigger. */
+    if (CONTROL_DUAL_AXIS) { next_injected_axis^=1u;h->Instance->JSQR=injected_contexts[next_injected_axis]; }
+    frames[axis].raw[0]=(uint16_t)h->Instance->JDR1;frames[axis].raw[1]=(uint16_t)h->Instance->JDR2;
+    frames[axis].raw[2]=(uint16_t)h->Instance->JDR3;
+    frames[axis].us=board_us();++frames[axis].sequence;
     /* Sequence must finish on the descending half while every low side is on.
      * Cap duties at .65: rising trigger CNT2300, rank skew ~2 us, total6us.
      * Gate/CSA settling and actual trigger latency still require scope evidence. */
-    TIM_TypeDef *timer=PCB_TEST_AXIS?TIM8:TIM1;
-    fast_timer_cr1=timer->CR1;fast_timer_count=timer->CNT;
-    fast_window=(fast_timer_cr1&TIM_CR1_DIR)!=0 && fast_timer_count>1650u && fast_timer_count<2450u;
+    TIM_TypeDef *timer=axis?TIM8:TIM1;
+    frames[axis].timer_cr1=timer->CR1;frames[axis].timer_count=timer->CNT;
+    frames[axis].window=(frames[axis].timer_cr1&TIM_CR1_DIR)!=0 && frames[axis].timer_count>1650u && frames[axis].timer_count<2450u;
     app_current_sample();
 }
-void pcb_control_read(control_input_t *in) {
+void pcb_control_read_axis(unsigned axis,control_input_t *in) {
     uint32_t mask=board_lock();
-    volatile encoder_bus_t *e=&buses[PCB_TEST_AXIS];
+    volatile encoder_bus_t *e=&buses[axis];
     in->now_us=board_us();in->now_ms=HAL_GetTick();
     in->encoder_us=e->raw_us;in->encoder_raw=e->raw;in->encoder_status=e->status;
     in->encoder_transport=e->raw_valid && !e->failed && !e->reinitializing;
@@ -466,26 +481,28 @@ void pcb_control_read(control_input_t *in) {
         if (streams[i].valid && in->now_ms-streams[i].sample_ms<=20u) in->adc_fresh_mask|=(uint8_t)(1u<<i);
         if (streams[i].failed) in->adc_failed_mask|=(uint8_t)(1u<<i);
     }
-    in->bus_v=control_bus;in->temperature_valid=control_temp_valid;in->temperature_c=control_temp;
-    in->current_us=fast_us;in->current_sequence=fast_sequence;
-    in->current_window_valid=fast_window;
-    in->current_timer_count=fast_timer_count;in->current_timer_cr1=fast_timer_cr1;
+    in->bus_v=control_bus;in->temperature_valid=control_temp_valid[axis];in->temperature_c=control_temp[axis];
+    in->current_us=frames[axis].us;in->current_sequence=frames[axis].sequence;
+    in->current_window_valid=frames[axis].window;
+    in->current_timer_count=frames[axis].timer_count;in->current_timer_cr1=frames[axis].timer_cr1;
     in->current_adc_clock_prescaler=hadc1.Init.ClockPrescaler;
-    in->zero_ready=zero_ready[PCB_TEST_AXIS];
+    in->zero_ready=zero_ready[axis];
     /* Timer-triggered acquisition is independent of callback latency. In
      * sinusoidal voltage mode retain the callback-window diagnostic without
      * rejecting the frame solely because software observed CNT late. Current
      * regulation retains the strict window requirement. Freshness, zero,
      * clipping, ADC failure and current trips remain mandatory in both modes. */
-    in->current_valid=in->analog_valid && in->zero_ready && fast_sequence &&
-        (!CONTROL_CURRENT_PI_ENABLED || fast_window) && !streams[0].failed;
+    in->current_valid=in->analog_valid && in->zero_ready && frames[axis].sequence &&
+        (!CONTROL_CURRENT_PI_ENABLED || frames[axis].window) && !streams[0].failed;
     for (unsigned j=0;j<3;++j) {
         /* Low-side SP->SN shunt current is opposite the winding current used
          * by commutation math. This project's telemetry uses winding polarity too. */
-        in->current_raw[j]=fast_raw[j];
+        in->current_raw[j]=frames[axis].raw[j];
         float voltage=sense_pin_volts(in->current_raw[j],control_reference);
-        in->current_a[j]=(voltage-zero[PCB_TEST_AXIS].zero[j])/0.28f;
+        in->current_a[j]=(voltage-zero[axis].zero[j])/0.28f;
         if (!isfinite(voltage) || voltage<0.25f || voltage>control_reference-0.25f) in->current_valid=false;
     }
     board_unlock(mask);
 }
+
+void pcb_control_read(control_input_t *in) { pcb_control_read_axis(PCB_TEST_AXIS,in); }

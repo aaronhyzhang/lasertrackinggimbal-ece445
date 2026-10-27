@@ -17,6 +17,8 @@ static unsigned stopped,positions,responses;
 static unsigned calibrations;
 static bool link=true;
 static uint32_t target;
+static unsigned addressed_axis;static uint16_t target_port=DEMO_UDP_PORT;
+void app_select_axis(unsigned axis){addressed_axis=axis;}
 static char response[700];
 uint32_t HAL_GetTick(void) { return now; }
 uint32_t HAL_GetUIDw0(void) { return 0x12345678u; }
@@ -88,7 +90,7 @@ static void inject(const char *message,uint8_t peer,uint16_t port,const char *ex
     IPH_CHKSUM_SET(ip,inet_chksum(ip,IP_HLEN));
     if(corrupt) IPH_TTL_SET(ip,63); /* Invalid IP checksum must not reach commands. */
     struct udp_hdr *udp=(struct udp_hdr *)(bytes+IP_HLEN);
-    udp->src=lwip_htons(port);udp->dest=lwip_htons(DEMO_UDP_PORT);udp->len=lwip_htons((u16_t)(UDP_HLEN+len));
+    udp->src=lwip_htons(port);udp->dest=lwip_htons(target_port);udp->len=lwip_htons((u16_t)(UDP_HLEN+len));
     memcpy(bytes+IP_HLEN+UDP_HLEN,message,len);
     struct pbuf *p=pbuf_alloc(PBUF_RAW,(u16_t)total,PBUF_RAM);assert(p);
     assert(pbuf_take(p,bytes,(u16_t)total)==ERR_OK);
@@ -104,6 +106,18 @@ int main(void) {
     network_init();assert(ready && gpio_groups==3 && g_network.phy_id2==0xc132);
     network_poll();assert(g_network.state==NETWORK_LINK_UP);
     interface.output=capture;
+#if CONTROL_DUAL_AXIS
+    inject("G1 1 1 POSITION 90000",1,40000,"OK G1 1 1",false);assert(addressed_axis==0);
+    target_port=DEMO_UDP_PORT+1;
+    inject("G1 2 1 POSITION 180000",1,40001,"OK G1 2 1",false);assert(addressed_axis==1);
+    assert(owners[0].valid && owners[1].valid && owners[0].session==1 && owners[1].session==2);
+    inject("G1 2 2 HEARTBEAT",1,40001,"OK G1 2 2",false);
+    target_port=DEMO_UDP_PORT;
+    inject("G1 1 2 HEARTBEAT",1,40000,"OK G1 1 2",false);
+    inject("G1 9 1 DISABLE",1,40000,"OK DISABLED",false);
+    assert(!owners[0].valid && !owners[1].valid && stopped==1);
+    puts("PASS real LwIP two-port routing, independent ownership/sequence/heartbeat, global DISABLE");return 0;
+#endif
     inject("G1 1 1 POSITION 90000",1,40000,"OK G1 1 1",false);assert(target==90000 && positions==1);
     inject("G1 1 1 POSITION 90000",1,40000,"ERR sequence",false);
     inject("G1 1 2 HEARTBEAT",1,40001,"ERR owner",false);

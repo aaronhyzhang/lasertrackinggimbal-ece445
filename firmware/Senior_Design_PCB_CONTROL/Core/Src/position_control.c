@@ -13,7 +13,7 @@ static float clamp(float v,float lo,float hi) { return fminf(hi,fmaxf(lo,v)); }
 static float wrap(float v) { v=fmodf(v,TURN);return v<0?v+TURN:v; }
 static float radians(float degrees) { return degrees*(PI/180.0f); }
 static float coordinate_sign(const position_control_t *s) {
-    return CONTROL_ENCODER_POSITIVE_SIGN ? (float)CONTROL_ENCODER_POSITIVE_SIGN : (float)s->direction;
+    return (s->axis?PAN_ENCODER_POSITIVE_SIGN:TILT_ENCODER_POSITIVE_SIGN)!=0 ? (float)(s->axis?PAN_ENCODER_POSITIVE_SIGN:TILT_ENCODER_POSITIVE_SIGN) : (float)s->direction;
 }
 float position_effort_sign(const position_control_t *s) {
     /* Electrical commutation polarity is calibrated independently of the
@@ -50,9 +50,14 @@ float position_voltage_limit(const position_control_t *s,float bus) {
     return fmaxf(0,fminf(s->config.run_volts,fminf(CONTROL_VOLT_LIMIT,bus*position_duty_span())));
 }
 void position_init(position_control_t *s) {
-    memset(s,0,sizeof(*s));s->direction=1;s->config=position_default_config();
+    memset(s,0,sizeof(*s));s->axis=PCB_TEST_AXIS;s->direction=1;s->config=position_default_config();
 }
 void position_trip(position_control_t *s,const control_input_t *in,servo_fault_t reason) { fail(s,reason,in); }
+void position_init_axis(position_control_t *s,unsigned axis) {
+    position_init(s);s->axis=axis;
+    s->config=axis?(position_config_t){PAN_MAX_RPM,PAN_ACCEL_RPM_S,PAN_POSITION_KP,PAN_VELOCITY_KP_V,PAN_VELOCITY_KI_V,PAN_RUN_VOLTS}:
+        (position_config_t){TILT_MAX_RPM,TILT_ACCEL_RPM_S,TILT_POSITION_KP,TILT_VELOCITY_KP_V,TILT_VELOCITY_KI_V,TILT_RUN_VOLTS};
+}
 void position_stop(position_control_t *s) {
     s->move_profile_valid=false;
     if (s->state!=SERVO_FAULT) s->state=s->commutation_calibrated?SERVO_READY:SERVO_OFF;
@@ -159,8 +164,8 @@ void position_tick(position_control_t *s,const control_input_t *in,servo_action_
     if (!in->command_valid || in->now_ms-in->command_ms>CONTROL_COMMAND_MAX_AGE_MS) {
         fail(s,SERVO_COMMAND_TIMEOUT,in);return;
     }
-    if (!isfinite(in->target_deg) || in->target_deg<0 || in->target_deg>CONTROL_ACCEPT_MAX_DEG) { fail(s,SERVO_TRAVEL,in);return; }
-    if (s->position_deg< -0.5f || s->position_deg>CONTROL_TRAVEL_MAX_DEG+0.5f || fabsf(s->velocity_rpm)>2*s->config.max_rpm) {
+    if (!isfinite(in->target_deg) || in->target_deg<0 || in->target_deg>(s->axis?PAN_ACCEPT_MAX_DEG:TILT_ACCEPT_MAX_DEG)) { fail(s,SERVO_TRAVEL,in);return; }
+    if (s->position_deg< -0.5f || s->position_deg>(s->axis?PAN_TRAVEL_MAX_DEG:TILT_TRAVEL_MAX_DEG)+0.5f || fabsf(s->velocity_rpm)>2*s->config.max_rpm) {
         fail(s,SERVO_TRAVEL,in);return;
     }
     if (in->experiment_mode==1 || in->experiment_mode==3) {
@@ -173,7 +178,7 @@ void position_tick(position_control_t *s,const control_input_t *in,servo_action_
         s->settled=false;return;
     }
     s->requested_deg=in->target_deg;
-    s->target_deg=clamp(in->target_deg,CONTROL_COMMAND_MIN_DEG,CONTROL_COMMAND_MAX_DEG);
+    s->target_deg=clamp(in->target_deg,(s->axis?PAN_COMMAND_MIN_DEG:TILT_COMMAND_MIN_DEG),(s->axis?PAN_COMMAND_MAX_DEG:TILT_COMMAND_MAX_DEG));
     /* Linear error: deliberately no shortest-arc/wrap operation here. */
     float distance=s->target_deg-s->trajectory_deg;
     if (!s->move_profile_valid || s->move_target_deg!=s->target_deg) {
@@ -181,9 +186,9 @@ void position_tick(position_control_t *s,const control_input_t *in,servo_action_
         s->move_distance_deg=fmaxf(fabsf(s->target_deg-s->position_deg),fabsf(distance));
         s->move_accel_rpm_s=s->config.accel_rpm_s;
         /* Do not introduce a lower braking limit on a moving retarget. */
-        if (s->move_distance_deg<=CONTROL_SMALL_MOVE_DEG &&
+        if (s->move_distance_deg<=(s->axis?PAN_SMALL_MOVE_DEG:0.0f) &&
             fabsf(s->trajectory_rpm)<=2.0f && fabsf(s->velocity_rpm)<=2.0f)
-            s->move_accel_rpm_s=fminf(s->move_accel_rpm_s,CONTROL_SMALL_ACCEL_RPM_S);
+            s->move_accel_rpm_s=fminf(s->move_accel_rpm_s,(s->axis?PAN_SMALL_ACCEL_RPM_S:TILT_ACCEL_RPM_S));
         s->move_profile_valid=true;
     }
     float a=s->move_accel_rpm_s*6.0f;
@@ -192,7 +197,7 @@ void position_tick(position_control_t *s,const control_input_t *in,servo_action_
     v+=clamp(desired-v,-a*0.001f,a*0.001f);
     float step=v*0.001f;
     if (fabsf(step)>=fabsf(distance) && step*distance>=0) { s->trajectory_deg=s->target_deg;v=0; }
-    else s->trajectory_deg=clamp(s->trajectory_deg+step,0,CONTROL_TRAVEL_MAX_DEG);
+    else s->trajectory_deg=clamp(s->trajectory_deg+step,0,(s->axis?PAN_TRAVEL_MAX_DEG:TILT_TRAVEL_MAX_DEG));
     s->trajectory_rpm=v/6;
     float error=s->trajectory_deg-s->position_deg;
     if (in->experiment_mode!=2 && fabsf(error)>30) { if (++s->following_ms>=200u) { fail(s,SERVO_FOLLOWING,in);return; } }
@@ -213,8 +218,8 @@ void position_tick(position_control_t *s,const control_input_t *in,servo_action_
     s->iq_target_a=CONTROL_CURRENT_PI_ENABLED?applied:0;
     s->vq_target_v=CONTROL_CURRENT_PI_ENABLED?0:applied;
     if (fabsf(effort)<=maximum || ev*effort<0) s->velocity_integral=candidate;
-    if ((s->position_deg<=CONTROL_COMMAND_MIN_DEG && applied<0) ||
-        (s->position_deg>=CONTROL_COMMAND_MAX_DEG && applied>0)) {
+    if ((s->position_deg<=(s->axis?PAN_COMMAND_MIN_DEG:TILT_COMMAND_MIN_DEG) && applied<0) ||
+        (s->position_deg>=(s->axis?PAN_COMMAND_MAX_DEG:TILT_COMMAND_MAX_DEG) && applied>0)) {
         s->iq_target_a=s->vq_target_v=0;s->velocity_integral=0;
     }
     /* Completion only: do not feed encoder-count velocity spikes into this
@@ -269,7 +274,7 @@ void position_fast(position_control_t *s,const control_input_t *in,control_outpu
     float vd=0,vq=0,limit=position_voltage_limit(s,in->bus_v);
     if (s->state!=SERVO_RUNNING) {
         uint32_t elapsed=in->now_ms-s->stage_ms;
-        vd=fminf(CONTROL_CAL_VOLTS,limit);
+        vd=fminf((s->axis?PAN_CAL_VOLTS:TILT_CAL_VOLTS),limit);
         if (s->state==SERVO_ALIGN) vd*=clamp((float)elapsed/500,0,1);
         /* Settled current must point along each applied d vector. Catches a
          * reversed current sign and B/C acquisition or motor phase mismatch. */
@@ -280,14 +285,14 @@ void position_fast(position_control_t *s,const control_input_t *in,control_outpu
          * quadrature sine vector produces torque; measured current is used
          * for diagnostics and trips, not amplitude regulation in this stage. */
         float demand=s->vq_target_v;
-        if ((s->position_deg<=CONTROL_COMMAND_MIN_DEG && demand<0) ||
-            (s->position_deg>=CONTROL_COMMAND_MAX_DEG && demand>0)) demand=0;
+        if ((s->position_deg<=(s->axis?PAN_COMMAND_MIN_DEG:TILT_COMMAND_MIN_DEG) && demand<0) ||
+            (s->position_deg>=(s->axis?PAN_COMMAND_MAX_DEG:TILT_COMMAND_MAX_DEG) && demand>0)) demand=0;
         vq=position_effort_sign(s)*clamp(demand,-limit,limit);
         s->id_integral=s->iq_integral=0;
     } else {
         float demand=s->iq_target_a;
-        if ((s->position_deg<=CONTROL_COMMAND_MIN_DEG && demand<0) ||
-            (s->position_deg>=CONTROL_COMMAND_MAX_DEG && demand>0)) demand=0;
+        if ((s->position_deg<=(s->axis?PAN_COMMAND_MIN_DEG:TILT_COMMAND_MIN_DEG) && demand<0) ||
+            (s->position_deg>=(s->axis?PAN_COMMAND_MAX_DEG:TILT_COMMAND_MAX_DEG) && demand>0)) demand=0;
         float ed=-s->id_a,eq=position_effort_sign(s)*demand-s->iq_a;
         float di=s->id_integral+CONTROL_CURRENT_KI*ed*0.00005f;
         float qi=s->iq_integral+CONTROL_CURRENT_KI*eq*0.00005f;
@@ -307,3 +312,4 @@ void position_fast(position_control_t *s,const control_input_t *in,control_outpu
 off:
     out->enable=out->pwm=false;
 }
+

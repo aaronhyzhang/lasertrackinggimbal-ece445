@@ -9,6 +9,7 @@
 #define TILT_POSITION_KP 5.5f
 #define TILT_MAX_RPM 110.0f
 #define TILT_ACCEL_RPM_S 150.0f
+#define TILT_CAL_VOLTS 1.0f
 #define TILT_RUN_VOLTS 6.0f
 #define TILT_ENCODER_POSITIVE_SIGN 0 /* Preserve electrical-calibration direction. */
 #define TILT_COMMAND_MIN_DEG 2.0f
@@ -22,6 +23,7 @@
 #define PAN_POSITION_KP 5.0f
 #define PAN_MAX_RPM 110.0f
 #define PAN_ACCEL_RPM_S 199.502f
+#define PAN_CAL_VOLTS 2.0f
 #define PAN_RUN_VOLTS 6.0f
 /* Measured manually: CW raw/unwrapped 319.5, CCW raw 339.7/unwrapped -20.2.
  * Approximately 339.7..339.8 degrees free travel; CCW decreases raw angle. */

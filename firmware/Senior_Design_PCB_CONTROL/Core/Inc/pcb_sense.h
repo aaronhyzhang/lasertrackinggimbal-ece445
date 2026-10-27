@@ -43,6 +43,8 @@ void pcb_sense_pots(uint16_t raw[2],bool *valid,uint32_t *sample_ms);
 bool pcb_sense_current_zero_ready(unsigned axis,uint32_t epoch);
 void board_feedback_driver(unsigned axis,sense_driver_t *driver);
 /* Fresh acquisition state, independent of the 20 Hz debugger publication. */
+extern volatile unsigned pcb_current_axis;
+void pcb_control_read_axis(unsigned axis,control_input_t *input);
 void pcb_control_read(control_input_t *input);
 void app_current_sample(void);
 void pcb_sense_adc_resume(ADC_HandleTypeDef *adc);

@@ -1,6 +1,9 @@
 #ifndef PCB_CONFIG_H
 #define PCB_CONFIG_H
 /* Select the bring-up stage and one axis below, then rebuild. */
+#ifndef CONTROL_DUAL_AXIS
+#define CONTROL_DUAL_AXIS 0 /* Explicit opt-in; preserves single-axis checkpoint. */
+#endif
 #ifndef PCB_STAGE
 #define PCB_STAGE PCB_MOTOR_RUN
 #endif

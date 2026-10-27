@@ -6,6 +6,8 @@
 #include "pcb_sense.h"
 extern ADC_HandleTypeDef hadc1;
 extern TIM_HandleTypeDef htim7;
+extern unsigned board_active_axis;
+void board_select_axis(unsigned axis);
 void board_init(void);
 void board_start_control(void);
 void board_adc_tick(void);

@@ -4,7 +4,10 @@
 #include "pcb_config.h"
 #include "demo_config.h"
 /* Caller supplies HAL/CMSIS timer types/macros, or simulated registers in tests. */
-#if PCB_TEST_AXIS == 0
+#if CONTROL_DUAL_AXIS
+extern unsigned board_active_axis;
+#define PCB_PWM_TIMER (board_active_axis?TIM8:TIM1)
+#elif PCB_TEST_AXIS == 0
 #define PCB_PWM_TIMER TIM1
 #else
 #define PCB_PWM_TIMER TIM8

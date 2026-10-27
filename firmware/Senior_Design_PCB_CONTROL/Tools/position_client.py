@@ -45,6 +45,12 @@ class Client:
                 raise RuntimeError(text)
             if operation == 'STATUS' and text.startswith('S1 '):
                 return status_fields(text)
+            if operation == 'CONFIG' and text.startswith('C1 '):
+                fields=dict(item.split('=',1) for item in text.split()[1:])
+                for key,value in fields.items():
+                    try:fields[key]=int(value)
+                    except ValueError:pass
+                return fields
             if operation == 'DISABLE' and text == 'OK DISABLED':
                 return text
             if text == expected:

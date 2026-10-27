@@ -26,6 +26,7 @@ def main():
                         help="Explicit CLI axis override: 0=J3, 1=J4")
     parser.add_argument("--motion",choices=["on","off"],help="Override CONTROL_MOTION_ENABLED")
     parser.add_argument("--source",choices=["pot","ethernet"],help="Override command source")
+    parser.add_argument("--dual",action="store_true",help="Build both axes, independent Ethernet ports")
     args = parser.parse_args()
     root = pathlib.Path(__file__).resolve().parents[1]
     if args.toolchain:
@@ -45,10 +46,13 @@ def main():
     if args.motion or args.source:
         output = output / f"motion-{args.motion or 'configured'}_{args.source or 'configured'}"
         output.mkdir(parents=True, exist_ok=True)
+    if args.dual:
+        output=output/"dual";output.mkdir(parents=True,exist_ok=True)
     cpu = ["-mcpu=cortex-m7", "-mthumb", "-mfpu=fpv5-d16", "-mfloat-abi=hard"]
     flags = cpu + ["-std=gnu11", "-g3", "-O2",
                    "-ffunction-sections", "-fdata-sections", "-fstack-usage", "-Wall", "-Wextra",
                    "-DUSE_HAL_DRIVER", "-DUSE_PWR_LDO_SUPPLY", "-DSTM32H743xx"]
+    if args.dual: flags += ["-DCONTROL_DUAL_AXIS=1"]
     if args.stage:
         flags += [f"-DPCB_STAGE={['io', 'pwm', 'driver', 'motor', 'sense'].index(args.stage)}"]
     if args.axis is not None:

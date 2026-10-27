@@ -105,3 +105,5 @@ calibration in both encoder directions and fault paths. Scripted-HAL tests use
 the actual application/acquisition code, and actual LwIP IPv4/UDP, with private
 MMIO memory on Windows. Python tests use real localhost UDP sockets. These tests
 do not prove ADC settling, PHY electrical operation, loop tuning or motor motion.
+
+Dual-motor bring-up: see [docs/DUAL_AXIS.md](docs/DUAL_AXIS.md). Working single-pan checkpoint: `3323cde`.

@@ -12,12 +12,12 @@ int main(void) {
     assert(CONTROL_ENCODER_POSITIVE_SIGN==0 && CONTROL_COMMAND_MAX_DEG==358);
     assert(s.config.position_kp==5.5f);
     assert(s.config.max_rpm==110.0f && s.config.accel_rpm_s==150.0f);
-    assert(CONTROL_MOTION_ENABLED==1);
+    assert(CONTROL_MOTION_ENABLED==(PCB_TEST_AXIS==1));
 #else
     assert(CONTROL_ENCODER_POSITIVE_SIGN==-1 && CONTROL_COMMAND_MAX_DEG==337);
     assert(s.config.position_kp==5.0f);
     assert(s.config.max_rpm==110.0f && s.config.accel_rpm_s==199.502f);
-    assert(CONTROL_MOTION_ENABLED==0);
+    assert(CONTROL_MOTION_ENABLED==(PCB_TEST_AXIS==1));
 #endif
     s.config.velocity_kp=0.9f;position_init(&s);
     assert(fabsf(s.config.velocity_kp-CONTROL_VELOCITY_KP_V)<0.00001f);

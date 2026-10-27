@@ -17,14 +17,30 @@ volatile driver_fault_capture_t g_driver_fault={
     .state=PCB_BENCH_CAPTURE_DRIVER_FAULT?DRIVER_FAULT_WAITING:DRIVER_FAULT_DISABLED};
 static uint32_t fault_capture_started_us;
 static const char fault_capture_spi_context;
+unsigned board_active_axis=PCB_TEST_AXIS;
+void board_select_axis(unsigned axis) { board_active_axis=axis; }
+#if CONTROL_DUAL_AXIS
+typedef struct { bool wake,ready,authorized;uint32_t wake_time,epoch,verified;TIM_HandleTypeDef timer;drv8304_snapshot_t status; } axis_board_t;
+static axis_board_t axes[2];
+#define wake_requested axes[board_active_axis].wake
+#define driver_ready axes[board_active_axis].ready
+#define bridge_authorized axes[board_active_axis].authorized
+#define wake_ms axes[board_active_axis].wake_time
+#define wake_epoch axes[board_active_axis].epoch
+#define last_verify axes[board_active_axis].verified
+#define htim_pwm axes[board_active_axis].timer
+#else
 static volatile bool wake_requested, driver_ready;
 static volatile uint32_t wake_ms, wake_epoch;
 static uint32_t last_verify;
 static TIM_HandleTypeDef htim_pwm;
+#endif
 TIM_HandleTypeDef htim7;
 static IWDG_HandleTypeDef watchdog;
 static volatile motor_fault_t latched_fault;
+#if !CONTROL_DUAL_AXIS
 static volatile bool bridge_authorized;
+#endif
 static volatile bool stop_latched = true;
 
 uint32_t board_lock(void) { uint32_t m = __get_PRIMASK(); __disable_irq(); return m; }
@@ -51,7 +67,12 @@ static bool fault_capture_keep_awake(void) {
 void board_inhibit(void) {
     uint32_t mask = board_lock();
     bridge_authorized = false;
+#if CONTROL_DUAL_AXIS
+    if ((board_active_axis && __HAL_RCC_TIM8_IS_CLK_ENABLED()) || (!board_active_axis && __HAL_RCC_TIM1_IS_CLK_ENABLED()))
+        CLEAR_BIT(PCB_PWM_TIMER->BDTR,TIM_BDTR_MOE);
+#else
     pcb_pwm_stop_all();
+#endif
     if (__HAL_RCC_GPIOG_IS_CLK_ENABLED()) {
         if (fault_capture_keep_awake())
             GPIOG->BSRR=(uint32_t)(PCB_ENABLES & ~PCB_SELECTED_ENABLE)<<16;
@@ -59,7 +80,11 @@ void board_inhibit(void) {
     }
     if (wake_requested) ++wake_epoch;
     wake_requested=driver_ready=false;
+    #if CONTROL_DUAL_AXIS
+    sense_driver_ready[board_active_axis]=false;
+#else
     sense_driver_ready[0]=sense_driver_ready[1]=false;
+#endif
     __DSB(); board_unlock(mask);
 }
 
@@ -67,7 +92,7 @@ void board_trip(motor_fault_t fault) {
     uint32_t mask = board_lock();
     if (fault!=FAULT_DRIVER) fault_capture_cancel(DRIVER_FAULT_ABORTED);
     if (latched_fault == FAULT_NONE) latched_fault = fault;
-    board_inhibit(); board_unlock(mask);
+    board_kill(); board_unlock(mask);
 }
 
 /* No SPI or waits in the ISR. Optional bench capture preserves an already
@@ -75,12 +100,15 @@ void board_trip(motor_fault_t fault) {
 static void driver_trip(driver_trip_source_t source) {
     uint32_t mask=board_lock();
     if (latched_fault==FAULT_NONE) {
-        driver_trip_snapshot_t snapshot={
-            .source=source,.wake_age_ms=HAL_GetTick()-wake_ms,
-            .nfault_high=(GPIOE->IDR&PCB_NFAULT)!=0,
-            .driver_ready=driver_ready,.pwm_authorized=bridge_authorized};
+        driver_trip_snapshot_t snapshot={source,HAL_GetTick()-wake_ms,
+            (GPIOE->IDR&PCB_NFAULT)!=0,driver_ready,bridge_authorized};
         if (PCB_BENCH_CAPTURE_DRIVER_FAULT) {
-            bridge_authorized=false; pcb_pwm_stop_all(); /* Before opening the readback window. */
+            bridge_authorized=false;
+#if CONTROL_DUAL_AXIS
+    CLEAR_BIT(PCB_PWM_TIMER->BDTR,TIM_BDTR_MOE);
+#else
+    pcb_pwm_stop_all();
+#endif /* Before opening the readback window. */
         }
         if (PCB_BENCH_CAPTURE_DRIVER_FAULT && PCB_STAGE==PCB_MOTOR_RUN &&
             g_driver_fault.state==DRIVER_FAULT_WAITING && wake_requested && driver_ready &&
@@ -94,7 +122,17 @@ static void driver_trip(driver_trip_source_t source) {
     board_unlock(mask);
 }
 
-void board_kill(void) { uint32_t m=board_lock(); stop_latched=true; board_inhibit(); board_unlock(m); }
+void board_kill(void) {
+    uint32_t m=board_lock();stop_latched=true;
+#if CONTROL_DUAL_AXIS
+    unsigned saved=board_active_axis;
+    for(unsigned i=0;i<2;i++) { board_select_axis(i);board_inhibit(); }
+    board_select_axis(saved);
+#else
+    board_inhibit();
+#endif
+    board_unlock(m);
+}
 
 void board_release_stop(void) { stop_latched=false; }
 
@@ -161,7 +199,13 @@ static void pins_init(void) {
     gpio(GPIOA,PCB_VR1_PIN|PCB_VR2_PIN,GPIO_MODE_ANALOG,GPIO_NOPULL,0);
     gpio(GPIOE,PCB_NFAULT,GPIO_MODE_INPUT,GPIO_PULLUP,0);
     if (PCB_STAGE==PCB_PWM_CHECK || PCB_STAGE==PCB_MOTOR_RUN) {
-#if PCB_TEST_AXIS == 0
+#if CONTROL_DUAL_AXIS
+        gpio(GPIOE,PCB_PWM0_E,GPIO_MODE_AF_PP,GPIO_PULLDOWN,GPIO_AF1_TIM1);
+        gpio(GPIOB,PCB_PWM0_B,GPIO_MODE_AF_PP,GPIO_PULLDOWN,GPIO_AF1_TIM1);
+        gpio(GPIOA,PCB_PWM1_A,GPIO_MODE_AF_PP,GPIO_PULLDOWN,GPIO_AF3_TIM8);
+        gpio(GPIOB,PCB_PWM1_B,GPIO_MODE_AF_PP,GPIO_PULLDOWN,GPIO_AF3_TIM8);
+        gpio(GPIOC,PCB_PWM1_C,GPIO_MODE_AF_PP,GPIO_PULLDOWN,GPIO_AF3_TIM8);
+#elif PCB_TEST_AXIS == 0
         gpio(GPIOE,PCB_PWM0_E,GPIO_MODE_AF_PP,GPIO_PULLDOWN,GPIO_AF1_TIM1);
         gpio(GPIOB,PCB_PWM0_B,GPIO_MODE_AF_PP,GPIO_PULLDOWN,GPIO_AF1_TIM1);
 #else
@@ -170,9 +214,9 @@ static void pins_init(void) {
         gpio(GPIOC,PCB_PWM1_C,GPIO_MODE_AF_PP,GPIO_PULLDOWN,GPIO_AF3_TIM8);
 #endif
     }
-    if (PCB_TEST_AXIS==0 && (PCB_STAGE==PCB_MOTOR_RUN || PCB_STAGE==PCB_DRIVER_CHECK))
+    if (!CONTROL_DUAL_AXIS && PCB_TEST_AXIS==0 && (PCB_STAGE==PCB_MOTOR_RUN || PCB_STAGE==PCB_DRIVER_CHECK))
         gpio(GPIOE,PCB_NFAULT,GPIO_MODE_AF_PP,GPIO_PULLUP,GPIO_AF1_TIM1);
-    if (PCB_STAGE==PCB_SENSOR_CHECK || (PCB_TEST_AXIS==1 && (PCB_STAGE==PCB_MOTOR_RUN || PCB_STAGE==PCB_DRIVER_CHECK)))
+    if (CONTROL_DUAL_AXIS || PCB_STAGE==PCB_SENSOR_CHECK || (PCB_TEST_AXIS==1 && (PCB_STAGE==PCB_MOTOR_RUN || PCB_STAGE==PCB_DRIVER_CHECK)))
         gpio(GPIOE,PCB_NFAULT,GPIO_MODE_IT_FALLING,GPIO_PULLUP,0); /* No TIM8 break on PE6. */
 }
 
@@ -197,7 +241,9 @@ static void spi_init(void) {
 }
 
 static void pwm_init(void) {
-#if PCB_TEST_AXIS == 0
+#if CONTROL_DUAL_AXIS
+    __HAL_RCC_TIM1_CLK_ENABLE();__HAL_RCC_TIM8_CLK_ENABLE();
+#elif PCB_TEST_AXIS == 0
     __HAL_RCC_TIM1_CLK_ENABLE();
 #else
     __HAL_RCC_TIM8_CLK_ENABLE();
@@ -225,7 +271,7 @@ static void pwm_init(void) {
     b.OffStateRunMode=TIM_OSSR_ENABLE; b.OffStateIDLEMode=TIM_OSSI_ENABLE;
     b.LockLevel=TIM_LOCKLEVEL_1; b.DeadTime=50; /* 500 ns at 100 MHz tDTS */
     b.BreakState=TIM_BREAK_DISABLE; b.BreakPolarity=TIM_BREAKPOLARITY_HIGH;
-    b.Break2State=(PCB_TEST_AXIS==0 && (PCB_STAGE==PCB_MOTOR_RUN || PCB_STAGE==PCB_DRIVER_CHECK))?TIM_BREAK2_ENABLE:TIM_BREAK2_DISABLE; b.Break2Polarity=TIM_BREAK2POLARITY_LOW;
+    b.Break2State=(!CONTROL_DUAL_AXIS && PCB_TEST_AXIS==0 && (PCB_STAGE==PCB_MOTOR_RUN || PCB_STAGE==PCB_DRIVER_CHECK))?TIM_BREAK2_ENABLE:TIM_BREAK2_DISABLE; b.Break2Polarity=TIM_BREAK2POLARITY_LOW;
     b.Break2Filter=0;
     b.AutomaticOutput=TIM_AUTOMATICOUTPUT_DISABLE;
     TIMEx_BreakInputConfigTypeDef input={0};
@@ -246,7 +292,24 @@ static void pwm_init(void) {
 
 void board_init(void) {
     /* I-cache enabled; D-cache remains disabled. */
-    SCB_EnableICache(); HAL_Init(); pins_init(); clock_init(); pwm_init(); pcb_sense_init();
+    SCB_EnableICache(); HAL_Init(); pins_init(); clock_init();
+#if CONTROL_DUAL_AXIS
+    board_select_axis(0);pwm_init();board_select_axis(1);pwm_init();
+    /* Align both free-running carriers while MOE/ENABLE are off. TIM1 and TIM8
+     * share the same APB2 timer clock. Consecutive CEN writes leave only bus-write
+     * skew, rather than the entire TIM8 HAL-init delay between PWM phases. */
+    CLEAR_BIT(TIM1->CR1,TIM_CR1_CEN);CLEAR_BIT(TIM8->CR1,TIM_CR1_CEN);
+    uint32_t cr1a=TIM1->CR1 & ~(TIM_CR1_CEN|TIM_CR1_DIR|TIM_CR1_UDIS);
+    uint32_t cr1b=TIM8->CR1 & ~(TIM_CR1_CEN|TIM_CR1_DIR|TIM_CR1_UDIS);
+    TIM1->CR1=cr1a & ~TIM_CR1_CMS;TIM8->CR1=cr1b & ~TIM_CR1_CMS;
+    TIM1->CNT=0;TIM8->CNT=0;TIM1->EGR=TIM_EGR_UG;TIM8->EGR=TIM_EGR_UG;
+    TIM1->CR1=cr1a;TIM8->CR1=cr1b;__DSB();
+    TIM1->CR1=cr1a|TIM_CR1_CEN;TIM8->CR1=cr1b|TIM_CR1_CEN;
+    board_select_axis(PCB_TEST_AXIS);
+#else
+    pwm_init();
+#endif
+    pcb_sense_init();
     if (PCB_STAGE==PCB_DRIVER_CHECK || PCB_STAGE==PCB_MOTOR_RUN || PCB_STAGE==PCB_SENSOR_CHECK) spi_init();
     __HAL_RCC_TIM2_CLK_ENABLE(); TIM2->PSC=99; TIM2->ARR=0xffffffffu;
     TIM2->EGR=TIM_EGR_UG; TIM2->CR1=TIM_CR1_CEN;
@@ -255,7 +318,7 @@ void board_init(void) {
     check(HAL_TIM_Base_Init(&htim7));
     HAL_NVIC_SetPriority(TIM7_IRQn,2,0); HAL_NVIC_EnableIRQ(TIM7_IRQn);
     HAL_NVIC_SetPriority(SysTick_IRQn,4,0);
-    board_inhibit();
+    board_kill();
 }
 
 void board_start_control(void) { pcb_sense_start();check(HAL_TIM_Base_Start_IT(&htim7)); }
@@ -268,7 +331,7 @@ void board_inputs(motor_input_t *in,uint16_t adc[2]) {
     in->driver_good=PCB_STAGE==PCB_PWM_CHECK ||
         (driver_ready && (GPIOE->IDR&PCB_NFAULT)!=0);
     in->current_zero_required=PCB_STAGE==PCB_MOTOR_RUN;
-    in->current_zero_ready=driver_ready && pcb_sense_current_zero_ready(PCB_TEST_AXIS,wake_epoch);
+    in->current_zero_ready=driver_ready && pcb_sense_current_zero_ready(CONTROL_DUAL_AXIS?board_active_axis:PCB_TEST_AXIS,wake_epoch);
     in->external_fault=latched_fault; in->hard_fault=latched_fault!=FAULT_NONE;
     board_unlock(m);
 }
@@ -277,7 +340,12 @@ bool board_arm_pressed(void) { return (GPIOD->IDR&PCB_ARM)==0; }
 bool board_stop_pressed(void) { return (GPIOD->IDR&PCB_STOP)==0; }
 
 static void pwm_off(void) {
-    bridge_authorized=false; pcb_pwm_stop_all();
+    bridge_authorized=false;
+#if CONTROL_DUAL_AXIS
+    CLEAR_BIT(PCB_PWM_TIMER->BDTR,TIM_BDTR_MOE);
+#else
+    pcb_pwm_stop_all();
+#endif
 }
 
 /* IRQs masked, outputs inhibited. DIR is read-only in center-aligned mode:
@@ -315,10 +383,10 @@ void board_apply(const motor_output_t *out) {
     bool drive=out->pwm && (PCB_STAGE==PCB_MOTOR_RUN || PCB_STAGE==PCB_PWM_CHECK);
     if (!drive) pwm_off();
     else if (PCB_STAGE==PCB_PWM_CHECK || (driver_ready && (GPIOE->IDR&PCB_NFAULT)!=0)) {
-        if (PCB_PWM_SYNC_START && !bridge_authorized) pwm_prepare_start(out->duty);
+        if (!CONTROL_DUAL_AXIS && PCB_PWM_SYNC_START && !bridge_authorized) pwm_prepare_start(out->duty);
         else if (!bridge_authorized) pcb_pwm_write(out->duty); /* Fast current ISR owns running duties. */
         if (!bridge_authorized) {
-#if PCB_TEST_AXIS == 0
+#if !CONTROL_DUAL_AXIS && PCB_TEST_AXIS == 0
             __HAL_TIM_CLEAR_FLAG(&htim_pwm,TIM_FLAG_BREAK|TIM_FLAG_BREAK2);
             HAL_NVIC_ClearPendingIRQ(TIM1_BRK_IRQn);
             if (PCB_STAGE==PCB_MOTOR_RUN) SET_BIT(PCB_PWM_TIMER->DIER,TIM_DIER_BIE);
@@ -332,7 +400,7 @@ void board_apply(const motor_output_t *out) {
 #endif
             bridge_authorized=true;
             __DSB(); SET_BIT(PCB_PWM_TIMER->BDTR,TIM_BDTR_MOE);
-            if (PCB_PWM_SYNC_START) SET_BIT(PCB_PWM_TIMER->CR1,TIM_CR1_CEN);
+            if (!CONTROL_DUAL_AXIS && PCB_PWM_SYNC_START) SET_BIT(PCB_PWM_TIMER->CR1,TIM_CR1_CEN);
         }
     } else driver_trip(DRIVER_TRIP_PWM_PERMISSION);
     board_unlock(mask);
@@ -404,13 +472,21 @@ void board_feedback_driver(unsigned axis,sense_driver_t *out) {
     if (axis<2u) {
         uint32_t pin=axis?GPIO_PIN_7:GPIO_PIN_4;
         out->awake=(GPIOG->ODR&pin)!=0;out->epoch=wake_epoch;
+#if CONTROL_DUAL_AXIS
+        out->epoch=axes[axis].epoch;
+#endif
         const volatile drv8304_snapshot_t *snapshot=0;
+#if CONTROL_DUAL_AXIS
+        out->configured=axes[axis].ready;snapshot=&axes[axis].status;
+        out->pwm_active=axes[axis].authorized;
+#else
         if (PCB_STAGE==PCB_SENSOR_CHECK) {
             out->configured=sense_driver_ready[axis];snapshot=&sense_driver_status[axis];
         } else if (axis==PCB_TEST_AXIS) {
             out->configured=driver_ready;snapshot=&g_driver_status;
             out->pwm_active=bridge_authorized;
         }
+#endif
         if (snapshot) {
             out->csa_register=snapshot->reg[6];out->read_mask=snapshot->read_mask;
             out->failed_address=snapshot->failed_address;
@@ -448,8 +524,7 @@ static void sense_drivers_service(void) {
     }
     board_unlock(mask);
 }
-void board_service(void) {
-    pcb_sense_service();
+static void board_service_axis(void) {
     if (PCB_STAGE==PCB_SENSOR_CHECK) { sense_drivers_service();return; }
     if (PCB_STAGE!=PCB_MOTOR_RUN && PCB_STAGE!=PCB_DRIVER_CHECK) return;
     fault_capture_service();
@@ -466,12 +541,23 @@ void board_service(void) {
     /* STOP or a fault can cancel a transaction; it cannot restore permission. */
     if (wake_requested && wake_epoch==epoch && !stop_latched && latched_fault==FAULT_NONE) {
         g_driver_status=snapshot;
+#if CONTROL_DUAL_AXIS
+        axes[board_active_axis].status=snapshot;
+#endif
         if (ok && !board_stop_pressed()) { driver_ready=true; last_verify=now; }
         else board_trip(FAULT_DRIVER_CONFIG);
     }
     board_unlock(mask);
 }
 
+void board_service(void) {
+    pcb_sense_service();
+#if CONTROL_DUAL_AXIS
+    for(unsigned i=0;i<2;i++) { uint32_t m=board_lock();board_select_axis(i);board_unlock(m);board_service_axis(); }
+#else
+    board_service_axis();
+#endif
+}
 void board_leds(bool armed,bool waiting,bool fault,uint32_t now) {
     bool blue=((now/500u)&1u)!=0;
     bool green=armed || (waiting && ((now/250u)&1u));
@@ -492,12 +578,16 @@ void EXTI9_5_IRQHandler(void) {
     if (__HAL_GPIO_EXTI_GET_IT(PCB_STOP)!=0u) {
         __HAL_GPIO_EXTI_CLEAR_IT(PCB_STOP); app_stop();
     }
-#if PCB_TEST_AXIS == 1 || PCB_STAGE == PCB_SENSOR_CHECK
+#if CONTROL_DUAL_AXIS || PCB_TEST_AXIS == 1 || PCB_STAGE == PCB_SENSOR_CHECK
     if (__HAL_GPIO_EXTI_GET_IT(PCB_NFAULT)!=0u) {
         __HAL_GPIO_EXTI_CLEAR_IT(PCB_NFAULT);
         /* Wake has a normal fault pulse. Before PWM, SPI/live checks gate it.
          * During drive, latch even a brief pulse; no automatic restart. */
-        if ((PCB_STAGE==PCB_MOTOR_RUN && bridge_authorized) ||
+        if ((PCB_STAGE==PCB_MOTOR_RUN && (bridge_authorized
+#if CONTROL_DUAL_AXIS
+            || axes[0].authorized || axes[1].authorized
+#endif
+            )) ||
             (PCB_STAGE==PCB_SENSOR_CHECK && driver_ready)) driver_trip(DRIVER_TRIP_NFAULT_EDGE);
     }
 #endif

@@ -32,10 +32,21 @@ volatile network_diagnostics_t g_network;
 static uint32_t phy_address;
 static uint32_t next_link_poll;
 static uint8_t mac[6];
+#if CONTROL_DUAL_AXIS
+typedef struct { bool valid;ip_addr_t ip;uint16_t port;uint32_t session,sequence,ms; } endpoint_owner_t;
+static endpoint_owner_t owners[2];static struct udp_pcb *endpoints[2];static unsigned network_axis;
+#define owner_valid owners[network_axis].valid
+#define owner_ip owners[network_axis].ip
+#define owner_port owners[network_axis].port
+#define owner_session owners[network_axis].session
+#define owner_sequence owners[network_axis].sequence
+#define owner_ms owners[network_axis].ms
+#else
 static bool owner_valid;
 static ip_addr_t owner_ip;
 static uint16_t owner_port;
 static uint32_t owner_session, owner_sequence, owner_ms;
+#endif
 u32_t sys_now(void) { return HAL_GetTick(); }
 static void rx_free(struct pbuf *p) { ((rx_slot_t *)p)->used=false; }
 void HAL_ETH_RxAllocateCallback(uint8_t **buffer) {
@@ -99,7 +110,11 @@ static void reply(const ip_addr_t *ip,uint16_t port,const char *text) {
     pbuf_free(p);
 }
 static void received(void *arg,struct udp_pcb *pcb,struct pbuf *p,const ip_addr_t *ip,u16_t port) {
+#if CONTROL_DUAL_AXIS
+    network_axis=(unsigned)(uintptr_t)arg;endpoint=pcb;app_select_axis(network_axis);
+#else
     (void)arg; (void)pcb;
+#endif
     char bytes[192]; net_command_t command;
     if (!p) return;
     bool parsed=p->tot_len<sizeof(bytes) &&
@@ -107,7 +122,11 @@ static void received(void *arg,struct udp_pcb *pcb,struct pbuf *p,const ip_addr_
     pbuf_free(p);
     if (!parsed) { ++g_network.rejected;reply(ip,port,"ERR syntax"); return; }
     ++g_network.rx_commands;
-    if (command.operation==NET_DISABLE) { app_stop();owner_valid=false;reply(ip,port,"OK DISABLED"); return; }
+    if (command.operation==NET_DISABLE) { app_stop();owner_valid=false;
+#if CONTROL_DUAL_AXIS
+        owners[0].valid=owners[1].valid=false;
+#endif
+        reply(ip,port,"OK DISABLED"); return; }
     if (command.operation==NET_STATUS) {
         char response[640]; app_status_text(response,sizeof(response)); reply(ip,port,response); return;
     }
@@ -183,9 +202,19 @@ void network_init(void) {
     IP4_ADDR(&ip,192,168,10,2); IP4_ADDR(&mask,255,255,255,0); IP4_ADDR(&gw,0,0,0,0);
     if (!netif_add(&interface,&ip,&mask,&gw,NULL,interface_init,ethernet_input)) return;
     netif_set_default(&interface);
+#if CONTROL_DUAL_AXIS
+    for(unsigned i=0;i<2;i++) {
+        endpoints[i]=udp_new();if(!endpoints[i])return;
+        if(udp_bind(endpoints[i],IP_ADDR_ANY,(u16_t)(DEMO_UDP_PORT+i))!=ERR_OK)return;
+        udp_recv(endpoints[i],received,(void *)(uintptr_t)i);
+    }
+    endpoint=endpoints[0];
+#else
     endpoint=udp_new(); if (!endpoint) return;
     if (udp_bind(endpoint,IP_ADDR_ANY,DEMO_UDP_PORT)!=ERR_OK) { udp_remove(endpoint); endpoint=NULL; return; }
-    udp_recv(endpoint,received,NULL);ready=true;g_network.state=NETWORK_LINK_DOWN;
+    udp_recv(endpoint,received,NULL);
+#endif
+    ready=true;g_network.state=NETWORK_LINK_DOWN;
 }
 static void check_link(void) {
     uint32_t bsr=0, mode=0;
@@ -199,7 +228,11 @@ static void check_link(void) {
     good=good && (negotiated==0x18u || negotiated==0x08u || negotiated==0x14u || negotiated==0x04u);
     if (!good && netif_is_link_up(&interface)) {
         if (CONTROL_SOURCE_ETHERNET) app_stop();
-        owner_valid=false;g_network.state=NETWORK_LINK_DOWN;
+        owner_valid=false;
+#if CONTROL_DUAL_AXIS
+        owners[0].valid=owners[1].valid=false;
+#endif
+        g_network.state=NETWORK_LINK_DOWN;
         (void)HAL_ETH_Stop_IT(&ethernet); netif_set_link_down(&interface); netif_set_down(&interface);
     } else if (good && !netif_is_link_up(&interface)) {
         ETH_MACConfigTypeDef config={0}; HAL_ETH_GetMACConfig(&ethernet,&config);

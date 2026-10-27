@@ -9,6 +9,9 @@
 #include <stdio.h>
 #include <math.h>
 #include <string.h>
+#if CONTROL_DUAL_AXIS
+#include "demo_dual.inc"
+#else
 static position_control_t servo;
 static arm_button_t arm_button;
 static volatile bool stop_pending,command_valid;
@@ -286,3 +289,5 @@ void app_status_text(char *text,size_t length) {
         (unsigned long)p->current_age_us,(unsigned long)p->encoder_age_us,p->settled,p->weak_magnet,
         CONTROL_CURRENT_PI_ENABLED?"current":"voltage",network_status());
 }
+
+#endif

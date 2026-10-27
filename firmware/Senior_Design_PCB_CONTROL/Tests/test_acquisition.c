@@ -78,9 +78,14 @@ HAL_StatusTypeDef HAL_ADCEx_InjectedConfigChannel(ADC_HandleTypeDef *h,ADC_Injec
         {ADC_CHANNEL_10,ADC_CHANNEL_15,ADC_CHANNEL_3}};
     assert(h==&hadc1 && c->InjectedNbrOfConversion==3);
     assert(c->InjectedSamplingTime==ADC_SAMPLETIME_16CYCLES_5);
-    assert(c->ExternalTrigInjecConv==(PCB_TEST_AXIS?ADC_EXTERNALTRIGINJEC_T8_TRGO2:ADC_EXTERNALTRIGINJEC_T1_TRGO2));
+    assert(c->ExternalTrigInjecConv==((!CONTROL_DUAL_AXIS && PCB_TEST_AXIS)?ADC_EXTERNALTRIGINJEC_T8_TRGO2:ADC_EXTERNALTRIGINJEC_T1_TRGO2));
     assert(c->ExternalTrigInjecConvEdge==ADC_EXTERNALTRIGINJECCONV_EDGE_RISING);
-    assert(c->InjectedChannel==expected[PCB_TEST_AXIS][injected_ranks++]);return HAL_OK;
+    unsigned axis=CONTROL_DUAL_AXIS?injected_ranks/3:PCB_TEST_AXIS;
+    assert(c->InjectedChannel==expected[axis][injected_ranks%3]);++injected_ranks;
+    /* Scripted register encoding sufficient to check distinct context routing. */
+    if(c->InjectedRank==ADC_INJECTED_RANK_1)h->Instance->JSQR=0;
+    h->Instance->JSQR=(h->Instance->JSQR<<5)|(c->InjectedChannel&31u);
+    return HAL_OK;
 }
 HAL_StatusTypeDef HAL_ADCEx_InjectedStart_IT(ADC_HandleTypeDef *h) { assert(h==&hadc1);return HAL_OK; }
 HAL_StatusTypeDef HAL_ADC_Start_IT(ADC_HandleTypeDef *h) { h->Instance->CR|=ADC_CR_ADEN;++starts[adc_index(h)];return HAL_OK; }
@@ -140,6 +145,20 @@ int main(void) {
     assert(VirtualAlloc((void *)0x1ff10000u,0x10000,0x3000,4)==(void *)0x1ff10000u);
     *VREFINT_CAL_ADDR=24000;
     pcb_sense_init();
+#if CONTROL_DUAL_AXIS
+    assert(injected_ranks==6 && injected_contexts[0]!=injected_contexts[1]);
+    hadc1.Instance->ISR=ADC_FLAG_JEOS;
+    hadc1.Instance->JDR1=111;hadc1.Instance->JDR2=112;hadc1.Instance->JDR3=113;
+    now_us=100;HAL_ADCEx_InjectedConvCpltCallback(&hadc1);
+    assert(pcb_current_axis==0 && frames[0].raw[0]==111 && frames[1].sequence==0);
+    assert(hadc1.Instance->JSQR==injected_contexts[1]);
+    hadc1.Instance->JDR1=221;now_us=150;HAL_ADCEx_InjectedConvCpltCallback(&hadc1);
+    assert(pcb_current_axis==1 && frames[1].raw[0]==221 && frames[0].raw[0]==111);
+    assert(frames[0].us==100 && frames[1].us==150 && hadc1.Instance->JSQR==injected_contexts[0]);
+    control_input_t in={0};pcb_control_read_axis(0,&in);assert(in.current_us==100 && in.current_raw[0]==111);
+    pcb_control_read_axis(1,&in);assert(in.current_us==150 && in.current_raw[0]==221);
+    puts("PASS alternating ADC contexts, independent frames/timestamps and axis read routing");return 0;
+#endif
     assert(isnan(g_telemetry.output_j3.encoder_angle_deg));
     assert(isnan(g_telemetry.output_j4.phase_a.current_a));
     assert(!g_telemetry.output_j3.status.current_calibrated);
@@ -177,7 +196,7 @@ int main(void) {
     unsigned callbacks_before=fast_callbacks;HAL_ADCEx_InjectedConvCpltCallback(&hadc1);
     assert(fast_callbacks==callbacks_before+1);
     control_input_t control={0};pcb_control_read(&control);
-    assert(control.current_valid && control.current_sequence==fast_sequence);
+    assert(control.current_valid && control.current_sequence==frames[PCB_TEST_AXIS].sequence);
     assert(control.current_timer_count==2100 && (control.current_timer_cr1&TIM_CR1_DIR));
     assert(fabsf(control.current_a[0]-1.0f)<0.01f && fabsf(control.current_a[2]+1.0f)<0.01f);
     assert(control.encoder_raw==buses[PCB_TEST_AXIS].raw); /* No 20Hz snapshot latency. */
