@@ -28,8 +28,8 @@
     "dual_release_build.log": "a574d08c0933b1f62d226c6c23468206fcea7fa718293a3ddcb9796c21e85093"
   },
   "active_elf_sha256": {
-    "Debug\\Senior_Design_PCB_CONTROL.elf": "405ba3f8249ac7bef357cf01012f3ef8d5ba9e3e0729359629c1cf3cad043b9a",
-    "Release\\Senior_Design_PCB_CONTROL.elf": "091bc968556cc3176398c7ae59d2dcb7daae0471878bbc0796efd64d35ab6834"
+    "Debug\\Senior_Design_PCB_CONTROL.elf": "26d8532eed471d04985c44e1a2c794b9af6b1e32c94623dc77908bbcaa2d9110",
+    "Release\\Senior_Design_PCB_CONTROL.elf": "5aef66888d18d749b6fecfb548203efa3ca488b95175693f87919e6ce75589a6"
   },
   "freshness_fix": {
     "observed_trip_age_us": 158,
@@ -41,6 +41,18 @@
       "dual_freshness_cubeide.log": "d50b5b41d6aa80bd6d3628afe93eee51f8b5dca2c0bb33f594b387b1930121a1",
       "dual_freshness_portable.log": "e5ce5c2793cd5a6877dacc0fc569feccdc99753d563ea320b5ab2bb51aeb61eb",
       "dual_freshness_bsp.log": "118e84922915b437bec5aa4b7db4ccf8407c920fc7c4c86a55849e8fd951a77e"
+    }
+  },
+  "temporary_phase_magnitude_bypass": {
+    "user_requested": true,
+    "dual_only": true,
+    "enabled": true,
+    "current_feedback_qualified": false,
+    "regression": "Captured finite phase readings accepted in dual voltage mode; NaN/stale/invalid frames still fault; single mode retains magnitude trip.",
+    "logs": {
+      "dual_phase_bypass_cubeide.log": "8c05b7ae6e532bdcd6cb009e74a74a725f8d14dd2634510b0c43c1244a4d1b29",
+      "dual_phase_bypass_bsp.log": "0b9968b02c69669cd6dc0fdaf61aab23695e44154a65d2e7e5e4d6288238970d",
+      "dual_phase_bypass_portable.log": "58324fd371261e91def09228bf39099183ef0e937ea97d6aa105e3faca7b045b"
     }
   }
 }

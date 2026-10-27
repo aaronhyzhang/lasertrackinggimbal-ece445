@@ -146,11 +146,11 @@ bool app_set_parameter(uint32_t key,uint32_t value) {
 }
 void app_status_text(char *text,size_t length) {
     app_status_t s;app_status(&s);position_control_t *v=&s.servo;
-    snprintf(text,length,"S1 axis=%u source=1 enabled=%u state=%u fault=%u calibrated=%u zero=%u position_mdeg=%ld target_mdeg=%ld rpm_milli=%ld iq_ma=%ld current_age_us=%lu encoder_age_us=%lu settled=%u weak=%u regulation=voltage network=%s dual=1",
+    snprintf(text,length,"S1 axis=%u source=1 enabled=%u state=%u fault=%u calibrated=%u zero=%u position_mdeg=%ld target_mdeg=%ld rpm_milli=%ld iq_ma=%ld current_age_us=%lu encoder_age_us=%lu settled=%u weak=%u regulation=voltage network=%s dual=1 phase_trip_enabled=%u",
         command_axis,CONTROL_MOTION_ENABLED,v->state,v->fault,v->commutation_calibrated,v->zero_set,
         (long)lroundf(v->position_deg*1000),(long)lroundf(v->target_deg*1000),(long)lroundf(v->velocity_rpm*1000),
         (long)lroundf(v->iq_a*1000),(unsigned long)v->current_age_us,(unsigned long)v->encoder_age_us,
-        v->settled,v->weak_magnet,network_status());
+        v->settled,v->weak_magnet,network_status(),CONTROL_SOFTWARE_PHASE_TRIP_ENABLED);
 }
 void app_config_text(char *text,size_t length) {
     uint32_t m=board_lock();position_config_t c=dual[command_axis].servo.config;uint32_t rev=dual[command_axis].revision;board_unlock(m);

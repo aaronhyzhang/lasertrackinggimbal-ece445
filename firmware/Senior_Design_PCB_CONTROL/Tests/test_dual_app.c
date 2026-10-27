@@ -81,6 +81,12 @@ int main(void){
     position_tick(&s,&in,SERVO_NO_ACTION);assert(s.fault==SERVO_FEEDBACK);
     position_init_axis(&s,1);s.state=SERVO_ALIGN;in.current_us=in.now_us;in.current_valid=false;
     position_fast(&s,&in,&out);assert(s.fault==SERVO_FEEDBACK && !out.pwm);
+    position_init_axis(&s,1);s.state=SERVO_ALIGN;in.current_us=in.now_us;in.current_valid=true;
+    in.current_a[0]=-0.2857519f;in.current_a[1]=-1.1159778f;in.current_a[2]=-1.5346323f;
+    position_fast(&s,&in,&out);
+    assert(!CONTROL_SOFTWARE_PHASE_TRIP_ENABLED && out.pwm && s.fault==SERVO_OK);
+    in.current_a[2]=NAN;position_fast(&s,&in,&out);assert(s.fault==SERVO_CURRENT && !out.pwm);
+    puts("PASS explicit dual magnitude bypass retains invalid/nonfinite and stale-current checks");
     puts("PASS dual 158-us frame, wake/fast/slow consistency, 300-us boundary, stale and invalid-frame faults");
     puts("PASS independent gains, simultaneous S1 arm, both fast paths, pan bounds and shared stop/fault");
 }

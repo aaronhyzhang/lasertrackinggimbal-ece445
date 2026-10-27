@@ -256,7 +256,7 @@ void position_fast(position_control_t *s,const control_input_t *in,control_outpu
     float sum=0;
     for (unsigned j=0;j<3;++j) {
         float current=in->current_a[j];
-        if (!isfinite(current) || fabsf(current)>CONTROL_PHASE_TRIP_A) { fail(s,SERVO_CURRENT,in);goto off; }
+        if (!isfinite(current) || (CONTROL_SOFTWARE_PHASE_TRIP_ENABLED && fabsf(current)>CONTROL_PHASE_TRIP_A)) { fail(s,SERVO_CURRENT,in);goto off; }
         s->phase_a[j]=current;sum+=current;s->max_phase_a=fmaxf(s->max_phase_a,fabsf(current));
     }
     s->current_sum_a=sum;

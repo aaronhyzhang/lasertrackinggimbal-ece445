@@ -30,6 +30,14 @@
 #define CONTROL_COMMAND_MAX_AGE_MS 500u
 #define CONTROL_IQ_LIMIT_A 0.5f
 #define CONTROL_PHASE_TRIP_A 1.5f
+/* Temporary user-authorized dual voltage-mode bring-up bypass. Hardware driver
+ * protection remains enabled; current measurements are not yet qualified. */
+#ifndef CONTROL_SOFTWARE_PHASE_TRIP_ENABLED
+#define CONTROL_SOFTWARE_PHASE_TRIP_ENABLED (!CONTROL_DUAL_AXIS)
+#endif
+#if CONTROL_CURRENT_PI_ENABLED && !CONTROL_SOFTWARE_PHASE_TRIP_ENABLED
+#error Current PI requires software phase-current protection
+#endif
 #define CONTROL_VOLT_LIMIT 6.0f
 #define CONTROL_CURRENT_KP 2.0f
 #define CONTROL_CURRENT_KI 300.0f

@@ -78,3 +78,15 @@ Current freshness is three per-axis sample periods: 300us in dual mode,
 checks remain enforced. A frozen valid158us frame exposed the original
 single-axis threshold left behind in dual mode.
 Shared nFAULT is PE6 EXTI in dual mode; either fault disables BOTH MOE/ENABLEs.
+
+## Temporary software phase-current magnitude bypass
+
+User requested continued voltage-mode bring-up while current sampling is investigated.
+CONTROL_SOFTWARE_PHASE_TRIP_ENABLED defaults to0 for dual builds,1 for single builds.
+This disables only the software +/-1.5A magnitude comparison. STATUS exposes
+phase_trip_enabled. ADC failure, nonfinite readings, current freshness and zero
+calibration checks, driver nFAULT, hardware driver protection, STOP and watchdogs
+remain active. Current PI cannot compile with the magnitude trip disabled.
+Restore the flag to1 after current sampling is qualified. This temporary build
+has reduced overcurrent protection; retain the existing voltage/motion limits
+and do not use its suspect current telemetry to increase loading or voltage.
