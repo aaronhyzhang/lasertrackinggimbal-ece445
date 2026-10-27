@@ -73,5 +73,8 @@ with consecutive CEN writes (small APB-write skew, not hardware zero-skew sync).
 after JEOS, using the vendor HAL's documented runtime-writable JSQR fields.
 Both current channel sets use16.5cycle sampling; regular diagnostics continue.
 This new acquisition path requires physical timing/current validation on the PCB;
-150us freshness and45us callback budget remain enforced, not silently relaxed.
+Current freshness is three per-axis sample periods: 300us in dual mode,
+150us in single mode. The45us callback budget and validity/current/fault
+checks remain enforced. A frozen valid158us frame exposed the original
+single-axis threshold left behind in dual mode.
 Shared nFAULT is PE6 EXTI in dual mode; either fault disables BOTH MOE/ENABLEs.

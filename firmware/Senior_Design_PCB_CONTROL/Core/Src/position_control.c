@@ -115,7 +115,7 @@ void position_tick(position_control_t *s,const control_input_t *in,servo_action_
     if (active(s) && (!enc || !in->analog_valid)) { fail(s,SERVO_FEEDBACK,in);return; }
     if (active(s) && (!isfinite(in->bus_v) || in->bus_v<18 || in->bus_v>28)) { fail(s,SERVO_SUPPLY,in);return; }
     if (active(s) && (!in->temperature_valid || !isfinite(in->temperature_c) || in->temperature_c>60)) { fail(s,SERVO_TEMPERATURE,in);return; }
-    if (position_driving(s) && (!in->driver_good || !in->current_valid || s->current_age_us>150u)) {
+    if (position_driving(s) && (!in->driver_good || !in->current_valid || s->current_age_us>CONTROL_CURRENT_MAX_AGE_US)) {
         fail(s,!in->driver_good?SERVO_DRIVER:SERVO_FEEDBACK,in);return;
     }
     if (action==SERVO_CALIBRATE && !active(s) && enc && CONTROL_MOTION_ENABLED) {
@@ -133,7 +133,7 @@ void position_tick(position_control_t *s,const control_input_t *in,servo_action_
     uint32_t elapsed=in->now_ms-s->stage_ms;
     if (s->state==SERVO_WAKE_CAL || s->state==SERVO_WAKE_RUN) {
         if (elapsed>2000u) { fail(s,SERVO_ZERO_TIMEOUT,in);return; }
-        if (elapsed>=350u && in->driver_good && in->zero_ready && in->current_valid && s->current_age_us<=150u) {
+        if (elapsed>=350u && in->driver_good && in->zero_ready && in->current_valid && s->current_age_us<=CONTROL_CURRENT_MAX_AGE_US) {
             enter(s,s->state==SERVO_WAKE_CAL?SERVO_ALIGN:SERVO_RUNNING,in->now_ms);
         }
     } else if (s->state==SERVO_ALIGN && elapsed>=2000u) {
@@ -243,7 +243,7 @@ void position_fast(position_control_t *s,const control_input_t *in,control_outpu
     memset(out,0,sizeof(*out));for (unsigned j=0;j<3;++j) out->duty[j]=0.5f;
     out->enable=active(s);out->pwm=position_driving(s);
     if (!out->pwm) { s->id_integral=s->iq_integral=0;return; }
-    if (!in->current_valid || in->now_us-in->current_us>150u || !in->zero_ready ||
+    if (!in->current_valid || in->now_us-in->current_us>CONTROL_CURRENT_MAX_AGE_US || !in->zero_ready ||
         !in->encoder_transport || in->now_us-in->encoder_us>CONTROL_ENCODER_MAX_AGE_US ||
         !(in->encoder_status&0x20u) || !in->driver_good || in->hard_fault ||
         (!CONTROL_ALLOW_WEAK_MAGNET && (in->encoder_status&0x18u)) ||
@@ -312,4 +312,3 @@ void position_fast(position_control_t *s,const control_input_t *in,control_outpu
 off:
     out->enable=out->pwm=false;
 }
-

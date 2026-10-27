@@ -30,4 +30,3 @@ for enabled,current_pi in ((0,0),(1,0),(1,1)):
         str(root/'Core/Src/demo_protocol.c'),'-lm','-o',str(exe)],check=True)
     subprocess.run([str(exe)],check=True)
 subprocess.run([sys.executable,'-m','unittest','discover','-s',str(root/'Tests'),'-p','test_client*.py','-v'],check=True)
-

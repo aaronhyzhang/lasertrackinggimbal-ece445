@@ -28,7 +28,19 @@
     "dual_release_build.log": "a574d08c0933b1f62d226c6c23468206fcea7fa718293a3ddcb9796c21e85093"
   },
   "active_elf_sha256": {
-    "Debug\\Senior_Design_PCB_CONTROL.elf": "0f366cc018d9cfcd4282656c7c3243972172ae9c66e81f32c92cbdc6f0180707",
-    "Release\\Senior_Design_PCB_CONTROL.elf": "edc537723474b0f2a87e513915b2d3a04d13dd986b86f9f210f859a95701aa49"
+    "Debug\\Senior_Design_PCB_CONTROL.elf": "405ba3f8249ac7bef357cf01012f3ef8d5ba9e3e0729359629c1cf3cad043b9a",
+    "Release\\Senior_Design_PCB_CONTROL.elf": "091bc968556cc3176398c7ae59d2dcb7daae0471878bbc0796efd64d35ab6834"
+  },
+  "freshness_fix": {
+    "observed_trip_age_us": 158,
+    "single_axis_limit_us": 150,
+    "dual_axis_limit_us": 300,
+    "basis": "Three per-axis acquisition periods: 50 us single, 100 us dual.",
+    "regressions": "Wake, supervisor and fast loop accept valid 158-us frames; fast accepts boundary300; supervisor/fast reject301; invalid fresh frames rejected.",
+    "logs": {
+      "dual_freshness_cubeide.log": "d50b5b41d6aa80bd6d3628afe93eee51f8b5dca2c0bb33f594b387b1930121a1",
+      "dual_freshness_portable.log": "e5ce5c2793cd5a6877dacc0fc569feccdc99753d563ea320b5ab2bb51aeb61eb",
+      "dual_freshness_bsp.log": "118e84922915b437bec5aa4b7db4ccf8407c920fc7c4c86a55849e8fd951a77e"
+    }
   }
 }

@@ -39,4 +39,3 @@ for name,defines,sources in cases:
     exe=out/f'{name}.exe'
     subprocess.run([str(a.zig),'cc',*flags,*defines,*map(str,sources),'-lm','-o',str(exe)],check=True)
     subprocess.run([str(exe)],check=True)
-

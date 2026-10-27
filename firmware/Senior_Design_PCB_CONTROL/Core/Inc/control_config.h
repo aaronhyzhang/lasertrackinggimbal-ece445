@@ -23,6 +23,10 @@
  * continuity and plausibility checks remain required; this is not a health pass. */
 #define CONTROL_ALLOW_WEAK_MAGNET 1
 #define CONTROL_ENCODER_MAX_AGE_US 4000u
+/* One ADC sequence per 50 us; dual mode alternates axis contexts. Preserve
+ * the original three-frame freshness tolerance at the actual per-axis rate. */
+#define CONTROL_CURRENT_SAMPLE_US (CONTROL_DUAL_AXIS?100u:50u)
+#define CONTROL_CURRENT_MAX_AGE_US (3u*CONTROL_CURRENT_SAMPLE_US)
 #define CONTROL_COMMAND_MAX_AGE_MS 500u
 #define CONTROL_IQ_LIMIT_A 0.5f
 #define CONTROL_PHASE_TRIP_A 1.5f

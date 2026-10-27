@@ -66,5 +66,21 @@ int main(void){
     app_stop();tick();assert(dual[0].servo.state==SERVO_READY && dual[1].servo.state==SERVO_READY && !pwm);
     dual[1].servo.state=SERVO_FAULT;dual[1].servo.fault=SERVO_CURRENT;
     tick();assert(!pwm && !enabled);
+    /* Reproduce the observed valid 158-us-old dual frame without weakening
+     * acquisition-validity or enforcing the single-axis 150-us threshold. */
+    control_input_t in=dual_inputs(1);position_control_t s;position_init_axis(&s,1);
+    assert(CONTROL_CURRENT_SAMPLE_US==100u && CONTROL_CURRENT_MAX_AGE_US==300u);
+    s.state=SERVO_WAKE_CAL;s.stage_ms=in.now_ms-350u;in.current_us=in.now_us-158u;
+    position_tick(&s,&in,SERVO_NO_ACTION);assert(s.state==SERVO_ALIGN);
+    position_tick(&s,&in,SERVO_NO_ACTION);assert(s.state==SERVO_ALIGN);
+    control_output_t out;position_fast(&s,&in,&out);assert(out.pwm && s.state==SERVO_ALIGN);
+    in.current_us=in.now_us-300u;position_fast(&s,&in,&out);assert(out.pwm);
+    in.current_us=in.now_us-301u;position_fast(&s,&in,&out);
+    assert(!out.pwm && s.fault==SERVO_FEEDBACK && s.trip_input.current_us==in.current_us);
+    position_init_axis(&s,1);s.state=SERVO_ALIGN;in.current_us=in.now_us-301u;
+    position_tick(&s,&in,SERVO_NO_ACTION);assert(s.fault==SERVO_FEEDBACK);
+    position_init_axis(&s,1);s.state=SERVO_ALIGN;in.current_us=in.now_us;in.current_valid=false;
+    position_fast(&s,&in,&out);assert(s.fault==SERVO_FEEDBACK && !out.pwm);
+    puts("PASS dual 158-us frame, wake/fast/slow consistency, 300-us boundary, stale and invalid-frame faults");
     puts("PASS independent gains, simultaneous S1 arm, both fast paths, pan bounds and shared stop/fault");
 }

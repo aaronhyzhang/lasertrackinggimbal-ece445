@@ -430,7 +430,7 @@ void pcb_sense_service(void) {
     sense_axis_t *selected=&f.axis[axis];
     selected->current_window_valid=current.current_window_valid;
     selected->current_age_ms=(current.now_us-current.current_us)/1000u;
-    selected->current_valid=current.current_valid && current.now_us-current.current_us<=150u &&
+    selected->current_valid=current.current_valid && current.now_us-current.current_us<=CONTROL_CURRENT_MAX_AGE_US &&
         selected->driver.awake && selected->driver.configured && selected->driver.gain_v_per_v==20 &&
         zero_ready_epoch[axis]==selected->driver.epoch;
     for (unsigned j=0;j<3;++j) {
