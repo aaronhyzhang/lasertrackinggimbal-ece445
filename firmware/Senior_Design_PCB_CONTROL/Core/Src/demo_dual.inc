@@ -1,6 +1,7 @@
 /* Dual-axis voltage-mode supervisor. Shared S1 arms all queued positions;
  * S2, DISABLE, shared nFAULT and either controller fault inhibit BOTH bridges. */
 #include "motor_profiles.h"
+#include "system_fsm.h"
 #if CONTROL_CURRENT_PI_ENABLED
 #error Dual-axis bring-up supports voltage commutation only
 #endif
@@ -17,6 +18,9 @@ static unsigned command_axis;
 static arm_button_t dual_arm;
 static volatile bool dual_stop;
 static uint32_t dual_foreground_ms,dual_last_tick,dual_last_feed;
+/* Gimbal-level state (docs/SYSTEM_FSM.md): observes both servos, may only stop/inhibit. */
+system_fsm_t g_system;
+static struct { bool seen,detected; uint32_t ms; } dual_target;
 void app_select_axis(unsigned axis) { if(axis<2) command_axis=axis; }
 static bool dual_active(const position_control_t *s) {
     return s->state==SERVO_WAKE_CAL || s->state==SERVO_WAKE_RUN || position_driving(s);
@@ -36,6 +40,7 @@ void app_init(void) {
     for(unsigned i=0;i<2;i++) { position_init_axis(&dual[i].servo,i);dual[i].revision=1; }
     dual_foreground_ms=dual_last_feed=HAL_GetTick();dual_last_tick=board_us();
     command_axis=PCB_TEST_AXIS;dual_stop=false;
+    system_fsm_init(&g_system,NULL,HAL_GetTick());memset(&dual_target,0,sizeof(dual_target));
 }
 void app_stop(void) {
     uint32_t m=board_lock();dual_stop=true;board_kill();
@@ -89,6 +94,15 @@ void app_control_tick(void) {
         for(unsigned j=0;j<3;j++)out.duty[j]=.5f;
         board_apply(&out);dual_publish(i,&in);
     }
+    system_input_t si={0};system_output_t so;
+    si.now_ms=HAL_GetTick();si.init_done=true; /* app_init() runs after board and network setup. */
+    for(unsigned i=0;i<2;i++) {
+        si.axis_state[i]=dual[i].servo.state;si.axis_fault[i]=dual[i].servo.fault;
+        si.axis_calibrated[i]=dual[i].servo.commutation_calibrated && dual[i].servo.zero_set;
+    }
+    si.target_seen=dual_target.seen;si.target_detected=dual_target.detected;si.target_ms=dual_target.ms;
+    system_fsm_step(&g_system,&si,&so);
+    if(so.stop)stop=true; /* FAULT latch or search timeout: same inhibit path as S2/DISABLE. */
     if(stop) { board_kill();for(unsigned i=0;i<2;i++) { position_stop(&dual[i].servo);dual[i].valid=false;g_axis_status[i].servo=dual[i].servo; } }
     dual_stop=false;
     uint32_t used=board_us()-start;
@@ -110,7 +124,7 @@ void app_status(app_status_t *s) { uint32_t m=board_lock();*s=g_axis_status[comm
 bool app_position(command_source_t source,uint32_t deg) {
     uint32_t m=board_lock();dual_axis_t *d=&dual[command_axis];
     bool ok=source==SOURCE_ETHERNET && CONTROL_MOTION_ENABLED && deg<=(command_axis?337000u:360000u) &&
-        (d->servo.state==SERVO_READY || d->servo.state==SERVO_RUNNING || d->servo.state==SERVO_WAKE_RUN) && d->servo.zero_set && !board_stop_pressed();
+        (d->servo.state==SERVO_READY || d->servo.state==SERVO_RUNNING || d->servo.state==SERVO_WAKE_RUN) && d->servo.zero_set && !board_stop_pressed() && g_system.state!=SYS_FAULT;
     if(d->servo.state==SERVO_RUNNING && HAL_GetTick()-d->command_ms>500)ok=false;
     if(ok) { d->target=deg/1000.0f;d->command_ms=HAL_GetTick();d->valid=true; }
     board_unlock(m);return ok;
@@ -121,11 +135,16 @@ bool app_heartbeat(command_source_t source) {
     if(ok) { d->command_ms=HAL_GetTick(); }
     board_unlock(m);return ok;
 }
+bool app_target(bool detected) {
+    uint32_t m=board_lock();
+    dual_target.seen=true;dual_target.detected=detected;dual_target.ms=HAL_GetTick();
+    board_unlock(m);return true;
+}
 bool app_calibrate(command_source_t source) {
     uint32_t m=board_lock();dual_axis_t *d=&dual[command_axis],*other=&dual[1-command_axis];
     bool ok=source==SOURCE_ETHERNET && CONTROL_MOTION_ENABLED && !board_stop_pressed() &&
         !dual_active(&other->servo) && !other->calibrate && !other->valid &&
-        (d->servo.state==SERVO_OFF || d->servo.state==SERVO_READY);
+        (d->servo.state==SERVO_OFF || d->servo.state==SERVO_READY) && g_system.state!=SYS_FAULT;
     if(ok) { d->calibrate=true;d->valid=true;d->command_ms=HAL_GetTick(); }
     board_unlock(m);return ok;
 }
@@ -146,11 +165,12 @@ bool app_set_parameter(uint32_t key,uint32_t value) {
 }
 void app_status_text(char *text,size_t length) {
     app_status_t s;app_status(&s);position_control_t *v=&s.servo;
-    snprintf(text,length,"S1 axis=%u source=1 enabled=%u state=%u fault=%u calibrated=%u zero=%u position_mdeg=%ld target_mdeg=%ld rpm_milli=%ld iq_ma=%ld current_age_us=%lu encoder_age_us=%lu settled=%u weak=%u regulation=voltage network=%s dual=1 phase_trip_enabled=%u",
+    uint32_t m=board_lock();unsigned sys=g_system.state,reason=g_system.reason;board_unlock(m);
+    snprintf(text,length,"S1 axis=%u source=1 enabled=%u state=%u fault=%u calibrated=%u zero=%u position_mdeg=%ld target_mdeg=%ld rpm_milli=%ld iq_ma=%ld current_age_us=%lu encoder_age_us=%lu settled=%u weak=%u regulation=voltage network=%s dual=1 phase_trip_enabled=%u sys=%u sys_reason=%u",
         command_axis,CONTROL_MOTION_ENABLED,v->state,v->fault,v->commutation_calibrated,v->zero_set,
         (long)lroundf(v->position_deg*1000),(long)lroundf(v->target_deg*1000),(long)lroundf(v->velocity_rpm*1000),
         (long)lroundf(v->iq_a*1000),(unsigned long)v->current_age_us,(unsigned long)v->encoder_age_us,
-        v->settled,v->weak_magnet,network_status(),CONTROL_SOFTWARE_PHASE_TRIP_ENABLED);
+        v->settled,v->weak_magnet,network_status(),CONTROL_SOFTWARE_PHASE_TRIP_ENABLED,sys,reason);
 }
 void app_config_text(char *text,size_t length) {
     uint32_t m=board_lock();position_config_t c=dual[command_axis].servo.config;uint32_t rev=dual[command_axis].revision;board_unlock(m);

@@ -24,6 +24,8 @@ void app_stop(void);
 void app_status(app_status_t *snapshot);
 bool app_position(command_source_t source,uint32_t millidegrees);
 bool app_heartbeat(command_source_t source);
+/* Owner-checked vision report; feeds the dual-axis system state machine only. */
+bool app_target(bool detected);
 bool app_calibrate(command_source_t source);
 bool app_zero(command_source_t source);
 void app_config_text(char *text,size_t length);

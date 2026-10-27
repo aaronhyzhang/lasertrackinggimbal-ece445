@@ -3,9 +3,10 @@
 Wire format, as implemented in firmware/Senior_Design_PCB_CONTROL/Core/Src/demo_network.c:
 
     G1 <session> <sequence> POSITION <0..360000 millidegrees>
+    G1 <session> <sequence> TARGET <0|1>          (vision report; firmware with sys= in STATUS)
     G1 <session> <sequence> HEARTBEAT | STATUS | DISABLE | CONFIG
 
-Accepted POSITION/HEARTBEAT reply `OK G1 <session> <sequence>`; a refused one
+Accepted POSITION/TARGET/HEARTBEAT reply `OK G1 <session> <sequence>`; a refused one
 replies `ERR G1 <session> <sequence>`. STATUS replies `S1 key=value ...`,
 DISABLE replies `OK DISABLED`, malformed packets reply `ERR syntax`, and
 ownership/sequence failures reply `ERR owner` / `ERR sequence`.
@@ -24,6 +25,11 @@ STATE_NAMES = {0: 'OFF', 1: 'WAKE_CAL', 2: 'ALIGN', 3: 'SWEEP', 4: 'RETURN', 5: 
 FAULT_NAMES = {0: 'OK', 1: 'DRIVER', 2: 'FEEDBACK', 3: 'ZERO_TIMEOUT', 4: 'CALIBRATION',
                5: 'CURRENT', 6: 'CURRENT_SUM', 7: 'TRAVEL', 8: 'FOLLOWING', 9: 'COMMAND_TIMEOUT',
                10: 'SUPPLY', 11: 'TEMPERATURE', 12: 'TIMING', 13: 'FOREGROUND', 14: 'INTERNAL'}
+# system_fsm.h gimbal-level states, reported as STATUS sys=<n>
+SYSTEM_NAMES = {0: 'INIT', 1: 'CALIBRATING', 2: 'IDLE', 3: 'ARMING', 4: 'TRACKING',
+                5: 'SEARCHING', 6: 'FAULT'}
+SYSTEM_REASONS = {0: 'NONE', 1: 'INIT_FAILED', 2: 'AXIS_FAULT', 3: 'BOARD_FAULT', 4: 'ESTOP',
+                  5: 'SEARCH_TIMEOUT'}
 
 DEFAULT_HOST = '192.168.10.2'
 TILT_PORT = 5005  # axis 0, J3
@@ -128,6 +134,9 @@ class G1Client:
 
     def position(self, degrees):
         return self.request('POSITION', round(degrees * 1000))
+
+    def target(self, detected):
+        return self.request('TARGET', 1 if detected else 0)
 
     def heartbeat(self):
         return self.request('HEARTBEAT')

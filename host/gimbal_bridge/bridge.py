@@ -9,6 +9,8 @@ Safety behaviour (unchanged firmware rules apply on top of these):
     each axis to its CURRENT measured position, so pressing S1 causes no jump.
   * Arming is only the physical S1 button.
   * Target lost / stale vision -> hold the last target (SEARCHING), keep leases.
+  * Firmware with the system state machine (STATUS has sys=) also receives
+    `TARGET <0|1>` every cycle on the tilt port, so the board knows TRACKING from SEARCHING.
   * Any fault, unexpected state, refused command or lost link -> DISABLE both and stop.
 """
 import collections
@@ -18,7 +20,7 @@ import time
 from dataclasses import dataclass
 
 from .g1 import (G1Client, G1Error, DEFAULT_HOST, TILT_PORT, PAN_PORT,
-                 SERVO_READY, SERVO_WAKE_RUN, SERVO_RUNNING, STATE_NAMES, FAULT_NAMES)
+                 SERVO_READY, SERVO_WAKE_RUN, SERVO_RUNNING, STATE_NAMES, FAULT_NAMES, SYSTEM_NAMES)
 from .tracking import Observation, TrackerConfig, next_target
 
 AXES = ('tilt', 'pan')  # index == firmware axis number
@@ -51,6 +53,8 @@ class Bridge:
         self.axes = [AxisState(), AxisState()]
         self.period = 1.0 / rate_hz
         self.mode = 'IDLE'
+        self.system_state = None   # board's sys= value, if the firmware reports it
+        self.send_target = False   # decided in check_ready() from the firmware's STATUS
         self.rtts = collections.deque(maxlen=20000)
         self._obs = None
         self._obs_new = False
@@ -63,7 +67,7 @@ class Bridge:
         if self._log:
             self._log.writerow(['t_s', 'mode', 'detected', 'pan_err_deg', 'tilt_err_deg',
                                 'tilt_target', 'tilt_meas', 'tilt_state', 'pan_target', 'pan_meas',
-                                'pan_state', 'rtt_ms'])
+                                'pan_state', 'rtt_ms', 'board_sys'])
         self._t0 = time.monotonic()
 
     # ---- vision side -------------------------------------------------------
@@ -86,6 +90,8 @@ class Bridge:
         a = self.axes[axis]
         a.measured_deg = s['position_mdeg'] / 1000
         a.state, a.fault = s['state'], s['fault']
+        if axis == 0 and 'sys' in s:
+            self.system_state = s['sys']
         return s
 
     def check_ready(self):
@@ -108,6 +114,7 @@ class Bridge:
                                     f'tracking window {low}..{high}; move it inside first')
         if problems:
             raise BridgeError('; '.join(problems))
+        self.send_target = self.system_state is not None
 
     def hold_current(self):
         """Queue each axis's current position as its target (S1 then arms without a jump)."""
@@ -158,6 +165,8 @@ class Bridge:
                 elif now - a.last_command_s >= HEARTBEAT_S:
                     self.clients[axis].heartbeat()
                     a.last_command_s = now
+                if axis == 0 and self.send_target:
+                    self.clients[0].target(tracking)
                 self._status(axis)
                 a.missed = 0
             except TimeoutError:
@@ -177,7 +186,8 @@ class Bridge:
                                 f'{obs.pan_error_deg:.3f}' if obs else '', f'{obs.tilt_error_deg:.3f}' if obs else '',
                                 f'{t.target_deg:.3f}', f'{t.measured_deg:.3f}', t.state,
                                 f'{p.target_deg:.3f}', f'{p.measured_deg:.3f}', p.state,
-                                f'{self.rtts[-1] * 1000:.3f}' if self.rtts and self.rtts[-1] else ''])
+                                f'{self.rtts[-1] * 1000:.3f}' if self.rtts and self.rtts[-1] else '',
+                                SYSTEM_NAMES.get(self.system_state, '')])
 
     def _run(self):
         next_tick = time.monotonic()

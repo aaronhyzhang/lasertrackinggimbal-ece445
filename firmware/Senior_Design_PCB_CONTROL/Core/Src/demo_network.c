@@ -162,6 +162,7 @@ static void received(void *arg,struct udp_pcb *pcb,struct pbuf *p,const ip_addr_
             command.operation==NET_ZERO ? app_zero(SOURCE_ETHERNET) :
             command.operation==NET_CALIBRATE ? app_calibrate(SOURCE_ETHERNET) :
             command.operation==NET_POSITION ? app_position(SOURCE_ETHERNET,command.millidegrees) :
+            command.operation==NET_TARGET ? app_target(command.args[0]!=0u) :
                                              app_heartbeat(SOURCE_ETHERNET);
     if (ok) { owner_sequence=command.sequence; owner_ms=now; }
     char response[64]; snprintf(response,sizeof(response),"%s G1 %lu %lu",ok?"OK":"ERR",

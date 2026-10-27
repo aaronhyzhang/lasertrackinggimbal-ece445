@@ -24,7 +24,7 @@ from datetime import datetime
 from pathlib import Path
 
 from .bridge import Bridge, BridgeError
-from .g1 import DEFAULT_HOST, TILT_PORT, PAN_PORT
+from .g1 import DEFAULT_HOST, TILT_PORT, PAN_PORT, SYSTEM_NAMES
 from .tracking import Observation, TrackerConfig
 
 
@@ -104,7 +104,8 @@ def main():
         print(f'Tracking ({a.input}). Logging to {log_path}', flush=True)
         while bridge.running():
             t, pn = bridge.axes
-            print(f'{bridge.mode:9s} tilt {t.measured_deg:7.2f} -> {t.target_deg:7.2f}   '
+            board = SYSTEM_NAMES.get(bridge.system_state, '-')
+            print(f'{bridge.mode:9s} board {board:10s} tilt {t.measured_deg:7.2f} -> {t.target_deg:7.2f}   '
                   f'pan {pn.measured_deg:7.2f} -> {pn.target_deg:7.2f}', flush=True)
             time.sleep(0.5)
         if bridge.error:

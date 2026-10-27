@@ -165,6 +165,46 @@ class BridgeFlow(WithBoard):
         self.assertFalse(any(a.valid for a in self.board.axes))
 
 
+class SystemState(WithBoard):
+    def test_target_reports_drive_board_state(self):
+        br = self.bridge()
+        self.start(br)
+        self.assertTrue(br.send_target)
+        br.submit(Observation(True, 0.0, 0.0))
+        time.sleep(0.1)
+        self.assertGreater(self.board.targets, 0)
+        self.assertEqual(self.board.system_state(), fake_board.SYS_TRACKING)
+        self.assertEqual(br.system_state, fake_board.SYS_TRACKING)
+        br.submit(Observation(False))
+        time.sleep(0.1)
+        self.assertEqual(self.board.system_state(), fake_board.SYS_SEARCHING)
+        self.assertEqual(br.system_state, fake_board.SYS_SEARCHING)
+
+    def test_target_requires_owner(self):
+        c = G1Client('127.0.0.1', self.board.ports[0], 0.2)
+        self.addCleanup(c.close)
+        with self.assertRaises(G1Error) as e:
+            c.target(True)
+        self.assertEqual(e.exception.reply, 'ERR owner')
+        self.assertEqual(self.board.targets, 0)
+
+
+class LegacyFirmware(unittest.TestCase):
+    def test_bridge_skips_target_without_sys_field(self):
+        board = fake_board.FakeBoard(legacy=True).start()
+        self.addCleanup(board.close)
+        br = Bridge(TrackerConfig(), '127.0.0.1', *board.ports, rate_hz=100, timeout=0.1)
+        self.addCleanup(br.close)
+        threading.Timer(0.15, board.press_s1).start()
+        br.start(arm_timeout_s=3)
+        br.submit(Observation(True, 1.0, 1.0))
+        time.sleep(0.3)
+        self.assertTrue(br.running(), br.error)
+        self.assertFalse(br.send_target)
+        self.assertIsNone(br.system_state)
+        self.assertEqual(board.targets, 0)
+
+
 class RV(WithBoard):
     def test_reject_all_malformed(self):
         c = G1Client('127.0.0.1', self.board.ports[0], 0.2)

@@ -218,6 +218,7 @@ bool app_heartbeat(command_source_t source) {
     if (ok) command_ms=HAL_GetTick();
     board_unlock(m);return ok;
 }
+bool app_target(bool detected) { (void)detected;return false; }
 bool app_set_parameter(uint32_t key,uint32_t value) {
     uint32_t m=board_lock();position_config_t c=servo.config;
     bool ok=CONTROL_SOURCE_ETHERNET && !CONTROL_CURRENT_PI_ENABLED &&

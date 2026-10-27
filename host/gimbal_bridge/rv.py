@@ -2,7 +2,7 @@
 
     latency     N STATUS round trips; one-way = RTT / 2. Requirement: < 5 ms for 99 %.
     throughput  Pipelined STATUS requests for a fixed time; reports Mbps. Requirement: >= 1 Mbps.
-    reject      Sends malformed packets; every one must get `ERR syntax` and the axis target
+    reject      Sends 20 malformed packets; every one must get `ERR syntax` and the axis target
                 must not change. (Firmware also counts them in g_network.rejected.)
 
 All tests use STATUS or invalid packets only, so nothing is commanded to move. By default
@@ -38,6 +38,8 @@ MALFORMED = [
     b'G1 1 1 STATUS ',                  # trailing space
     b'G1 1 1 STATUS\n',                 # control character
     b'G1 1 1 ARM',                      # no remote arm exists
+    b'G1 1 1 TARGET',                   # missing detection flag
+    b'G1 1 1 TARGET 2',                 # detection flag must be 0 or 1
     b'G1 1 1 HEARTBEAT extra',          # extra field
     b'G1 1 1 \xff\xfe',                 # non-ASCII
     b'G1 1 1 POSITION ' + b'9' * 200,   # too long

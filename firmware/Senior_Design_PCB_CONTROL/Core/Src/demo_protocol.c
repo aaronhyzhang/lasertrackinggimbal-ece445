@@ -41,6 +41,10 @@ bool protocol_parse(const void *bytes,size_t length,net_command_t *out) {
         out->operation=NET_POSITION;
         return count==5 && protocol_u32(token[4],&out->millidegrees) && out->millidegrees<=360000u;
     }
+    if (!strcmp(token[3],"TARGET")) { /* Vision report: 1 = ball detected in the latest frame. */
+        out->operation=NET_TARGET;
+        return count==5 && protocol_u32(token[4],&out->args[0]) && out->args[0]<=1u;
+    }
     if (count!=4) return false;
     if (!strcmp(token[3],"HEARTBEAT")) out->operation=NET_HEARTBEAT;
     else if (!strcmp(token[3],"STATUS")) out->operation=NET_STATUS;

@@ -30,7 +30,7 @@ class TrackerConfig:
     max_step_deg: float = 20.0   # largest correction from one frame
     min_update_deg: float = 0.1  # smaller target changes are sent as heartbeats instead
     # Firmware accepts tilt 2..358 and pan 2..337; these defaults match Colin's tested sweeps.
-    # Narrow tilt to the real mechanical/safe window before running with the laser.
+    # Narrow tilt to the real mechanical/safe window before running on the assembled gimbal.
     tilt_limits: tuple = (15.0, 345.0)
     pan_limits: tuple = (15.0, 320.0)
     stale_s: float = 0.3         # observation older than this counts as "target lost"

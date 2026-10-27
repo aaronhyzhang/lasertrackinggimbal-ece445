@@ -1,6 +1,6 @@
 # Host: laptop bridge (vision → PCB)
 
-Laptop-side software for the laser tracking gimbal. It connects the vision pipeline to the
+Laptop-side software for the tracking gimbal. It connects the vision pipeline to the
 custom PCB running `firmware/Senior_Design_PCB_CONTROL` (dual-axis build) over Ethernet.
 
 ```text
@@ -108,6 +108,7 @@ The firmware's own protections always apply. On top of them the bridge does the 
 | Before arming | Commands each axis to **where it already is**, so S1 causes no jump |
 | Arming | **Physical S1 only.** No network command can arm |
 | Ball not detected, or newest frame older than 0.3 s | **SEARCHING**: holds the last target and keeps the motors' command timeout alive |
+| Board has the system state machine (STATUS shows `sys=`) | Also sends `TARGET 1/0` on the tilt port every cycle, so the board's own state follows TRACKING/SEARCHING. Older firmware: skipped automatically |
 | Fault, refused command, S2, or 8 missed replies in a row | Sends **DISABLE** to both axes and exits |
 | Ctrl-C or normal exit | Sends DISABLE to both axes |
 | Laptop program crashes or the cable is pulled | The firmware's **500 ms timeout** stops the motors by itself |
@@ -143,7 +144,7 @@ py -3 -m gimbal_bridge.rv all --port 5006
 |---|---|---|
 | `latency` | One-way < 5 ms for 99 % of messages | 2000 STATUS round trips; one-way = round trip / 2 |
 | `throughput` | ≥ 1 Mbps | STATUS requests kept in flight for 5 s; reports UDP payload and on-wire Mbps |
-| `reject` | Bad messages rejected and never applied | 18 malformed packets must all get `ERR syntax`; target must not change |
+| `reject` | Bad messages rejected and never applied | 20 malformed packets must all get `ERR syntax`; target must not change |
 
 Results print as PASS/FAIL and are saved to `logs/rv/*.json`. Also compare the reject count
 with `g_network.rejected` in CubeIDE Live Expressions. The tool refuses to run while an
@@ -167,7 +168,8 @@ Press **S1** on the board when asked. Both motors should follow the fake ball sm
 > camera: a ball on the right must turn the camera to the right.
 
 Logs go to `logs/track/*.csv`: time, mode, vision errors, target, measured position and
-state per axis, and command round-trip time.
+state per axis, command round-trip time, and the board's system state. The console line shows
+the bridge mode and the board's state (`board TRACKING`, `-` on older firmware).
 
 ---
 
@@ -214,7 +216,8 @@ Then send **one JSON datagram per frame** to `127.0.0.1:5100`:
 Send `{"detected": false}` when no ball is found. Optional `"t_capture"` must be a
 `time.monotonic()` value from the same machine.
 
-> Camera-to-laser offset is not compensated yet. Add it to the errors before submitting.
+> Any fixed offset between where the camera points and where the gimbal should aim is not
+> compensated yet. Add it to the errors before submitting.
 
 ---
 
@@ -240,6 +243,6 @@ Send `{"detected": false}` when no ball is found. Optional `"t_capture"` must be
   electrical behaviour. Passing the tests is not hardware validation.
 - The latency figure is a round trip halved; it assumes symmetric delay and does not include
   camera or detector time. Measure end-to-end latency separately.
-- No camera-to-laser offset or depth compensation yet.
-- No system state machine (init/calibrate/idle/search/track/fault) on the board yet; the
-  bridge's TRACKING/SEARCHING is laptop-side only.
+- No aim-offset or depth compensation yet.
+- The board's system state machine (`firmware/.../docs/SYSTEM_FSM.md`) has no e-stop pin
+  yet; its e-stop input is wired to `false` until one is assigned.
