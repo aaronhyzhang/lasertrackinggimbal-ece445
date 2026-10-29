@@ -1,0 +1,4 @@
+-r requirements.txt
+numpy<=2.3.5
+coremltools>=9,<10
+scikit-learn>=1.5,<2

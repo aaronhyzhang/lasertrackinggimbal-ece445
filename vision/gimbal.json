@@ -1,0 +1,19 @@
+{
+  "host": "192.168.10.2",
+  "tilt_port": 5005,
+  "pan_port": 5006,
+  "pan_sign": -1,
+  "tilt_sign": 1,
+  "gain": 0.4,
+  "max_step_deg": 3.0,
+  "min_update_deg": 0.05,
+  "stale_s": 0.3,
+  "loss_stop_s": 2.0,
+  "arm_timeout_s": 60.0,
+  "capture_delay_s": 0.0,
+  "pan_ratio": 1.0,
+  "tilt_ratio": 1.0,
+  "tilt_level_deg": null,
+  "tilt_limits": null,
+  "pan_limits": null
+}

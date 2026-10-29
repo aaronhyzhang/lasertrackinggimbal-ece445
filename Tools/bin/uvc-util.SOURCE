@@ -1,0 +1,3 @@
+https://github.com/jtfrey/uvc-util
+Commit: 8110da7025c95eea3096a7181af9a46c0cc7ac37
+Built locally with Apple clang, -O2, IOKit and Foundation.

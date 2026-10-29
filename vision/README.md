@@ -52,8 +52,31 @@ python -m vision.utils.calibration generate
 Defaults request **camera 0, 1920 × 1080, 60 FPS**. Use `--camera 1` if needed;
 the driver may negotiate a different mode. Keep the **same camera, resolution,
 camera mode, and focus** for capture, verification, and tracking. Calibration
-rejects mismatched tracking resolutions. Focus is left to the camera; there are
-no software focus overrides. Autofocus changes can affect calibration accuracy.
+rejects mismatched tracking resolutions. On macOS, use the UVC focus helper below
+to disable autofocus if the camera exposes the control. Lock focus before
+calibrating and keep it fixed for tracking.
+
+### Keep autofocus disabled
+
+Autofocus may remain disabled while the webcam stays powered, but the setting
+is not guaranteed to persist after unplugging the camera, restarting the Mac,
+cycling USB hub power, or another application changing camera settings.
+`vision.run` does not automatically reapply the setting.
+
+Before each tracking session, run this from `lasertrackinggimbal-ece445`:
+
+```bash
+env/bin/python -m vision.camera_focus \
+  --device "FHD Camera Microphone" --disable-auto
+```
+
+`FHD Camera Microphone` is the connected NBPower webcam's USB product name.
+The helper checks support and verifies the setting by reading it back. Use
+`env/bin/python -m vision.camera_focus --list` to find the name if it changes.
+The helper requires `uvc-util` at `Tools/bin/uvc-util` or on `PATH`.
+Disabling autofocus does not restore a previously calibrated manual lens
+position; keep the same focus used for calibration and check image sharpness
+after reconnecting the camera.
 
 For different measured squares, pass `--square-length METERS` to both capture and
 calibration; markers default to 0.6 times that length. Use `--marker-length` if
@@ -65,9 +88,11 @@ the ratio differs. Keep separate capture folders for different setups with
 
 ```bash
 python -m vision.run
+python -m vision.run --ethernet
 ```
 
-This opens the live camera, detects the ball with `weights/yolo26s.pt`, and uses
+This opens the live camera, detects the ball with
+`weights/coreml/yolo26s-384x640-fp16.mlpackage` (Core ML FP16 on macOS), and uses
 the saved calibration to estimate position and pan/tilt errors. **q / Escape**
 quits. It processes live frames; it does not save images or video.
 
@@ -77,8 +102,10 @@ is right and positive tilt is up. Range is distance to the ball center. Depth
 uses the ball diameter (**0.24 m** by default); set `--ball-diameter METERS` to
 your measured value. Boxes touching the image edge have no depth estimate.
 
-Optional: `--camera 1` selects another camera, `--device mps` requests the Apple
-GPU. On Windows with the RTX 4060, use `python -m vision.run --device 0` with a
+Optional: `--camera 1` selects another camera. To use the original PyTorch model
+on the Apple GPU, pass `--model vision/weights/yolo26s.pt --device mps`.
+On Windows with the RTX 4060, use
+`python -m vision.run --model vision/weights/yolo26s.pt --device 0` with a
 CUDA-enabled PyTorch installation (see the [PyTorch installer](https://pytorch.org/get-started/locally/)).
 The actual inference device is printed at startup.
 `--log-csv vision/measurements/run1.csv` saves per-frame measurements without
@@ -86,6 +113,14 @@ overwriting an existing file. Capture remains 1920 × 1080; model input defaults
 to 640 pixels. Keep `--imgsz`, `--model`, and `--confidence` at their defaults
 unless deliberately comparing accuracy and processing speed. Use `--help` for
 all available options.
+
+Tracking now uses a latest-frame capture worker for numeric live camera indices
+(`--sync-capture` restores synchronous capture), warms up inference before opening
+the camera, and limits preview refresh to 30 FPS at a maximum 1280 × 720.
+`--no-preview` removes GUI overhead; `--max-frames 600` makes a bounded measurement run.
+Core ML `.mlpackage` models use the direct CPU + Neural Engine path; `--device`
+selects hardware only for PyTorch models. Camera delivery FPS, discarded frames,
+and host receipt age are included in runtime diagnostics.
 
 Run the automated vision tests with `python -m unittest discover -s vision/unit_tests -t . -v`.
 See [unit_tests/README.md](unit_tests/README.md) for scope and individual test commands.
