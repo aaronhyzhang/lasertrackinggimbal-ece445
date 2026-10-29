@@ -13,6 +13,7 @@ if not __package__:
 
 from .detect import DEFAULT_IMAGE_SIZE, Detect
 from .gimbal import CONFIG_PATH, Gimbal, Settings
+from .live_telemetry import TelemetryRecorder
 from .position import BALL_DIAMETER_M, Position
 from .stream import Stream
 from .utils.diagnostics import Diagnostics
@@ -54,6 +55,7 @@ def main(argv=None):
     parser.add_argument("--image", help="Test one local image instead of the live camera")
     parser.add_argument("--log-csv", help="Save every processed frame's measurements to a new CSV file")
     parser.add_argument("--debug-log", help="Runtime log path (default: vision/logs/run-<timestamp>.log)")
+    parser.add_argument("--no-telemetry", action="store_true", help="Disable automatic DIAG/HEALTH recording during Ethernet runs")
     ethernet = parser.add_mutually_exclusive_group()
     ethernet.add_argument("--ethernet", action="store_true",
                           help="Track through the PCB; press physical S1 once when prompted")
@@ -70,6 +72,7 @@ def main(argv=None):
     stream = None
     logger = None
     gimbal = None
+    telemetry = None
     diagnostics = Diagnostics(args.debug_log)
     print(f"Runtime diagnostics: {diagnostics.path}")
     diagnostics.log.info("Arguments: %s", vars(args))
@@ -102,6 +105,11 @@ def main(argv=None):
             diagnostics.mark("gimbal_start")
             gimbal = Gimbal(settings, dry_run=args.ethernet_dry_run)
             gimbal.start()
+            if not args.no_telemetry:
+                telemetry = TelemetryRecorder(settings, diagnostics.path, diagnostics.log,
+                                              host_snapshot=gimbal.telemetry_snapshot)
+                telemetry.start()
+                print(f"Telemetry CSV: {telemetry.csv_path}")
             geometry = "coupled yaw/tilt" if settings.tilt_level_deg is not None else "local angle corrections (near-level camera)"
             print(f"Ethernet: {settings.host}, tilt:{settings.tilt_port}, pan:{settings.pan_port} | {geometry}")
             print("Encoder feedback + camera errors set targets. q/Escape/S2 stops; no automatic rearm.")
@@ -219,6 +227,7 @@ def main(argv=None):
     finally:
         diagnostics.mark("cleanup")
         for name, cleanup in (("gimbal", gimbal.close if gimbal is not None else None),
+                              ("telemetry", telemetry.close if telemetry is not None else None),
                               ("measurements", logger.close if logger is not None else None),
                               ("camera", stream.release if stream is not None else None),
                               ("windows", cv.destroyAllWindows)):

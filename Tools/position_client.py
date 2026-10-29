@@ -51,12 +51,14 @@ class Client:
             if remaining <= 0:
                 raise TimeoutError('No matching response')
             self.sock.settimeout(remaining)
-            text = self.sock.recv(1024).decode('ascii')
+            # HEALTH includes driver, ADC and network counters in one datagram.
+            text = self.sock.recv(4096).decode('ascii')
             if text.startswith('ERR'):
                 raise RuntimeError(text)
             if operation == 'STATUS' and text.startswith('S1 '):
                 return status_fields(text)
-            if operation == 'CONFIG' and text.startswith('C1 '):
+            prefix = {'CONFIG': 'C1 ', 'DIAG': 'D1 ', 'HEALTH': 'H1 '}.get(operation)
+            if prefix is not None and text.startswith(prefix):
                 fields=dict(item.split('=',1) for item in text.split()[1:])
                 for key,value in fields.items():
                     try:fields[key]=int(value)
@@ -64,7 +66,7 @@ class Client:
                 return fields
             if operation == 'DISABLE' and text == 'OK DISABLED':
                 return text
-            if operation not in ('STATUS', 'CONFIG', 'DISABLE') and text == expected:
+            if operation not in ('STATUS', 'CONFIG', 'DIAG', 'HEALTH', 'DISABLE') and text == expected:
                 return text
 
     def close(self):

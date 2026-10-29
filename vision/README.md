@@ -96,6 +96,33 @@ This opens the live camera, detects the ball with
 the saved calibration to estimate position and pan/tilt errors. **q / Escape**
 quits. It processes live frames; it does not save images or video.
 
+Ethernet feedback polls both axes at a target of 100 Hz (10 ms per cycle), set
+by `feedback_hz` in `vision/gimbal.json` (20–100; use 20 for the previous rate).
+The preview and runtime log's gimbal status show the measured feedback rate;
+Ethernet latency and host scheduling can lower it. Position commands require a
+new camera observation, so their rate also depends on vision FPS and detection.
+
+Ethernet runs automatically start the read-only `live_telemetry.py` recorder.
+Alongside `run-<timestamp>.log`, it writes `run-<timestamp>-telemetry.csv` with
+DIAG samples at a target of 20 Hz per axis and cached HEALTH data refreshed at
+2 Hz, plus `run-<timestamp>-telemetry.json` with configuration, counts and errors.
+The runtime log also receives one `TELEMETRY` summary per axis each second.
+The recorder uses its own worker and sockets; it sends only CONFIG/DIAG/HEALTH.
+Unsupported diagnostics or a failed request stop recording with a logged warning;
+the vision controller continues. `--no-telemetry` disables it for comparisons.
+For a separate terminal dashboard, run `python -m vision.live_telemetry`.
+
+The CSV includes received/effective targets, planned/measured motion, speed,
+acceleration, saturation, command freshness, feedback health, and host timing.
+`planner_error_deg` is effective target minus trajectory; `motor_error_deg` is
+trajectory minus measured position. `host_*_frame_to_send_ms` and
+`host_*_position_rtt_ms` describe the last acknowledged position command for
+that axis, not a new command on every telemetry row. Frame ages use host receipt
+time minus configured capture delay; sensor exposure latency is not measured.
+Host and board clocks are independent; UTC and host performance-counter stamps
+are included for correlation. See [tracking latency notes](TRACKING_LATENCY.md)
+for the diagnosis and prediction/filter tradeoffs.
+
 The preview shows confidence, approximate X/Y/Z in meters, range, angles, and
 processing FPS. Coordinates are **+X right, +Y down, +Z forward**; positive pan
 is right and positive tilt is up. Range is distance to the ball center. Depth

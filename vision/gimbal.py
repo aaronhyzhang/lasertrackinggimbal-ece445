@@ -30,6 +30,8 @@ class Settings:
     gain: float = 0.4
     max_step_deg: float = 3.0
     min_update_deg: float = 0.05
+    # Poll both axes independently of vision; POSITION still needs a new frame.
+    feedback_hz: float = 100.0
     stale_s: float = 0.3
     loss_stop_s: float = 2.0
     arm_timeout_s: float = 60.0
@@ -51,12 +53,14 @@ class Settings:
         if any(type(p) is not int or not 1 <= p <= 65535 for p in (self.tilt_port, self.pan_port)) or self.tilt_port == self.pan_port:
             raise ValueError("Use distinct valid tilt/pan UDP ports")
         for name in ("gain", "max_step_deg", "min_update_deg", "stale_s", "loss_stop_s",
-                     "arm_timeout_s", "capture_delay_s", "pan_ratio", "tilt_ratio"):
+                     "arm_timeout_s", "capture_delay_s", "pan_ratio", "tilt_ratio", "feedback_hz"):
             value = getattr(self, name)
             if not isinstance(value, (int, float)) or not math.isfinite(value):
                 raise ValueError(f"{name} must be finite")
         if not 0 < self.gain <= 1 or not 0 < self.max_step_deg <= 10 or self.min_update_deg < 0:
             raise ValueError("Require 0 < gain <= 1, 0 < max_step_deg <= 10, min_update_deg >= 0")
+        if isinstance(self.feedback_hz, bool) or not 20 <= self.feedback_hz <= 100:
+            raise ValueError("feedback_hz must be between 20 and 100")
         if not 0 < self.stale_s <= 0.5 or self.loss_stop_s < self.stale_s or self.arm_timeout_s <= 0:
             raise ValueError("Invalid stale/loss/arming timeout")
         if self.capture_delay_s < 0 or self.capture_delay_s >= self.stale_s or min(self.pan_ratio, self.tilt_ratio) <= 0:
@@ -178,6 +182,8 @@ class Gimbal:
         self._last_submission = -math.inf
         self._error = None
         self._message = "Connecting"
+        self._telemetry = {}
+        self._submitted = self._replaced = 0
 
     def start(self):
         if self._thread is not None:
@@ -209,21 +215,47 @@ class Gimbal:
             if timestamp <= self._last_submission:
                 raise ValueError("Frame timestamps must increase")
             self._last_submission = timestamp
+            self._submitted += 1
+            self._replaced += self._pending is not None
             self._pending = (timestamp, angles)
+
+    def telemetry_snapshot(self):
+        """Copy host timing for the recorder; no socket or file operations."""
+        with self._lock:
+            data = dict(self._telemetry, submitted_observations=self._submitted,
+                        replaced_observations=self._replaced, pending_observation=self._pending is not None)
+        now = time.perf_counter()
+        data['snapshot_perf_s'] = now
+        for stamp, age in (('feedback_perf_s', 'feedback_age_ms'), ('frame_perf_s', 'frame_age_ms')):
+            value = data.pop(stamp, None)
+            data[age] = None if value is None else (now - value) * 1000
+        return data
 
     def close(self):
         self._stop.set()
         if self._thread is not None:
             self._thread.join(timeout=2)
 
-    def _message_set(self, text):
+    def _message_set(self, text, **telemetry):
         with self._lock:
             self._message = text
+            self._telemetry = telemetry
 
     def _run(self):
         clients, histories, limits = [], [deque(maxlen=100), deque(maxlen=100)], []
         attempted = False
         s = self.settings
+        period = 1 / s.feedback_hz
+        feedback_times = deque(maxlen=math.ceil(s.feedback_hz) + 1)
+        command_timing = {}
+
+        def send_position(axis, target, frame_timestamp=None):
+            before = time.perf_counter()
+            clients[axis].request("POSITION", round(target * 1000))
+            command_timing[f'{AXES[axis]}_position_rtt_ms'] = (time.perf_counter() - before) * 1000
+            command_timing[f'{AXES[axis]}_frame_to_send_ms'] = (
+                None if frame_timestamp is None else (before - frame_timestamp) * 1000)
+
         try:
             # Short bounded requests; a lost reply ends this session rather than
             # reusing uncorrelated STATUS replies from a timed-out transaction.
@@ -242,8 +274,8 @@ class Gimbal:
             queued_at = last_frame = last_detection = None
             observation = None
             last_target_report = 0.0
+            next_tick = time.perf_counter()
             while not self._stop.is_set():
-                tick = time.perf_counter()
                 for i, client in enumerate(clients):
                     if attempted and not self.dry_run:
                         client.request("HEARTBEAT")
@@ -260,6 +292,9 @@ class Gimbal:
                     seen_active[i] |= status["state"] in (WAKING, RUNNING)
                 current = tuple(st["position_mdeg"] / 1000 for st in statuses)
                 now = time.perf_counter()
+                feedback_times.append(now)
+                elapsed = feedback_times[-1] - feedback_times[0]
+                measured_hz = (len(feedback_times) - 1) / elapsed if elapsed > 0 else 0.0
                 with self._lock:
                     pending, self._pending = self._pending, None
                 if pending is not None:
@@ -281,8 +316,8 @@ class Gimbal:
                         if q != target and (window is not None or abs(q - target) > 2):
                             raise RuntimeError(f"{AXES[i]} starting position {q:.2f} is outside tracking limits {limits[i]}")
                     attempted = True  # also disable on a partial send / lost ACK
-                    for client, target in zip(clients, targets):
-                        client.request("POSITION", round(target * 1000))
+                    for i, target in enumerate(targets):
+                        send_position(i, target)
                     queued_at = now
                     print("Gimbal ready: starting positions queued. Press physical S1 once; S2/q stops.", flush=True)
                 if attempted:
@@ -303,7 +338,7 @@ class Gimbal:
                             if not self.dry_run:
                                 for i, client in enumerate(clients):
                                     if abs(new[i] - targets[i]) >= s.min_update_deg:
-                                        client.request("POSITION", round(new[i] * 1000))
+                                        send_position(i, new[i], observation[0])
                             targets = new if self.dry_run else tuple(
                                 new[i] if abs(new[i] - targets[i]) >= s.min_update_deg else targets[i] for i in (0, 1))
                 # laptop-bridge adds a reporting-only TARGET operation. Detect it
@@ -313,8 +348,19 @@ class Gimbal:
                     last_target_report = now
                 mode = "DRY RUN" if self.dry_run else "TRACKING" if armed and tracking else "HOLD (ball lost)" if armed else "WAIT S1" if attempted else "WAIT BALL"
                 target_text = "" if targets is None else f" -> tilt {targets[0]:.2f}, pan {targets[1]:.2f} deg"
-                self._message_set(f"{mode}: tilt {current[0]:.2f}, pan {current[1]:.2f} deg{target_text}")
-                self._stop.wait(max(0, 0.05 - (time.perf_counter() - tick)))
+                self._message_set(f"{mode}: tilt {current[0]:.2f}, pan {current[1]:.2f} deg{target_text}"
+                                  f" | feedback {measured_hz:.1f} Hz",
+                                  feedback_hz=measured_hz, feedback_perf_s=now,
+                                  frame_perf_s=observation[0] if observation else None, tracking=bool(tracking),
+                                  pan_error_deg=observation[1][0] if tracking else None,
+                                  tilt_error_deg=observation[1][1] if tracking else None,
+                                  tilt_measured_deg=current[0], pan_measured_deg=current[1],
+                                  tilt_target_deg=targets[0] if targets else None,
+                                  pan_target_deg=targets[1] if targets else None, **command_timing)
+                # Keep a steady cadence despite small scheduler delays. If the
+                # requests overrun the period, resume without a catch-up backlog.
+                next_tick = max(next_tick + period, time.perf_counter())
+                self._stop.wait(max(0, next_tick - time.perf_counter()))
         except BaseException as error:
             with self._lock:
                 self._error = error
