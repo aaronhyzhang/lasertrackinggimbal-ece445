@@ -1,0 +1,41 @@
+"""Windows MMIO-backed tests of actual acquisition and network with scripted HAL."""
+import argparse
+from pathlib import Path
+import subprocess
+p=argparse.ArgumentParser(description=__doc__);p.add_argument('--zig',type=Path,required=True);a=p.parse_args()
+root=Path(__file__).resolve().parents[1];out=root/'build/host-tests';out.mkdir(exist_ok=True,parents=True)
+flags=['-std=c11','-O1','-UNDEBUG','-Wall','-Wextra','-Werror','-Wno-unused-parameter',
+       '-Wno-pointer-to-int-cast','-Wno-int-to-pointer-cast','-DUSE_HAL_DRIVER','-DSTM32H743xx']
+for inc in ('Core/Inc','Core/Src','Drivers/STM32H7xx_HAL_Driver/Inc','Drivers/CMSIS/Include',
+            'Drivers/CMSIS/Device/ST/STM32H7xx/Include','Middlewares/LwIP/src/include'):
+    flags+=['-I',str(root/inc)]
+cases=[]
+cases.append(('dual_app',['-DCONTROL_DUAL_AXIS=1','-DCONTROL_MOTION_ENABLED=1'],
+    [root/'Tests/test_dual_app.c',root/'Core/Src/position_control.c']))
+for current_pi in (0,1):
+    cases.append((f'pan_coordinates_{current_pi}',
+        ['-DPCB_TEST_AXIS=1','-DCONTROL_MOTION_ENABLED=1',f'-DCONTROL_CURRENT_PI_ENABLED={current_pi}'],
+        [root/'Tests/test_pan_coordinates.c',root/'Core/Src/position_control.c',root/'Core/Src/commission.c']))
+cases.append(('commission',['-DPCB_TEST_AXIS=0','-DCONTROL_MOTION_ENABLED=1'],[root/'Tests/test_commission.c',root/'Core/Src/commission.c',root/'Core/Src/position_control.c']))
+for motion,source in ((0,0),(1,0),(1,1)):
+    cases.append((f'app_{motion}_{source}',['-DPCB_TEST_AXIS=0',f'-DCONTROL_MOTION_ENABLED={motion}',f'-DCONTROL_SOURCE_ETHERNET={source}'],
+                  [root/'Tests/test_app.c',root/'Core/Src/position_control.c',root/'Core/Src/commission.c']))
+for axis in (0,1):
+    for revision in ('V','Y'):
+        for current_pi in (0,1):
+            cases.append((f'acquisition_{axis}_{revision}_{current_pi}',
+                          [f'-DPCB_TEST_AXIS={axis}',f'-DTEST_ADC_REVISION=REV_ID_{revision}',
+                           f'-DCONTROL_CURRENT_PI_ENABLED={current_pi}'],
+                          [root/'Tests/test_acquisition.c',root/'Core/Src/sense_math.c']))
+cases.append(('dual_acquisition',['-DCONTROL_DUAL_AXIS=1'],
+    [root/'Tests/test_acquisition.c',root/'Core/Src/sense_math.c']))
+lwip=list((root/'Middlewares/LwIP/src/core').rglob('*.c'))
+cases.append(('network',['-DCONTROL_SOURCE_ETHERNET=1'],
+              [root/'Tests/test_network.c',root/'Core/Src/demo_protocol.c',*lwip,root/'Middlewares/LwIP/src/netif/ethernet.c']))
+cases.append(('dual_network',['-DCONTROL_DUAL_AXIS=1','-DCONTROL_SOURCE_ETHERNET=1'],
+              [root/'Tests/test_network.c',root/'Core/Src/demo_protocol.c',*lwip,root/'Middlewares/LwIP/src/netif/ethernet.c']))
+for name,defines,sources in cases:
+    if not any(d.startswith('-DCONTROL_DUAL_AXIS=') for d in defines):defines=[*defines,'-DCONTROL_DUAL_AXIS=0']
+    exe=out/f'{name}.exe'
+    subprocess.run([str(a.zig),'cc',*flags,*defines,*map(str,sources),'-lm','-o',str(exe)],check=True)
+    subprocess.run([str(exe)],check=True)
